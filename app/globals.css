@@ -1,26 +1,85 @@
 @import "tailwindcss";
 
+/*
+ * AoE4-inspired theme: dark slate/stone, gold & bronze accents, parchment surfaces,
+ * serif display headings. (UI/UX brief: match the feel of Age of Empires IV.)
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0f1115;   /* dark slate */
+  --surface: #181b22;      /* stone panel */
+  --surface-2: #20242d;
+  --border: #3a3326;       /* dark bronze edge */
+  --foreground: #e8e2d2;   /* aged parchment text */
+  --muted: #9a917d;
+  --gold: #d8b24a;         /* AoE gold */
+  --gold-bright: #f1cf6c;
+  --bronze: #8a6a32;
+  --parchment: #e9dcc0;
+  --parchment-ink: #2b2417;
+  --danger: #b5482f;       /* ban red */
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-gold: var(--gold);
+  --color-gold-bright: var(--gold-bright);
+  --color-bronze: var(--bronze);
+  --color-parchment: var(--parchment);
+  --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-cinzel);
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(216, 178, 74, 0.08), transparent 60%),
+    var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
 }
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-cinzel), Georgia, serif;
+  letter-spacing: 0.02em;
+}
+
+/* Reusable AoE-flavored bits */
+.aoe-panel {
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+.aoe-gold-text {
+  color: var(--gold-bright);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.aoe-rule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--bronze), transparent);
+}
+.aoe-btn {
+  border: 1px solid var(--bronze);
+  background: linear-gradient(180deg, #2a2a22, #1b1b16);
+  color: var(--gold-bright);
+  transition: filter 0.15s ease, transform 0.05s ease;
+}
+.aoe-btn:hover { filter: brightness(1.2); }
+.aoe-btn:active { transform: translateY(1px); }
+
+/* Civ lock-in animation: a freshly chosen civ pops + glows into the player's strip. */
+@keyframes civ-pop {
+  0% { opacity: 0; transform: scale(0.3) translateY(10px); filter: brightness(2.2); }
+  60% { opacity: 1; transform: scale(1.12) translateY(0); filter: brightness(1.6); }
+  100% { opacity: 1; transform: scale(1); filter: brightness(1); }
+}
+.civ-pop { animation: civ-pop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes civ-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(241, 207, 108, 0); }
+  50% { box-shadow: 0 0 14px 2px rgba(241, 207, 108, 0.55); }
+}
+.civ-pop-glow { animation: civ-glow 1.1s ease-out 1; }

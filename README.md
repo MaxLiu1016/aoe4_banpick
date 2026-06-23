@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AoE4 Ban/Pick
 
-## Getting Started
+A single configurable arena for Age of Empires IV tournament drafting — map ban/pick,
+civ ban/pick, snipe drafting, and **live spectating** — replacing the current
+three-separate-sites workflow.
 
-First, run the development server:
+See [`PLAN.md`](./PLAN.md) for the full architecture and milestone plan.
+
+## Stack
+
+- **Next.js 16** (App Router, TypeScript) on a **custom Node server** (`server.ts`)
+- **Socket.IO** for real-time BP sync, hover, timers (self-hosted; one room per match)
+- **MongoDB Atlas** via Mongoose (app models) + raw client for the Auth.js adapter
+- **Auth.js v5** (credentials + bcrypt) for accounts
+- **Tailwind CSS v4** — AoE4-flavored dark/gold/parchment theme
+- Deploy target: **Railway** (long-lived WebSocket host)
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # then fill in MONGODB_URI + AUTH_SECRET
+npm run dev                  # custom server + Socket.IO on http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`npm run dev` runs `tsx watch server.ts` (Next + Socket.IO together).
+`npm run build` then `npm run start` for production.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Var | Purpose |
+| --- | --- |
+| `MONGODB_URI` | Atlas connection string (keep in `.env.local`, never commit) |
+| `AUTH_SECRET` | Auth.js JWT secret (`openssl rand -base64 32`) |
+| `AUTH_URL` | App base URL |
+| `PORT` | Server port (default 3000) |
+| `NEXT_PUBLIC_SOCKET_URL` | Socket origin for the browser (blank = same origin) |
 
-## Learn More
+## Project layout
 
-To learn more about Next.js, take a look at the following resources:
+```
+server.ts                 # custom Node server: Next handler + Socket.IO
+auth.ts                   # Auth.js (NextAuth v5) config
+app/                      # routes: / · /login · /presets · /match/[id] · /watch/[id]
+components/               # UI components
+lib/
+  mongoose.ts             # Mongoose connection (app models)
+  mongodb.ts              # raw MongoClient promise (Auth.js adapter)
+  models/                 # User, Preset, Match, MatchAction, MatchGame
+  draft/                  # schema.ts (Zod rules) · defaultPreset.ts
+  socket/events.ts        # shared Socket.IO event contract
+data/                     # civs.ts, maps.ts (sourced from the AoE fandom wiki)
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Asset policy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+All civ/map names and images are sourced from the **Age of Empires Wiki**
+(`ageofempires.fandom.com`) only. Do **not** use aoe4world.com.
 
-## Deploy on Vercel
+## Status
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+M0 (skeleton) complete: scaffolding, data layer, auth, custom Socket.IO server,
+themed pages. Next up: M1 auth wiring → M2 preset editor → M3+ live match room.
+See `PLAN.md` §6.

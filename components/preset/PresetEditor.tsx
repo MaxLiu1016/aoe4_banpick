@@ -1,0 +1,464 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Thumb } from "@/components/Thumb";
+import type { ClientPreset } from "@/lib/presets";
+import type { PresetConfig, Step, StepType, Actor, Pool, PoolEntry } from "@/lib/draft/schema";
+import { buildDefaultConfig } from "@/lib/draft/defaultPreset";
+import { validatePreset } from "@/lib/draft/validate";
+import { ClonePresetButton } from "@/components/preset/ClonePresetButton";
+import { useI18n } from "@/lib/i18n";
+import { CIVS } from "@/data/civs";
+import { DEFAULT_MAPS } from "@/data/maps";
+
+type TFn = (k: string, v?: Record<string, string | number>) => string;
+
+const STEP_TYPES: StepType[] = [
+  "MAP_BAN", "MAP_PICK", "CIV_BAN", "CIV_PICK", "MAP_SELECT", "CIV_OFFER", "CIV_SNIPE_OPPONENT", "GAME_RESULT",
+];
+const ACTORS: Actor[] = ["HOST_DRAW", "PLAYER1", "PLAYER2", "LOSER", "WINNER"];
+const POOLS: Pool[] = ["map", "civ", "drafted_civ"];
+
+// Suggested label for a step, used as default + placeholder (localized).
+function defaultLabel(s: Pick<Step, "type" | "actor" | "count">, t: TFn): string {
+  const step = t(`step.${s.type}`);
+  if (s.type === "CIV_OFFER" || s.type === "CIV_SNIPE_OPPONENT" || s.type === "GAME_RESULT") return step;
+  return `${t(`actorShort.${s.actor}`)} · ${step}`;
+}
+
+// The pool a step operates on, derived from its type.
+function poolForType(type: StepType): Pool {
+  if (type === "MAP_BAN" || type === "MAP_PICK" || type === "MAP_SELECT" || type === "GAME_RESULT") return "map";
+  if (type === "CIV_BAN" || type === "CIV_PICK") return "civ";
+  return "drafted_civ"; // CIV_OFFER / CIV_SNIPE_OPPONENT
+}
+
+function newStep(t: TFn): Step {
+  const base = {
+    type: "CIV_BAN" as StepType,
+    actor: "PLAYER1" as Actor,
+    pool: "civ" as Pool,
+    count: 1,
+    timeLimitSec: 30,
+    showCurrentMap: false,
+    excludeUsedCivs: true,
+    banScope: "opponent" as const,
+    pausable: false,
+  };
+  return { id: crypto.randomUUID(), ...base, label: defaultLabel(base, t) };
+}
+
+export function PresetEditor({ initial }: { initial: ClientPreset }) {
+  const router = useRouter();
+  const { t } = useI18n();
+  const [name, setName] = useState(initial.name);
+  const [description, setDescription] = useState(initial.description);
+  const [isPublic, setIsPublic] = useState(initial.isPublic);
+  const [config, setConfig] = useState<PresetConfig>(initial.config);
+  const [status, setStatus] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+
+  const includedCiv = new Set(config.civs.map((c) => c.id));
+  const includedMap = new Set(config.maps.map((m) => m.id));
+  // Catalog = default maps + any custom maps already in this preset.
+  const mapCatalog = [...DEFAULT_MAPS, ...config.maps.filter((m) => !DEFAULT_MAPS.some((d) => d.id === m.id))];
+
+  function patchOptions(p: Partial<PresetConfig["options"]>) {
+    setConfig((c) => ({ ...c, options: { ...c.options, ...p } }));
+  }
+
+  function toggleCiv(entry: PoolEntry) {
+    setConfig((c) => {
+      const has = c.civs.some((x) => x.id === entry.id);
+      return {
+        ...c,
+        civs: has ? c.civs.filter((x) => x.id !== entry.id) : [...c.civs, { id: entry.id, name: entry.name, imageUrl: entry.imageUrl }],
+      };
+    });
+  }
+
+  function toggleMap(entry: PoolEntry) {
+    setConfig((c) => {
+      const has = c.maps.some((x) => x.id === entry.id);
+      return {
+        ...c,
+        maps: has ? c.maps.filter((x) => x.id !== entry.id) : [...c.maps, entry],
+      };
+    });
+  }
+
+  function addCustomMap(rawName: string, imageUrl?: string) {
+    const trimmed = rawName.trim();
+    if (!trimmed) return;
+    const id = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    if (!id || includedMap.has(id)) return;
+    const url = imageUrl?.trim();
+    setConfig((c) => ({ ...c, maps: [...c.maps, { id, name: trimmed, ...(url ? { imageUrl: url } : {}) }] }));
+  }
+
+  function updateStep(idx: number, patch: Partial<Step>) {
+    setConfig((c) => {
+      const steps = c.steps.slice();
+      steps[idx] = { ...steps[idx], ...patch };
+      return { ...c, steps };
+    });
+  }
+  // Like updateStep, but re-generates the label and auto-syncs the pool to the type.
+  function updateStepMeta(idx: number, patch: Partial<Step>) {
+    setConfig((c) => {
+      const steps = c.steps.slice();
+      const old = steps[idx];
+      const merged = { ...old, ...patch };
+      if (patch.type) merged.pool = poolForType(patch.type);
+      const wasAuto = !old.label || old.label === defaultLabel(old, t);
+      if (wasAuto) merged.label = defaultLabel(merged, t);
+      steps[idx] = merged;
+      return { ...c, steps };
+    });
+  }
+  function moveStep(idx: number, dir: -1 | 1) {
+    setConfig((c) => {
+      const steps = c.steps.slice();
+      const j = idx + dir;
+      if (j < 0 || j >= steps.length) return c;
+      [steps[idx], steps[j]] = [steps[j], steps[idx]];
+      return { ...c, steps };
+    });
+  }
+  function removeStep(idx: number) {
+    setConfig((c) => ({ ...c, steps: c.steps.filter((_, i) => i !== idx) }));
+  }
+  function addStep() {
+    setConfig((c) => ({ ...c, steps: [...c.steps, newStep(t)] }));
+  }
+  // Insert a fresh step right after `idx`.
+  function insertStep(idx: number) {
+    setConfig((c) => {
+      const steps = c.steps.slice();
+      steps.splice(idx + 1, 0, newStep(t));
+      return { ...c, steps };
+    });
+  }
+  // Move a step from one index to another (drag-and-drop reorder).
+  function moveTo(from: number, to: number) {
+    setConfig((c) => {
+      if (from === to || from < 0 || to < 0 || from >= c.steps.length || to >= c.steps.length) return c;
+      const steps = c.steps.slice();
+      const [m] = steps.splice(from, 1);
+      steps.splice(to, 0, m);
+      return { ...c, steps };
+    });
+  }
+  function regenerate() {
+    if (!confirm(t("editor.regenConfirm"))) return;
+    const fresh = buildDefaultConfig(config.options.bestOf);
+    setConfig((c) => ({ ...c, steps: fresh.steps }));
+  }
+
+  async function save() {
+    setBusy(true);
+    setStatus(null);
+    try {
+      const res = await fetch(`/api/presets/${initial.id}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name, description, isPublic, config }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error ?? "Save failed");
+      }
+      setStatus(t("editor.saved"));
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    if (!confirm(t("editor.deleteConfirm"))) return;
+    const res = await fetch(`/api/presets/${initial.id}`, { method: "DELETE" });
+    if (res.ok) router.push("/presets");
+  }
+
+  const problems = validatePreset(config);
+
+  return (
+    <div className="space-y-6">
+      {problems.length > 0 && (
+        <div className="rounded-lg border border-danger/60 bg-danger/10 p-4 text-sm">
+          <p className="font-display text-danger">{t("editor.notReady")}</p>
+          <ul className="mt-1 list-disc pl-5 text-muted">
+            {problems.map((p, i) => <li key={i}>{p}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {/* Header / actions */}
+      <div className="aoe-panel rounded-xl p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="min-w-0 flex-1 rounded border border-border bg-surface-2 px-3 py-2 font-display text-xl text-gold-bright outline-none focus:border-gold"
+          />
+          <div className="flex items-center gap-2">
+            <button onClick={save} disabled={busy} className="aoe-btn rounded px-4 py-2 font-display disabled:opacity-50">
+              {busy ? t("editor.saving") : t("editor.save")}
+            </button>
+            <ClonePresetButton presetId={initial.id} className="rounded border border-border px-3 py-2 text-sm text-muted hover:text-gold-bright" />
+            <button onClick={remove} className="rounded border border-danger/60 px-3 py-2 text-sm text-danger hover:bg-danger/10">
+              {t("editor.delete")}
+            </button>
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
+          <label className="flex items-center gap-2 text-muted">
+            <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
+            {t("editor.publicToggle")}
+          </label>
+          {status && <span className="text-gold-bright">{status}</span>}
+        </div>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder={t("editor.descPh")}
+          rows={2}
+          className="mt-3 w-full rounded border border-border bg-surface-2 px-3 py-2 text-sm text-foreground outline-none focus:border-gold"
+        />
+      </div>
+
+      {/* Global options */}
+      <Section title={t("editor.formatOptions")}>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <NumberField label={t("editor.bestOf")} min={1} max={15} value={config.options.bestOf}
+            onChange={(v) => patchOptions({ bestOf: v })} />
+          <NumberField label={t("editor.defaultTimer")} min={0} max={3600} value={config.options.defaultTimeLimitSec}
+            onChange={(v) => patchOptions({ defaultTimeLimitSec: v })} />
+          <ToggleField label={t("editor.publicHover")} checked={config.options.publicHover}
+            onChange={(v) => patchOptions({ publicHover: v })} hint={t("editor.publicHoverHint")} />
+          <ToggleField label={t("editor.pausable")} checked={config.options.pausable}
+            onChange={(v) => patchOptions({ pausable: v })} hint={t("editor.pausableHint")} />
+        </div>
+      </Section>
+
+      {/* Civ pool */}
+      <Section title={`${t("editor.civPool")} (${config.civs.length}/${CIVS.length})`}>
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+          {CIVS.map((c) => {
+            const on = includedCiv.has(c.id);
+            return (
+              <button
+                key={c.id}
+                onClick={() => toggleCiv(c)}
+                className={`flex flex-col items-center rounded-lg border p-2 transition ${
+                  on ? "border-gold bg-surface-2" : "border-border opacity-40 hover:opacity-80"
+                }`}
+                title={c.name}
+              >
+                {c.imageUrl && (
+                  <Thumb src={c.imageUrl} alt={c.name} className="h-9 w-9 object-contain" />
+                )}
+                <span className="mt-1 text-[10px] leading-tight text-muted">{c.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      </Section>
+
+      {/* Map pool — thumbnail grid, click to toggle in/out (like the civ pool) */}
+      <Section title={`${t("editor.mapPool")} (${config.maps.length})`}>
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+          {mapCatalog.map((m) => {
+            const on = includedMap.has(m.id);
+            return (
+              <button
+                key={m.id}
+                onClick={() => toggleMap(m)}
+                className={`flex flex-col items-center rounded-lg border p-2 transition ${
+                  on ? "border-emerald-500/70 bg-surface-2" : "border-border opacity-40 hover:opacity-80"
+                }`}
+                title={m.name}
+              >
+                <Thumb src={m.imageUrl} alt={m.name} className="h-11 w-11 rounded object-contain" />
+                <span className="mt-1 text-[10px] leading-tight text-muted">{m.name}</span>
+              </button>
+            );
+          })}
+        </div>
+        <CustomMapInput onAdd={addCustomMap} addLabel={t("editor.add")} placeholder={t("editor.addCustomMap")} urlPlaceholder={t("editor.mapImageUrl")} urlHint={t("editor.urlHint")} />
+      </Section>
+
+      {/* Steps */}
+      <section className="aoe-panel rounded-xl p-5">
+        <div className="sticky top-2 z-20 -mx-5 -mt-5 mb-3 flex flex-wrap items-center justify-between gap-2 rounded-t-xl border-b border-border bg-surface-2 px-5 py-3">
+          <h2 className="font-display text-lg aoe-gold-text">{t("editor.steps")} ({config.steps.length})</h2>
+          <div className="flex gap-2">
+            <button onClick={regenerate} className="rounded border border-border px-3 py-1.5 text-sm text-muted hover:text-gold-bright">
+              {t("editor.regenerate", { n: config.options.bestOf })}
+            </button>
+            <button onClick={addStep} className="aoe-btn rounded px-3 py-1.5 text-sm">{t("editor.addStep")}</button>
+          </div>
+        </div>
+        <p className="mb-3 text-xs text-muted">{t("editor.tip")} · {t("editor.dragHint")}</p>
+        <ol className="space-y-2">
+          {config.steps.map((s, i) => (
+            <li
+              key={s.id}
+              onDragOver={(e) => { if (dragIdx !== null) e.preventDefault(); }}
+              onDrop={() => { if (dragIdx !== null) moveTo(dragIdx, i); setDragIdx(null); }}
+              className={`rounded-lg border border-l-4 bg-surface-2/60 p-3 transition ${
+                dragIdx === i ? "border-gold opacity-60" :
+                s.actor === "PLAYER1" ? "border-border border-l-sky-500/70" :
+                s.actor === "PLAYER2" ? "border-border border-l-rose-500/70" :
+                s.actor === "LOSER" || s.actor === "WINNER" ? "border-border border-l-amber-500/60" :
+                "border-border border-l-bronze"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  draggable
+                  onDragStart={() => setDragIdx(i)}
+                  onDragEnd={() => setDragIdx(null)}
+                  title={t("editor.dragHint")}
+                  className="flex w-8 shrink-0 cursor-grab select-none items-center justify-center gap-0.5 font-display text-gold-bright active:cursor-grabbing"
+                >
+                  <span className="text-muted">⠿</span>{i + 1}
+                </span>
+                <select value={s.type} onChange={(e) => updateStepMeta(i, { type: e.target.value as StepType })} className={selectCls}>
+                  {STEP_TYPES.map((st) => <option key={st} value={st}>{t(`step.${st}`)}</option>)}
+                </select>
+                <select value={s.actor} onChange={(e) => updateStepMeta(i, { actor: e.target.value as Actor })} className={selectCls}>
+                  {ACTORS.map((a) => <option key={a} value={a}>{t(`actor.${a}`)}</option>)}
+                </select>
+                <select value={s.pool} onChange={(e) => updateStep(i, { pool: e.target.value as Pool })} className={selectCls}>
+                  {POOLS.map((pl) => <option key={pl} value={pl}>{t(`pool.${pl}`)}</option>)}
+                </select>
+                <label className="flex items-center gap-1 text-xs text-muted">
+                  ×<input type="number" min={1} max={50} value={s.count}
+                    onChange={(e) => updateStepMeta(i, { count: clamp(+e.target.value, 1, 50) })}
+                    className="w-14 rounded border border-border bg-surface px-2 py-1 text-foreground" />
+                </label>
+                <label className="flex items-center gap-1 text-xs text-muted">
+                  ⏱<input type="number" min={0} max={3600} value={s.timeLimitSec}
+                    onChange={(e) => updateStep(i, { timeLimitSec: clamp(+e.target.value, 0, 3600) })}
+                    className="w-16 rounded border border-border bg-surface px-2 py-1 text-foreground" />
+                </label>
+                <div className="ml-auto flex gap-1">
+                  <button onClick={() => insertStep(i)} className="rounded border border-bronze px-2 text-gold-bright hover:bg-surface" title={t("editor.insert")}>＋</button>
+                  <button onClick={() => moveStep(i, -1)} className="rounded border border-border px-2 text-muted hover:text-gold-bright" title="↑">↑</button>
+                  <button onClick={() => moveStep(i, 1)} className="rounded border border-border px-2 text-muted hover:text-gold-bright" title="↓">↓</button>
+                  <button onClick={() => removeStep(i)} className="rounded border border-danger/50 px-2 text-danger hover:bg-danger/10" title="×">×</button>
+                </div>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-4 pl-8 text-xs text-muted">
+                {s.type === "CIV_BAN" && (
+                  <select value={s.banScope ?? "pool"} onChange={(e) => updateStep(i, { banScope: e.target.value as "pool" | "opponent" })} className={selectCls}>
+                    <option value="pool">{t("editor.banPool")}</option>
+                    <option value="opponent">{t("editor.banOpponent")}</option>
+                  </select>
+                )}
+                <label className="flex items-center gap-1">
+                  <input type="checkbox" checked={s.showCurrentMap} onChange={(e) => updateStep(i, { showCurrentMap: e.target.checked })} />
+                  {t("editor.showCurrentMap")}
+                </label>
+                <label className="flex items-center gap-1">
+                  <input type="checkbox" checked={s.excludeUsedCivs} onChange={(e) => updateStep(i, { excludeUsedCivs: e.target.checked })} />
+                  {t("editor.excludeUsedCivs")}
+                </label>
+                <label className="flex items-center gap-1">
+                  <input type="checkbox" checked={s.pausable} onChange={(e) => updateStep(i, { pausable: e.target.checked })} />
+                  {t("editor.pausableShort")}
+                </label>
+                <input
+                  value={s.label ?? ""}
+                  onChange={(e) => updateStep(i, { label: e.target.value })}
+                  placeholder={defaultLabel(s, t)}
+                  className="min-w-40 flex-1 rounded border border-border bg-surface px-2 py-1 text-foreground"
+                />
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+    </div>
+  );
+}
+
+const selectCls = "rounded border border-border bg-surface px-2 py-1 text-xs text-foreground outline-none focus:border-gold";
+
+function clamp(n: number, lo: number, hi: number) {
+  if (Number.isNaN(n)) return lo;
+  return Math.min(hi, Math.max(lo, n));
+}
+
+function Section({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
+  return (
+    <section className="aoe-panel rounded-xl p-5">
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-lg aoe-gold-text">{title}</h2>
+        {action}
+      </div>
+      <div className="aoe-rule my-3" />
+      {children}
+    </section>
+  );
+}
+
+function NumberField({ label, value, min, max, onChange }: { label: string; value: number; min: number; max: number; onChange: (v: number) => void }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs uppercase tracking-wide text-muted">{label}</span>
+      <input type="number" min={min} max={max} value={value}
+        onChange={(e) => onChange(clamp(+e.target.value, min, max))}
+        className="w-full rounded border border-border bg-surface-2 px-3 py-2 text-foreground outline-none focus:border-gold" />
+    </label>
+  );
+}
+
+function ToggleField({ label, checked, onChange, hint }: { label: string; checked: boolean; onChange: (v: boolean) => void; hint?: string }) {
+  return (
+    <label className="flex cursor-pointer flex-col gap-1">
+      <span className="text-xs uppercase tracking-wide text-muted">{label}</span>
+      <span className="flex items-center gap-2 text-sm text-foreground">
+        <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+        {hint && <span className="text-xs text-muted">{hint}</span>}
+      </span>
+    </label>
+  );
+}
+
+function CustomMapInput({ onAdd, addLabel, placeholder, urlPlaceholder, urlHint }: {
+  onAdd: (name: string, url?: string) => void; addLabel: string; placeholder: string; urlPlaceholder: string; urlHint: string;
+}) {
+  const [name, setName] = useState("");
+  const [url, setUrl] = useState("");
+  const add = () => { onAdd(name, url); setName(""); setUrl(""); };
+  return (
+    <div className="mt-3">
+      <div className="flex flex-wrap gap-2">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") add(); }}
+          placeholder={placeholder}
+          className="w-44 rounded border border-border bg-surface-2 px-3 py-1.5 text-sm text-foreground outline-none focus:border-gold"
+        />
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") add(); }}
+          placeholder={urlPlaceholder}
+          className="min-w-0 flex-1 rounded border border-border bg-surface-2 px-3 py-1.5 text-sm text-foreground outline-none focus:border-gold"
+        />
+        <button onClick={add} className="rounded border border-border px-3 py-1.5 text-sm text-muted hover:text-gold-bright">
+          {addLabel}
+        </button>
+      </div>
+      <p className="mt-1 text-[11px] text-muted">{urlHint}</p>
+    </div>
+  );
+}

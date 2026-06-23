@@ -1,0 +1,56 @@
+import type { PresetConfig, Step } from "@/lib/draft/schema";
+import { BASE_CIVS } from "@/data/civs";
+import { DEFAULT_MAPS } from "@/data/maps";
+
+let counter = 0;
+const sid = (t: string) => `${t}-${counter++}`;
+
+/**
+ * Builds a default config that mirrors the current 3-site workflow:
+ *   1. Map ban/pick      → narrows the map pool
+ *   2. Civ ban/pick      → builds the match's available civ pool
+ *   3. Per game:
+ *        - Map select    (game 1: host draws random un-banned; later: loser picks)
+ *        - Civ snipe draft (both players pick a civ from the drafted pool,
+ *                           excluding civs already used, shown the current map)
+ *        - Game result
+ */
+export function buildDefaultConfig(bestOf = 5): PresetConfig {
+  counter = 0;
+  const steps: Step[] = [];
+
+  const mk = (s: Omit<Step, "id">): Step => ({ id: sid(s.type), ...s });
+
+  // --- Map BP: ban a couple, then EACH player picks maps into their OWN pool.
+  // The loser selects from their own pool each game. ---
+  steps.push(mk({ type: "MAP_BAN", actor: "PLAYER1", pool: "map", count: 1, timeLimitSec: 30, showCurrentMap: false, excludeUsedCivs: false, pausable: false, label: "P1 ban map" }));
+  steps.push(mk({ type: "MAP_BAN", actor: "PLAYER2", pool: "map", count: 1, timeLimitSec: 30, showCurrentMap: false, excludeUsedCivs: false, pausable: false, label: "P2 ban map" }));
+  const mapsPerPlayer = Math.max(1, Math.ceil(bestOf / 2));
+  steps.push(mk({ type: "MAP_PICK", actor: "PLAYER1", pool: "map", count: mapsPerPlayer, timeLimitSec: 45, showCurrentMap: false, excludeUsedCivs: false, pausable: false, label: `P1 pick ${mapsPerPlayer} maps` }));
+  steps.push(mk({ type: "MAP_PICK", actor: "PLAYER2", pool: "map", count: mapsPerPlayer, timeLimitSec: 45, showCurrentMap: false, excludeUsedCivs: false, pausable: false, label: `P2 pick ${mapsPerPlayer} maps` }));
+
+  // --- Civ BP (build the match civ pool) ---
+  steps.push(mk({ type: "CIV_BAN", actor: "PLAYER1", pool: "civ", count: 1, timeLimitSec: 30, showCurrentMap: false, excludeUsedCivs: false, banScope: "opponent", pausable: false, label: "P1 ban civ" }));
+  steps.push(mk({ type: "CIV_BAN", actor: "PLAYER2", pool: "civ", count: 1, timeLimitSec: 30, showCurrentMap: false, excludeUsedCivs: false, banScope: "opponent", pausable: false, label: "P2 ban civ" }));
+  // Each player drafts a persistent "hand" of civs. Sized so they never run out
+  // (each game plays 1 distinct civ; offers need spares): bestOf + offerSize - 1.
+  const handSize = bestOf + 1;
+  steps.push(mk({ type: "CIV_PICK", actor: "PLAYER1", pool: "civ", count: handSize, timeLimitSec: 60, showCurrentMap: false, excludeUsedCivs: false, pausable: false, label: "P1 draft hand" }));
+  steps.push(mk({ type: "CIV_PICK", actor: "PLAYER2", pool: "civ", count: handSize, timeLimitSec: 60, showCurrentMap: false, excludeUsedCivs: false, pausable: false, label: "P2 draft hand" }));
+
+  // --- Per-game loop: pick map, simultaneous offer (2), simultaneous counter-snipe (1), result ---
+  for (let g = 0; g < bestOf; g++) {
+    const mapActor = g === 0 ? "HOST_DRAW" : "LOSER";
+    steps.push(mk({ type: "MAP_SELECT", actor: mapActor, pool: "map", count: 1, timeLimitSec: 30, showCurrentMap: false, excludeUsedCivs: false, pausable: false, label: `Game ${g + 1}: select map` }));
+    steps.push(mk({ type: "CIV_OFFER", actor: "PLAYER1", pool: "drafted_civ", count: 2, timeLimitSec: 45, showCurrentMap: true, excludeUsedCivs: true, pausable: false, label: `Game ${g + 1}: offer 2 (both players)` }));
+    steps.push(mk({ type: "CIV_SNIPE_OPPONENT", actor: "PLAYER1", pool: "drafted_civ", count: 1, timeLimitSec: 30, showCurrentMap: true, excludeUsedCivs: false, pausable: false, label: `Game ${g + 1}: snipe opponent (both players)` }));
+    steps.push(mk({ type: "GAME_RESULT", actor: "HOST_DRAW", pool: "map", count: 1, timeLimitSec: 0, showCurrentMap: true, excludeUsedCivs: false, pausable: false, label: `Game ${g + 1}: result` }));
+  }
+
+  return {
+    civs: BASE_CIVS,
+    maps: DEFAULT_MAPS,
+    steps,
+    options: { bestOf, publicHover: false, defaultTimeLimitSec: 30, pausable: false },
+  };
+}
