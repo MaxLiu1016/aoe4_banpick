@@ -112,6 +112,9 @@ const DICT: Record<string, { en: string; zh: string }> = {
   "match.paused": { en: "PAUSED", zh: "已暫停" },
   "match.p1wins": { en: "Player 1 wins!", zh: "玩家 1 獲勝！" },
   "match.p2wins": { en: "Player 2 wins!", zh: "玩家 2 獲勝！" },
+  "match.winner": { en: "{name} wins!", zh: "{name} 獲勝！" },
+  "match.matchWinner": { en: "Match winner", zh: "本場勝者" },
+  "match.gameN": { en: "Game {n}", zh: "第 {n} 局" },
   "match.yourMove": { en: "Your move.", zh: "輪到你。" },
   "match.currentMap": { en: "Current map:", zh: "本局地圖：" },
   "match.maps": { en: "Maps", zh: "地圖" },
@@ -158,6 +161,13 @@ const DICT: Record<string, { en: string; zh: string }> = {
   "result.waitingHost": { en: "Waiting for the host to call the result…", zh: "等待房主裁定勝負…" },
   "result.p1won": { en: "Player 1 won", zh: "玩家 1 獲勝" },
   "result.p2won": { en: "Player 2 won", zh: "玩家 2 獲勝" },
+  "result.won": { en: "{name} won", zh: "{name} 獲勝" },
+  // between-games acknowledgement gate
+  "ack.title": { en: "{name} won game {n}", zh: "{name} 拿下第 {n} 局" },
+  "ack.prompt": { en: "Next game starts once both players click Got it — the clock is paused until then.", zh: "雙方都按「收到」後下一局才開始計時——在那之前計時暫停。" },
+  "ack.gotIt": { en: "Got it — I'm ready", zh: "收到，我準備好了" },
+  "ack.youReady": { en: "You're ready — waiting for the other player…", zh: "你已就緒——等待另一位玩家…" },
+  "ack.waiting": { en: "Waiting for both players to confirm…", zh: "等待雙方確認…" },
   // preset editor — step types
   "step.MAP_BAN": { en: "Ban map", zh: "禁地圖" },
   "step.MAP_PICK": { en: "Pick map (into pool)", zh: "選地圖進池" },

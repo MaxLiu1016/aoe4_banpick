@@ -12,6 +12,9 @@ const MatchGameSchema = new Schema(
     // Who has clicked the result; host can override. e.g. { player1: "player2", player2: "player2" }
     confirmedBy: { type: Schema.Types.Mixed, default: {} },
     overriddenByHost: { type: Boolean, default: false },
+    // Who has acknowledged ("Got it") this decided game, so the next game's clock
+    // can start only once both players are ready. e.g. { player1: true, player2: true }
+    acknowledgedBy: { type: Schema.Types.Mixed, default: {} },
   },
   { timestamps: true }
 );

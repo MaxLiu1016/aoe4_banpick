@@ -17,6 +17,7 @@ export const C2S = {
   START: "match:start", // { matchId } — host force-starts once both seated
   RESULT_CLICK: "match:resultClick", // { matchId, gameIndex, winner }
   RESULT_OVERRIDE: "match:resultOverride", // host only { matchId, gameIndex, winner }
+  RESULT_ACK: "match:resultAck", // { matchId, gameIndex } — a player acknowledges a decided game so the next clock may start
 } as const;
 
 // Server -> Client

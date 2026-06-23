@@ -26,6 +26,8 @@ interface Payload {
   state: DerivedState;
   you?: SeatRole | "spectator";
   youAreHost?: boolean;
+  // Set after a game is decided: the next game's clock is held until both players ack.
+  awaitingAck?: { gameIndex: number; winner: "player1" | "player2"; by: { player1: boolean; player2: boolean } } | null;
 }
 type Hover = { role: string; pool: string; targetId: string | null };
 
@@ -87,6 +89,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   }
   function act(target: string) { emit(C2S.ACTION, { matchId, target }); }
   function setReady(ready: boolean) { emit(C2S.READY, { matchId, ready }); }
+  function ackResult(gameIndex: number) { emit(C2S.RESULT_ACK, { matchId, gameIndex }); }
   function rename(name: string) { emit(C2S.RENAME, { matchId, name }); }
   function forceStart() { emit(C2S.START, { matchId }); }
   function copyInvite() {
@@ -174,6 +177,10 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const p1Maps = state.mapsByP1.map((id) => ({ key: id, civ: mapById(id), used: playedMaps.has(id) }));
   const p2Maps = state.mapsByP2.map((id) => ({ key: id, civ: mapById(id), used: playedMaps.has(id) }));
 
+  // Display names (fall back to "Player 1/2" when a seat is unnamed).
+  const p1Name = payload!.seats.player1?.name || t("match.p1");
+  const p2Name = payload!.seats.player2?.name || t("match.p2");
+
   return (
     <div className="space-y-5">
       {error && <div className="rounded border border-danger/60 bg-danger/10 px-4 py-2 text-sm text-danger">{error}</div>}
@@ -183,26 +190,26 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         <div className="grid grid-cols-3 items-center">
           <SeatCard label={t("match.p1")} seat={payload!.seats.player1} role="player1" you={you} turn={state.turn}
             score={state.score.player1} canTake={!spectator && !payload!.seats.player1 && you === "spectator" && !!session}
-            onTake={() => takeSeat("player1")} />
+            onTake={() => takeSeat("player1")} crowned={state.finished && state.score.player1 > state.score.player2} />
           <div className="text-center">
             <div className="font-display text-3xl aoe-gold-text">{state.score.player1} — {state.score.player2}</div>
             <div className="text-xs text-muted">{t("match.bestOf", { n: state.bestOf, t: state.target })}</div>
-            <div className="mt-1 text-xs">
+            <div className="mt-1">
               {state.finished ? (
-                <span className="aoe-gold-text">
-                  {state.score.player1 > state.score.player2 ? t("match.p1wins") : t("match.p2wins")}
+                <span className="font-display text-xl aoe-gold-text">
+                  {t("match.winner", { name: state.score.player1 > state.score.player2 ? p1Name : p2Name })}
                 </span>
               ) : payload!.status === "paused" ? (
-                <span className="text-danger">{t("match.paused")}</span>
+                <span className="text-xs text-danger">{t("match.paused")}</span>
               ) : (
-                <span className={stepTone(state.currentStep?.type)}>{turnLabel(state, t)}</span>
+                <span className={`text-xs ${stepTone(state.currentStep?.type)}`}>{turnLabel(state, t)}</span>
               )}
             </div>
           </div>
           <SeatCard label={t("match.p2")} seat={payload!.seats.player2} role="player2" you={you} turn={state.turn}
             score={state.score.player2} canTake={!spectator && !payload!.seats.player2 && you === "spectator" && !!session}
             onTake={() => takeSeat("player2")} right
-            />
+            crowned={state.finished && state.score.player2 > state.score.player1} />
         </div>
 
         {/* Each player's hand (Pool 1) shown under them; used civs are dimmed */}
@@ -256,6 +263,21 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           </div>
         )}
       </div>
+
+      {/* Per-game overview: map, civs played and winner for each game — moved up
+          to the top so the current standing & matchup is clear at a glance. */}
+      <MatchOverview state={state} p1Name={p1Name} p2Name={p2Name} civById={civById} mapById={mapById} />
+
+      {/* Between-games gate: hold the clock until both players acknowledge the result */}
+      {payload!.awaitingAck && !state.finished && (
+        <AckGate
+          info={payload!.awaitingAck}
+          p1Name={p1Name}
+          p2Name={p2Name}
+          you={you}
+          onAck={() => ackResult(payload!.awaitingAck!.gameIndex)}
+        />
+      )}
 
       {/* Current step prompt */}
       {step && !state.finished && (
@@ -329,13 +351,13 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
             gameIndex={state.currentGameIndex}
             isHost={amHost}
             currentWinner={state.games[state.currentGameIndex]?.winner ?? null}
+            p1Name={p1Name}
+            p2Name={p2Name}
             onDecide={(w) => emit(C2S.RESULT_OVERRIDE, { matchId, gameIndex: state.currentGameIndex, winner: w })}
           />
         </>
       )}
 
-      {/* Games summary */}
-      <GamesTable state={state} />
     </div>
   );
 }
@@ -561,7 +583,7 @@ function Lobby({ seats, you, amHost, loggedIn, bestOf, inviteUrl, copied, onCopy
               {seat.ready ? t("match.ready") : t("match.notReady")}
             </span>
             {mine && (
-              <div className="mt-3 space-y-2">
+              <div className="mt-3 flex flex-col items-center gap-4">
                 <button onClick={() => onReady(!seat.ready)} className="aoe-btn rounded px-4 py-2 font-display">
                   {seat.ready ? t("match.unready") : t("match.readyUp")}
                 </button>
@@ -659,13 +681,14 @@ function turnLabel(state: DerivedState, t: TFn): string {
   return t(key, { p });
 }
 
-function SeatCard({ label, seat, role, you, turn, score, canTake, onTake, right }: {
+function SeatCard({ label, seat, role, you, turn, score, canTake, onTake, right, crowned }: {
   label: string; seat: Seat; role: SeatRole; you: string; turn: SeatRole | null; score: number;
-  canTake: boolean; onTake: () => void; right?: boolean;
+  canTake: boolean; onTake: () => void; right?: boolean; crowned?: boolean;
 }) {
   const { t } = useI18n();
   return (
     <div className={right ? "text-right" : ""}>
+      {crowned && <div className="text-2xl leading-none" title={t("match.matchWinner")}>👑</div>}
       <div className={`font-display text-lg leading-tight ${turn === role ? "text-gold-bright" : "text-foreground"}`}>
         <span className="font-sans text-[11px] uppercase tracking-wide text-muted">{label}</span>
         {seat?.name ? <span> · {seat.name}</span> : <span className="text-muted"> · —</span>}
@@ -730,7 +753,7 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
 }
 
 function VersusBanner({ game, p1Name, p2Name, civById, mapById }: {
-  game?: { civP1?: string; civP2?: string; map?: string };
+  game?: { civP1?: string; civP2?: string; map?: string; winner?: "player1" | "player2" | null };
   p1Name?: string;
   p2Name?: string;
   civById: (id?: string) => PoolView | undefined;
@@ -740,15 +763,18 @@ function VersusBanner({ game, p1Name, p2Name, civById, mapById }: {
   const c1 = civById(game?.civP1);
   const c2 = civById(game?.civP2);
   const map = mapById(game?.map);
-  const Side = ({ name, civ, tone }: { name?: string; civ?: PoolView; tone: "sky" | "rose" }) => (
+  const Side = ({ name, civ, tone, won }: { name?: string; civ?: PoolView; tone: "sky" | "rose"; won?: boolean }) => (
     <div className="flex flex-col items-center text-center">
       <div className={`text-xs uppercase tracking-wide ${tone === "sky" ? "text-sky-400" : "text-rose-400"}`}>
         {tone === "sky" ? t("match.p1") : t("match.p2")}{name ? ` · ${name}` : ""}
       </div>
-      <div className={`mt-2 rounded-full p-1 ring-2 ${tone === "sky" ? "ring-sky-500/70" : "ring-rose-500/70"}`}>
-        <Thumb src={civ?.imageUrl} alt={civ?.name ?? ""} className="civ-pop h-16 w-16 object-contain" />
+      <div className="relative mt-2">
+        {won && <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-2xl leading-none">👑</span>}
+        <div className={`rounded-full p-1 ring-2 ${won ? "ring-gold-bright" : tone === "sky" ? "ring-sky-500/70" : "ring-rose-500/70"}`}>
+          <Thumb src={civ?.imageUrl} alt={civ?.name ?? ""} className="civ-pop h-16 w-16 object-contain" />
+        </div>
       </div>
-      <div className="mt-1 font-display aoe-gold-text">{civ?.name ?? "—"}</div>
+      <div className={`mt-1 font-display ${won ? "aoe-gold-text" : "text-foreground"}`}>{civ?.name ?? "—"}</div>
     </div>
   );
   return (
@@ -758,20 +784,21 @@ function VersusBanner({ game, p1Name, p2Name, civById, mapById }: {
         style={{ background: "linear-gradient(105deg, rgba(56,189,248,0.14) 0%, transparent 42%, transparent 58%, rgba(244,63,94,0.14) 100%)" }}
       />
       <div className="relative grid grid-cols-3 items-center gap-3">
-        <Side name={p1Name} civ={c1} tone="sky" />
+        <Side name={p1Name} civ={c1} tone="sky" won={game?.winner === "player1"} />
         <div className="flex flex-col items-center">
           <div className="font-display text-3xl aoe-gold-text drop-shadow">VS</div>
           {map && <Thumb src={map.imageUrl} alt={map.name} className="mt-2 h-20 w-20 object-contain" />}
           <div className="mt-1 text-xs text-muted">{map?.name ?? ""}</div>
         </div>
-        <Side name={p2Name} civ={c2} tone="rose" />
+        <Side name={p2Name} civ={c2} tone="rose" won={game?.winner === "player2"} />
       </div>
     </section>
   );
 }
 
-function ResultControls({ gameIndex, isHost, currentWinner, onDecide }: {
+function ResultControls({ gameIndex, isHost, currentWinner, onDecide, p1Name, p2Name }: {
   gameIndex: number; isHost: boolean; currentWinner: "player1" | "player2" | null; onDecide: (w: "player1" | "player2") => void;
+  p1Name: string; p2Name: string;
 }) {
   const { t } = useI18n();
   return (
@@ -787,7 +814,7 @@ function ResultControls({ gameIndex, isHost, currentWinner, onDecide }: {
                 onClick={() => onDecide(w)}
                 className={`aoe-btn rounded px-5 py-2 font-display ${currentWinner === w ? "ring-2 ring-gold-bright" : ""}`}
               >
-                {w === "player1" ? t("result.p1won") : t("result.p2won")}
+                {t("result.won", { name: w === "player1" ? p1Name : p2Name })}
               </button>
             ))}
           </div>
@@ -799,31 +826,95 @@ function ResultControls({ gameIndex, isHost, currentWinner, onDecide }: {
   );
 }
 
-function GamesTable({ state }: { state: DerivedState }) {
+// Shown between games after a result is committed: the next game's clock is held
+// until BOTH players click "Got it", so the loser knows exactly when it begins.
+function AckGate({ info, p1Name, p2Name, you, onAck }: {
+  info: { gameIndex: number; winner: "player1" | "player2"; by: { player1: boolean; player2: boolean } };
+  p1Name: string; p2Name: string; you: SeatRole | "spectator"; onAck: () => void;
+}) {
   const { t } = useI18n();
-  const civName = (id?: string) => state.civs.find((c) => c.id === id)?.name ?? "—";
-  const mapName = (id?: string) => state.maps.find((m) => m.id === id)?.name ?? "—";
-  const played = state.games.filter((g) => g.map || g.winner);
+  const winnerName = info.winner === "player1" ? p1Name : p2Name;
+  const seated = you === "player1" || you === "player2";
+  const youAcked = you === "player1" || you === "player2" ? info.by[you] : false;
+  const AckPip = ({ name, ready }: { name: string; ready: boolean }) => (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${ready ? "border-gold text-gold-bright" : "border-border text-muted"}`}>
+      {ready ? "✓" : "…"} {name}
+    </span>
+  );
+  return (
+    <section className="aoe-panel rounded-xl border border-gold/60 p-5 text-center ring-1 ring-gold/30">
+      <div className="text-2xl leading-none">👑</div>
+      <h3 className="mt-1 font-display text-lg aoe-gold-text">{t("ack.title", { name: winnerName, n: info.gameIndex + 1 })}</h3>
+      <p className="mt-1 text-sm text-muted">{t("ack.prompt")}</p>
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-xs">
+        <AckPip name={p1Name} ready={info.by.player1} />
+        <AckPip name={p2Name} ready={info.by.player2} />
+      </div>
+      {seated && !youAcked && (
+        <button onClick={onAck} className="aoe-btn mt-4 rounded px-7 py-2.5 font-display">{t("ack.gotIt")}</button>
+      )}
+      {seated && youAcked && <p className="mt-3 text-sm text-gold-bright">{t("ack.youReady")}</p>}
+      {!seated && <p className="mt-3 text-xs text-muted">{t("ack.waiting")}</p>}
+    </section>
+  );
+}
+
+// Per-game overview shown at the TOP of the match: one card per game with the
+// map, both civs played, and a crown on the game's winner. Makes the current
+// standing and matchup readable at a glance.
+function MatchOverview({ state, p1Name, p2Name, civById, mapById }: {
+  state: DerivedState;
+  p1Name: string;
+  p2Name: string;
+  civById: (id?: string) => PoolView | undefined;
+  mapById: (id?: string) => PoolView | undefined;
+}) {
+  const { t } = useI18n();
+  const played = state.games.filter((g) => g.map || g.civP1 || g.civP2 || g.winner);
   if (played.length === 0) return null;
   return (
     <section className="aoe-panel rounded-xl p-4">
-      <h3 className="mb-2 font-display text-sm uppercase tracking-wide text-muted">{t("match.games")}</h3>
-      <table className="w-full text-sm">
-        <thead className="text-xs text-muted">
-          <tr><th className="text-left">#</th><th className="text-left">{t("match.colMap")}</th><th className="text-left">P1</th><th className="text-left">P2</th><th className="text-left">{t("match.colWinner")}</th></tr>
-        </thead>
-        <tbody>
-          {played.map((g) => (
-            <tr key={g.gameIndex} className="border-t border-border/50">
-              <td className="py-1">{g.gameIndex + 1}</td>
-              <td>{mapName(g.map)}</td>
-              <td>{civName(g.civP1)}</td>
-              <td>{civName(g.civP2)}</td>
-              <td className="aoe-gold-text">{g.winner ? (g.winner === "player1" ? "P1" : "P2") : "—"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <h3 className="mb-3 font-display text-sm uppercase tracking-wide text-muted">{t("match.games")}</h3>
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {played.map((g) => {
+          const isCurrent = !state.finished && g.gameIndex === state.currentGameIndex;
+          const m = mapById(g.map);
+          return (
+            <div key={g.gameIndex}
+              className={`rounded-lg border bg-surface-2/40 p-3 ${isCurrent ? "border-gold ring-1 ring-gold/40" : "border-border/70"}`}>
+              <div className="mb-2 flex items-center justify-between text-[11px] uppercase tracking-wide text-muted">
+                <span>{t("match.gameN", { n: g.gameIndex + 1 })}</span>
+                {m && (
+                  <span className="flex items-center gap-1 normal-case text-foreground/80">
+                    {m.imageUrl && <Thumb src={m.imageUrl} alt={m.name} className="h-4 w-4 rounded object-cover ring-1 ring-bronze" />}
+                    {m.name}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-start justify-between gap-2">
+                <GameSide name={p1Name} civ={civById(g.civP1)} won={g.winner === "player1"} tone="sky" />
+                <div className="self-center font-display text-[10px] text-muted">VS</div>
+                <GameSide name={p2Name} civ={civById(g.civP2)} won={g.winner === "player2"} tone="rose" />
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </section>
+  );
+}
+
+function GameSide({ name, civ, won, tone }: { name: string; civ?: PoolView; won: boolean; tone: "sky" | "rose" }) {
+  return (
+    <div className="flex min-w-0 flex-1 flex-col items-center text-center">
+      <div className="relative">
+        {won && <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-base leading-none">👑</span>}
+        <div className={`rounded-full p-0.5 ring-2 ${won ? "ring-gold-bright" : tone === "sky" ? "ring-sky-500/50" : "ring-rose-500/50"}`}>
+          <Thumb src={civ?.imageUrl} alt={civ?.name ?? ""} className={`h-10 w-10 rounded-full object-cover ${civ ? "" : "opacity-30"}`} />
+        </div>
+      </div>
+      <span className={`mt-1 max-w-full truncate text-[10px] ${won ? "aoe-gold-text" : "text-foreground/80"}`}>{civ?.name ?? "—"}</span>
+      <span className="max-w-full truncate text-[9px] text-muted">{name}</span>
+    </div>
   );
 }

@@ -59,12 +59,14 @@ async function buildPayload(matchId: string) {
 
   const t = timers.get(matchId);
   const live = state.status === "running";
+  const awaitingAck = live ? await awaitingAckInfo(matchId, state) : null;
 
   return {
     matchId,
     status: state.status,
     publicHover: Boolean(match.config?.options?.publicHover),
     deadlineTs: live && t ? t.deadlineTs : null,
+    awaitingAck,
     seats: {
       host: String(match.hostId),
       player1: match.player1Id ? { id: String(match.player1Id), name: match.player1Name, ready: Boolean(match.player1Ready) } : null,
@@ -130,6 +132,22 @@ function clearTimer(matchId: string) {
   if (t?.handle) clearTimeout(t.handle);
 }
 
+type AckInfo = { gameIndex: number; winner: "player1" | "player2"; by: { player1: boolean; player2: boolean } };
+
+// After a game's result is committed the next game's clock is held until BOTH
+// players acknowledge ("Got it"), so the loser is never surprised by a running
+// timer. Returns the pending game's ack status, or null when nothing is pending.
+async function awaitingAckInfo(matchId: string, state: DerivedState): Promise<AckInfo | null> {
+  if (state.finished) return null;
+  const prevIdx = state.currentGameIndex - 1;
+  const prev = prevIdx >= 0 ? state.games[prevIdx] : undefined;
+  if (!prev?.winner) return null;
+  const g = await MatchGame.findOne({ matchId, gameIndex: prevIdx }).lean<{ acknowledgedBy?: Record<string, boolean> }>();
+  const ack = g?.acknowledgedBy ?? {};
+  if (ack.player1 && ack.player2) return null;
+  return { gameIndex: prevIdx, winner: prev.winner, by: { player1: !!ack.player1, player2: !!ack.player2 } };
+}
+
 /** Recompute the countdown for the current step. Resets when the turn token changes. */
 async function scheduleTimer(io: Server, matchId: string) {
   const ctx = await getCtx(matchId);
@@ -139,6 +157,13 @@ async function scheduleTimer(io: Server, matchId: string) {
   const noOneAwaiting = !state.awaiting.player1 && !state.awaiting.player2;
 
   if (match.status !== "running" || state.finished || !state.currentStep || limit <= 0 || state.turn === "host" || noOneAwaiting) {
+    clearTimer(matchId);
+    timers.delete(matchId);
+    return;
+  }
+
+  // Hold the clock until both players acknowledge the previous game's result.
+  if (await awaitingAckInfo(matchId, state)) {
     clearTimer(matchId);
     timers.delete(matchId);
     return;
@@ -358,6 +383,20 @@ export function registerMatchHandlers(io: Server) {
         await broadcast(io, matchId);
       } catch (e) {
         socket.emit(S2C.ERROR, { message: e instanceof Error ? e.message : "Override failed." });
+      }
+    });
+
+    // A seated player acknowledges a decided game ("Got it"); once both players
+    // have, the gate in scheduleTimer lifts and the next game's clock starts.
+    socket.on(C2S.RESULT_ACK, async ({ matchId, gameIndex }: { matchId: string; gameIndex: number }) => {
+      try {
+        const role = socket.data.role as Role | undefined;
+        if ((role !== "player1" && role !== "player2") || socket.data.matchId !== matchId) return;
+        await dbConnect();
+        await MatchGame.updateOne({ matchId, gameIndex }, { $set: { [`acknowledgedBy.${role}`]: true } }, { upsert: true });
+        await broadcast(io, matchId);
+      } catch (e) {
+        socket.emit(S2C.ERROR, { message: e instanceof Error ? e.message : "Ack failed." });
       }
     });
 
