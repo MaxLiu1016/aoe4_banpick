@@ -20,6 +20,7 @@ interface Payload {
   matchId: string;
   status: string;
   publicHover: boolean;
+  resultMode?: "vote" | "host";
   deadlineTs: number | null;
   seats: { host: string; player1: Seat; player2: Seat };
   votes: Record<number, { player1?: string; player2?: string }>;
@@ -90,6 +91,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   function act(target: string) { emit(C2S.ACTION, { matchId, target }); }
   function setReady(ready: boolean) { emit(C2S.READY, { matchId, ready }); }
   function ackResult(gameIndex: number) { emit(C2S.RESULT_ACK, { matchId, gameIndex }); }
+  function voteResult(gameIndex: number, winner: "player1" | "player2") { emit(C2S.RESULT_CLICK, { matchId, gameIndex, winner }); }
   function rename(name: string) { emit(C2S.RENAME, { matchId, name }); }
   function forceStart() { emit(C2S.START, { matchId }); }
   function copyInvite() {
@@ -127,7 +129,9 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   }
 
   const step = state.currentStep;
-  const myTurn = !spectator && you === state.turn && state.status === "running";
+  // While the between-games result gate is up, nobody may act until both players ack.
+  const ackPending = !!payload!.awaitingAck && !state.finished;
+  const myTurn = !spectator && you === state.turn && state.status === "running" && !ackPending;
   const isHost = amHost;
 
   const showMaps = step?.type === "MAP_BAN" || step?.type === "MAP_PICK" || step?.type === "MAP_SELECT";
@@ -140,7 +144,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const youPlayer: "player1" | "player2" | null = you === "player1" || you === "player2" ? you : null;
   const opp = youPlayer === "player1" ? "player2" : youPlayer === "player2" ? "player1" : null;
   const duel = state.civDuel;
-  const canActDuel = !spectator && !!youPlayer && state.awaiting[youPlayer] && payload!.status === "running";
+  const canActDuel = !spectator && !!youPlayer && state.awaiting[youPlayer] && payload!.status === "running" && !ackPending;
   const usedByYou = youPlayer
     ? state.games.filter((g) => g.gameIndex < state.currentGameIndex).map((g) => (youPlayer === "player1" ? g.civP1 : g.civP2)).filter(Boolean) as string[]
     : [];
@@ -350,10 +354,14 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           />
           <ResultControls
             gameIndex={state.currentGameIndex}
+            mode={payload!.resultMode ?? "vote"}
             isHost={amHost}
+            you={you}
+            votes={payload!.votes?.[state.currentGameIndex]}
             currentWinner={state.games[state.currentGameIndex]?.winner ?? null}
             p1Name={p1Name}
             p2Name={p2Name}
+            onVote={(w) => voteResult(state.currentGameIndex, w)}
             onDecide={(w) => emit(C2S.RESULT_OVERRIDE, { matchId, gameIndex: state.currentGameIndex, winner: w })}
           />
         </>
@@ -431,7 +439,7 @@ function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed
                   className={`relative flex flex-col items-center rounded-lg border p-2 transition ${
                     offered ? "border-gold bg-surface-2" : used ? "border-border opacity-30" : "border-bronze hover:border-gold hover:bg-surface-2 cursor-pointer"}`}
                   title={c.name}>
-                  <Thumb src={c.imageUrl} alt={c.name} className="h-9 w-9 object-contain" />
+                  <Thumb src={c.imageUrl} alt={c.name} className="h-11 w-11 object-contain" />
                   <span className="mt-1 text-[10px] leading-tight text-muted">{c.name}</span>
                   {used && <span className="absolute right-1 top-1 text-[8px] text-danger">{t("match.used")}</span>}
                 </button>
@@ -741,7 +749,7 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
               ].join(" ")}
               title={e.name}
             >
-              <Thumb src={e.imageUrl} alt={e.name} className={`${isMap ? "h-20 w-full object-cover" : "h-10 w-10 object-contain"} ${banned ? "grayscale" : ""}`} />
+              <Thumb src={e.imageUrl} alt={e.name} className={`${isMap ? "h-24 w-full object-cover" : "h-12 w-12 object-contain"} ${banned ? "grayscale" : ""}`} />
               <span className={`leading-tight text-muted ${isMap ? "w-full truncate px-2 py-1 text-[11px]" : "mt-1 text-[10px]"}`}>{e.name}</span>
               {banned && <span className="absolute right-1 top-1 text-danger">✕</span>}
               {(e.state === "drafted" || e.state === "picked") && <span className="absolute right-1 top-1 text-[9px] text-emerald-400">●</span>}
@@ -770,9 +778,9 @@ function VersusBanner({ game, p1Name, p2Name, civById, mapById }: {
         {tone === "sky" ? t("match.p1") : t("match.p2")}{name ? ` · ${name}` : ""}
       </div>
       <div className="relative mt-2">
-        {won && <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-2xl leading-none">👑</span>}
-        <div className={`rounded-full p-1 ring-2 ${won ? "ring-gold-bright" : tone === "sky" ? "ring-sky-500/70" : "ring-rose-500/70"}`}>
-          <Thumb src={civ?.imageUrl} alt={civ?.name ?? ""} className="civ-pop h-16 w-16 object-contain" />
+        {won && <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-2xl leading-none">👑</span>}
+        <div className={`flex h-20 w-20 items-center justify-center overflow-hidden rounded-full ring-2 ${won ? "ring-gold-bright" : tone === "sky" ? "ring-sky-500/70" : "ring-rose-500/70"}`}>
+          <Thumb src={civ?.imageUrl} alt={civ?.name ?? ""} className="civ-pop h-full w-full object-contain" />
         </div>
       </div>
       <div className={`mt-1 font-display ${won ? "aoe-gold-text" : "text-foreground"}`}>{civ?.name ?? "—"}</div>
@@ -797,27 +805,78 @@ function VersusBanner({ game, p1Name, p2Name, civById, mapById }: {
   );
 }
 
-function ResultControls({ gameIndex, isHost, currentWinner, onDecide, p1Name, p2Name }: {
-  gameIndex: number; isHost: boolean; currentWinner: "player1" | "player2" | null; onDecide: (w: "player1" | "player2") => void;
+function ResultControls({ gameIndex, mode, isHost, you, votes, currentWinner, onVote, onDecide, p1Name, p2Name }: {
+  gameIndex: number;
+  mode: "vote" | "host";
+  isHost: boolean;
+  you: SeatRole | "spectator";
+  votes?: { player1?: string; player2?: string };
+  currentWinner: "player1" | "player2" | null;
+  onVote: (w: "player1" | "player2") => void;
+  onDecide: (w: "player1" | "player2") => void;
   p1Name: string; p2Name: string;
 }) {
   const { t } = useI18n();
+  const nameOf = (w?: string) => (w === "player1" ? p1Name : w === "player2" ? p2Name : "—");
+  const youPlayer = you === "player1" || you === "player2" ? you : null;
+  const myVote = youPlayer ? votes?.[youPlayer] : undefined;
+  const WinBtn = ({ w, vote, active }: { w: "player1" | "player2"; vote: boolean; active: boolean }) => (
+    <button onClick={() => (vote ? onVote(w) : onDecide(w))}
+      className={`aoe-btn rounded px-5 py-2 font-display ${active ? "ring-2 ring-gold-bright" : ""}`}>
+      {t("result.won", { name: w === "player1" ? p1Name : p2Name })}
+    </button>
+  );
+
   return (
     <section className="aoe-panel rounded-xl p-5 text-center">
       <h3 className="font-display text-lg aoe-gold-text">{t("result.title", { n: gameIndex + 1 })}</h3>
-      {isHost ? (
+
+      {mode === "vote" ? (
+        <>
+          {youPlayer ? (
+            <>
+              <p className="mt-1 text-xs text-muted">{t("result.voteHint")}</p>
+              <div className="mt-3 flex justify-center gap-3">
+                <WinBtn w="player1" vote active={myVote === "player1"} />
+                <WinBtn w="player2" vote active={myVote === "player2"} />
+              </div>
+            </>
+          ) : (
+            <p className="mt-1 text-xs text-muted">{t("result.voteWatch")}</p>
+          )}
+          <div className="mx-auto mt-4 max-w-xs space-y-1 border-t border-border/50 pt-3 text-xs">
+            {(["player1", "player2"] as const).map((p) => (
+              <div key={p} className="flex items-center justify-between gap-3">
+                <span className="text-muted">{p === "player1" ? p1Name : p2Name}</span>
+                <span className={votes?.[p] ? "text-gold-bright" : "text-muted"}>
+                  {votes?.[p] ? t("result.votedFor", { name: nameOf(votes[p]) }) : t("result.noVote")}
+                </span>
+              </div>
+            ))}
+          </div>
+          {votes?.player1 && votes?.player2 && votes.player1 !== votes.player2 && (
+            <p className="mt-2 text-xs text-danger">{t("result.disagree")}</p>
+          )}
+          {isHost && (
+            <div className="mt-3 border-t border-border/50 pt-3">
+              <p className="text-xs text-muted">{t("result.hostResolve")}</p>
+              <div className="mt-2 flex justify-center gap-2">
+                {(["player1", "player2"] as const).map((w) => (
+                  <button key={w} onClick={() => onDecide(w)}
+                    className={`rounded border px-3 py-1.5 text-sm ${currentWinner === w ? "border-gold text-gold-bright" : "border-border text-muted hover:text-gold-bright"}`}>
+                    {t("result.won", { name: w === "player1" ? p1Name : p2Name })}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      ) : isHost ? (
         <>
           <p className="mt-1 text-xs text-muted">{t("result.hostCall")}</p>
           <div className="mt-3 flex justify-center gap-3">
-            {(["player1", "player2"] as const).map((w) => (
-              <button
-                key={w}
-                onClick={() => onDecide(w)}
-                className={`aoe-btn rounded px-5 py-2 font-display ${currentWinner === w ? "ring-2 ring-gold-bright" : ""}`}
-              >
-                {t("result.won", { name: w === "player1" ? p1Name : p2Name })}
-              </button>
-            ))}
+            <WinBtn w="player1" vote={false} active={currentWinner === "player1"} />
+            <WinBtn w="player2" vote={false} active={currentWinner === "player2"} />
           </div>
         </>
       ) : (
@@ -910,8 +969,8 @@ function GameSide({ name, civ, won, tone }: { name: string; civ?: PoolView; won:
     <div className="flex min-w-0 flex-1 flex-col items-center text-center">
       <div className="relative">
         {won && <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-base leading-none">👑</span>}
-        <div className={`rounded-full p-0.5 ring-2 ${won ? "ring-gold-bright" : tone === "sky" ? "ring-sky-500/50" : "ring-rose-500/50"}`}>
-          <Thumb src={civ?.imageUrl} alt={civ?.name ?? ""} className={`h-10 w-10 rounded-full object-cover ${civ ? "" : "opacity-30"}`} />
+        <div className={`flex h-12 w-12 items-center justify-center overflow-hidden rounded-full ring-2 ${won ? "ring-gold-bright" : tone === "sky" ? "ring-sky-500/50" : "ring-rose-500/50"}`}>
+          <Thumb src={civ?.imageUrl} alt={civ?.name ?? ""} className={`h-full w-full object-cover ${civ ? "" : "opacity-30"}`} />
         </div>
       </div>
       <span className={`mt-1 max-w-full truncate text-[10px] ${won ? "aoe-gold-text" : "text-foreground/80"}`}>{civ?.name ?? "—"}</span>

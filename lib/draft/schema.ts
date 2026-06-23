@@ -74,6 +74,9 @@ export const PresetOptionsSchema = z.object({
   defaultTimeLimitSec: z.number().int().min(0).max(3600).default(0),
   // Allow either side to pause.
   pausable: z.boolean().default(true),
+  // How a game's winner is decided: "vote" = both players pick and must agree
+  // (host can still override); "host" = only the host/referee calls it.
+  resultMode: z.enum(["vote", "host"]).default("vote"),
 });
 export type PresetOptions = z.infer<typeof PresetOptionsSchema>;
 

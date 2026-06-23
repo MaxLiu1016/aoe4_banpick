@@ -379,7 +379,19 @@ export function validateAction(state: DerivedState, role: SeatRole, target: stri
       if (state.turn !== role) return { ok: false, error: "It is not your turn." };
       const entry = state.civs.find((c) => c.id === target);
       if (!entry) return { ok: false, error: "Unknown civ." };
-      if (entry.state !== "available") return { ok: false, error: "Civ already taken." };
+      const scope = step.banScope ?? "pool";
+      if (scope === "opponent") {
+        // Opponent bans never change the civ's GLOBAL state, so checking only
+        // `state === "available"` would let the same civ be banned twice. Guard
+        // against a civ already gone (pool ban / drafted) and against this player
+        // re-banning a civ they already banned for the opponent.
+        if (entry.state !== "available") return { ok: false, error: "That civ is already banned." };
+        if (state.civBans.some((b) => b.id === target && (b.scope === "pool" || b.by === role))) {
+          return { ok: false, error: "You already banned that civ." };
+        }
+      } else if (entry.state !== "available") {
+        return { ok: false, error: "Civ already taken." };
+      }
       return { ok: true, resolved: { actionType: "ban", pool: "civ", gameIndex, scope: step.banScope } };
     }
     case "CIV_PICK": {

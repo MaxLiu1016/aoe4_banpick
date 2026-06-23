@@ -65,6 +65,7 @@ async function buildPayload(matchId: string) {
     matchId,
     status: state.status,
     publicHover: Boolean(match.config?.options?.publicHover),
+    resultMode: match.config?.options?.resultMode ?? "vote",
     deadlineTs: live && t ? t.deadlineTs : null,
     awaitingAck,
     seats: {
@@ -353,6 +354,13 @@ export function registerMatchHandlers(io: Server) {
           return;
         }
         await dbConnect();
+        // Block ALL actions until the previous game's result is acknowledged by
+        // both players — nobody may pick/ban while the between-games gate is up.
+        const gateCtx = await getCtx(matchId);
+        if (gateCtx && (await awaitingAckInfo(matchId, gateCtx.state))) {
+          socket.emit(S2C.ERROR, { message: "Both players must confirm the previous result first." });
+          return;
+        }
         const res = await applyAction(matchId, role, target);
         if (!res.ok) { socket.emit(S2C.ERROR, { message: res.error ?? "Invalid action." }); return; }
         await broadcast(io, matchId);
@@ -366,6 +374,9 @@ export function registerMatchHandlers(io: Server) {
         const role = socket.data.role as Role | undefined;
         if ((role !== "player1" && role !== "player2") || socket.data.matchId !== matchId) return;
         await dbConnect();
+        // Player voting only applies in "vote" mode; in "host" mode the host calls it.
+        const m = await Match.findById(matchId).lean<{ config?: { options?: { resultMode?: string } } }>();
+        if ((m?.config?.options?.resultMode ?? "vote") !== "vote") return;
         const game = await MatchGame.findOneAndUpdate({ matchId, gameIndex }, { $set: { [`confirmedBy.${role}`]: winner } }, { upsert: true, new: true });
         const cb = (game?.confirmedBy as Record<string, string>) ?? {};
         if (cb.player1 && cb.player1 === cb.player2) await commitResult(matchId, gameIndex, winner, false);

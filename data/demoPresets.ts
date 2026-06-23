@@ -246,6 +246,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "6c98d936-f141-42c2-b7a1-1c38ccf1b8d3",
           "type": "CIV_BAN",
+          "banScope": "opponent",
           "actor": "PLAYER1",
           "pool": "civ",
           "count": 1,
@@ -258,6 +259,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "86658e31-f903-4011-971b-0c52162dde6f",
           "type": "CIV_BAN",
+          "banScope": "opponent",
           "actor": "PLAYER2",
           "pool": "civ",
           "count": 1,
@@ -270,6 +272,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "d31394c4-448e-421e-8bbe-575b7a06debe",
           "type": "CIV_BAN",
+          "banScope": "opponent",
           "actor": "PLAYER1",
           "pool": "civ",
           "count": 1,
@@ -282,6 +285,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "da5bc025-4fe8-4db1-aaef-fcd48fd0378f",
           "type": "CIV_BAN",
+          "banScope": "opponent",
           "actor": "PLAYER2",
           "pool": "civ",
           "count": 1,
@@ -318,6 +322,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "defc3fc8-0259-4c62-b1c3-b9ab8cc43bc6",
           "type": "CIV_BAN",
+          "banScope": "opponent",
           "actor": "PLAYER1",
           "pool": "civ",
           "count": 1,
@@ -330,6 +335,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "fca26866-5bac-4e63-b385-2f76ed01e993",
           "type": "CIV_BAN",
+          "banScope": "opponent",
           "actor": "PLAYER2",
           "pool": "civ",
           "count": 1,
@@ -619,6 +625,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
       "options": {
         "bestOf": 3,
         "publicHover": true,
+        "resultMode": "vote",
         "defaultTimeLimitSec": 30,
         "pausable": true
       }
@@ -1000,6 +1007,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
       "options": {
         "bestOf": 3,
         "publicHover": true,
+        "resultMode": "vote",
         "defaultTimeLimitSec": 30,
         "pausable": true
       }

@@ -234,6 +234,15 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
             onChange={(v) => patchOptions({ publicHover: v })} hint={t("editor.publicHoverHint")} />
           <ToggleField label={t("editor.pausable")} checked={config.options.pausable}
             onChange={(v) => patchOptions({ pausable: v })} hint={t("editor.pausableHint")} />
+          <label className="block">
+            <span className="mb-1 block text-xs uppercase tracking-wide text-muted">{t("editor.resultMode")}</span>
+            <select value={config.options.resultMode ?? "vote"}
+              onChange={(e) => patchOptions({ resultMode: e.target.value as "vote" | "host" })}
+              className="w-full rounded border border-border bg-surface-2 px-3 py-2 text-foreground outline-none focus:border-gold">
+              <option value="vote">{t("editor.resultVote")}</option>
+              <option value="host">{t("editor.resultHost")}</option>
+            </select>
+          </label>
         </div>
       </Section>
 
