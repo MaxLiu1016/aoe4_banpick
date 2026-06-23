@@ -38,6 +38,8 @@ const DICT: Record<string, { en: string; zh: string }> = {
   "login.username": { en: "Username", zh: "使用者名稱" },
   "login.email": { en: "Email or username", zh: "電子郵件 / 使用者名稱" },
   "login.password": { en: "Password", zh: "密碼" },
+  "login.passwordHint": { en: "At least 8 characters.", zh: "密碼至少 8 個字。" },
+  "login.passwordTooShort": { en: "Password must be at least 8 characters.", zh: "密碼至少需要 8 個字。" },
   "login.inviteCode": { en: "Invite code", zh: "邀請碼" },
   "login.inviteHint": { en: "Registration is invite-only — ask an admin for a code.", zh: "註冊採邀請制——請向管理員索取邀請碼。" },
   "login.signin": { en: "Sign in", zh: "登入" },

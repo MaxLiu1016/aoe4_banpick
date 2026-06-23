@@ -144,7 +144,8 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const usedByYou = youPlayer
     ? state.games.filter((g) => g.gameIndex < state.currentGameIndex).map((g) => (youPlayer === "player1" ? g.civP1 : g.civP2)).filter(Boolean) as string[]
     : [];
-  const handIds = youPlayer === "player1" ? state.draftedByP1 : youPlayer === "player2" ? state.draftedByP2 : [];
+  // For the offer UI: a player's drafted hand, or the full available pool when no hand was drafted (easy flow).
+  const handIds = youPlayer === "player1" ? state.offerableP1 : youPlayer === "player2" ? state.offerableP2 : [];
 
   function clickable(entry: PoolView): boolean {
     if (!myTurn || !step) return false;

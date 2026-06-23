@@ -71,6 +71,9 @@ export interface DerivedState {
   draftedCivIds: string[];
   draftedByP1: string[];
   draftedByP2: string[];
+  /** Civs each player may offer this game: their drafted hand, or the full available pool when no hand was drafted. */
+  offerableP1: string[];
+  offerableP2: string[];
   /** All civ bans with who banned and the scope ("pool" = global, "opponent" = vs opponent). */
   civBans: CivBan[];
   /** Civs the current player may pick into their hand (during a CIV_PICK step). */
@@ -235,6 +238,12 @@ export function deriveState(
   const draftedCivIds = civs.filter((c) => c.state === "drafted").map((c) => c.id);
   const draftedByP1 = civs.filter((c) => c.state === "drafted" && c.by === "player1").map((c) => c.id);
   const draftedByP2 = civs.filter((c) => c.state === "drafted" && c.by === "player2").map((c) => c.id);
+  // What each player may OFFER from this game: normally their drafted hand, but
+  // when no hand was drafted (the "easy" flow) the whole available civ pool is
+  // open, so both players simultaneously pick any civ each game.
+  const availableCivIds = civs.filter((c) => c.state === "available").map((c) => c.id);
+  const offerableP1 = draftedByP1.length ? draftedByP1 : availableCivIds;
+  const offerableP2 = draftedByP2.length ? draftedByP2 : availableCivIds;
 
   // Per-player civ blocks: a "pool" ban blocks both; an "opponent" ban by X blocks X's opponent.
   const blockedFor = (p: "player1" | "player2") =>
@@ -329,6 +338,8 @@ export function deriveState(
     draftedCivIds,
     draftedByP1,
     draftedByP2,
+    offerableP1,
+    offerableP2,
     civBans,
     civPickableIds,
     mapsByP1,
@@ -384,8 +395,8 @@ export function validateAction(state: DerivedState, role: SeatRole, target: stri
     case "CIV_OFFER": {
       if (role !== "player1" && role !== "player2") return { ok: false, error: "Only players may offer." };
       if (!state.awaiting[role]) return { ok: false, error: "You have already offered." };
-      const ownPool = role === "player1" ? state.draftedByP1 : state.draftedByP2;
-      if (!ownPool.includes(target)) return { ok: false, error: "That civ is not in your pool." };
+      const ownPool = role === "player1" ? state.offerableP1 : state.offerableP2;
+      if (!ownPool.includes(target)) return { ok: false, error: "That civ is not available to offer." };
       const alreadyOffered = (role === "player1" ? duel?.offered.player1 : duel?.offered.player2) ?? [];
       if (alreadyOffered.includes(target)) return { ok: false, error: "Already offered this game." };
       if (step.excludeUsedCivs) {

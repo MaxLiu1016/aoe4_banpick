@@ -21,6 +21,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       if (mode === "register") {
+        if (form.password.length < 8) throw new Error(t("login.passwordTooShort"));
         const res = await fetch("/api/register", {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -61,6 +62,7 @@ export default function LoginPage() {
             )}
             <Field label={t("login.email")} type={mode === "register" ? "email" : "text"} value={form.email} onChange={set("email")} />
             <Field label={t("login.password")} type="password" value={form.password} onChange={set("password")} />
+            {mode === "register" && <p className="text-xs text-muted">{t("login.passwordHint")}</p>}
             {mode === "register" && (
               <>
                 <Field label={t("login.inviteCode")} value={form.inviteCode} onChange={set("inviteCode")} />

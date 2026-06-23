@@ -185,7 +185,7 @@ function duelTargetsFor(state: DerivedState, role: "player1" | "player2"): strin
   const d = state.civDuel;
   if (!step || !d) return [];
   if (step.type === "CIV_OFFER") {
-    const own = role === "player1" ? state.draftedByP1 : state.draftedByP2;
+    const own = role === "player1" ? state.offerableP1 : state.offerableP2;
     const offered = role === "player1" ? d.offered.player1 : d.offered.player2;
     const usedPrev = state.games.filter((g) => g.gameIndex < state.currentGameIndex).map((g) => (role === "player1" ? g.civP1 : g.civP2));
     return own.filter((id) => !offered.includes(id) && (!step.excludeUsedCivs || !usedPrev.includes(id)));
