@@ -169,7 +169,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P1 ban map"
+          "label": "P1 · Ban map"
         },
         {
           "id": "MAP_BAN-1",
@@ -181,7 +181,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P2 ban map"
+          "label": "P2 · Ban map"
         },
         {
           "id": "CIV_BAN-2",
@@ -193,7 +193,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P1 pick map pool"
+          "label": "P1 · Pick map (into pool)"
         },
         {
           "id": "CIV_BAN-3",
@@ -205,7 +205,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P2 pick map pool"
+          "label": "P2 · Pick map (into pool)"
         },
         {
           "id": "CIV_PICK-4",
@@ -217,7 +217,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P1 pick map pool"
+          "label": "P1 · Pick map (into pool)"
         },
         {
           "id": "GAME_RESULT-25",
@@ -229,7 +229,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "pick map pool"
+          "label": "P2 · Pick map (into pool)"
         },
         {
           "id": "09179417-f17d-42b6-bc94-1501f9719a49",
@@ -241,7 +241,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "隨機 · 選圖開打"
+          "label": "Random · Select map"
         },
         {
           "id": "6c98d936-f141-42c2-b7a1-1c38ccf1b8d3",
@@ -253,7 +253,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P1 · 禁文明"
+          "label": "P1 · Ban civ"
         },
         {
           "id": "86658e31-f903-4011-971b-0c52162dde6f",
@@ -265,7 +265,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P2 · 禁文明"
+          "label": "P2 · Ban civ"
         },
         {
           "id": "d31394c4-448e-421e-8bbe-575b7a06debe",
@@ -277,7 +277,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P1 · 禁文明"
+          "label": "P1 · Ban civ"
         },
         {
           "id": "da5bc025-4fe8-4db1-aaef-fcd48fd0378f",
@@ -289,7 +289,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P2 · 禁文明"
+          "label": "P2 · Ban civ"
         },
         {
           "id": "52797920-3217-40b8-afbd-40632c173ed1",
@@ -301,7 +301,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P1 · 選文明進池"
+          "label": "P1 · Pick civ into pool"
         },
         {
           "id": "85769d14-cc39-45a4-9ead-39b696a42ddb",
@@ -313,7 +313,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P2 · 選文明進池"
+          "label": "P2 · Pick civ into pool"
         },
         {
           "id": "defc3fc8-0259-4c62-b1c3-b9ab8cc43bc6",
@@ -325,7 +325,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P1 · 禁文明"
+          "label": "P1 · Ban civ"
         },
         {
           "id": "fca26866-5bac-4e63-b385-2f76ed01e993",
@@ -337,7 +337,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P2 · 禁文明"
+          "label": "P2 · Ban civ"
         },
         {
           "id": "03f9322c-efdc-4089-829a-4566c4523e3b",
@@ -349,7 +349,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P1 · 選文明進池"
+          "label": "P1 · Pick civ into pool"
         },
         {
           "id": "861d5641-ca01-44bb-8789-da1ec5ca685e",
@@ -361,7 +361,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P2 · 選文明進池"
+          "label": "P2 · Pick civ into pool"
         },
         {
           "id": "ad1bd095-bb01-42d3-a553-0947b8e77823",
@@ -373,7 +373,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P1 · 選文明進池"
+          "label": "P1 · Pick civ into pool"
         },
         {
           "id": "14184712-e0ce-4d30-af63-34fa808eec54",
@@ -385,7 +385,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P2 · 選文明進池"
+          "label": "P2 · Pick civ into pool"
         },
         {
           "id": "087fd67c-bd85-4134-9dfb-c4533b5307de",
@@ -397,7 +397,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P1 · 選文明進池"
+          "label": "P1 · Pick civ into pool"
         },
         {
           "id": "5f56fbdf-14d3-47b7-ba03-8ea2d57682ab",
@@ -409,7 +409,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P2 · 選文明進池"
+          "label": "P2 · Pick civ into pool"
         },
         {
           "id": "b5325de9-5083-49a9-85f1-7d5a936668b9",
@@ -421,7 +421,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "選文明出戰（同時）"
+          "label": "Pick civ to field (simultaneous)"
         },
         {
           "id": "39cfea76-31ba-4531-81b2-690a80a32587",
@@ -433,7 +433,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "選文明出戰（同時）"
+          "label": "Pick civ to field (simultaneous)"
         },
         {
           "id": "1ca8fed9-b8ca-44a7-b522-2fe705af95ff",
@@ -445,7 +445,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "狙擊對手（同時）"
+          "label": "Snipe opponent (simultaneous)"
         },
         {
           "id": "11da54e4-6175-4e8b-8b7a-ba5f9e6ed2bf",
@@ -457,7 +457,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "狙擊對手（同時）"
+          "label": "Snipe opponent (simultaneous)"
         },
         {
           "id": "0c08202d-531b-4eea-8b38-421f99bc9ab9",
@@ -469,7 +469,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "對局結果"
+          "label": "Game result"
         },
         {
           "id": "71cd9347-ec36-4d94-9713-05d1d221faa8",
@@ -481,7 +481,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "敗方 · 選圖開打"
+          "label": "Loser · Select map"
         },
         {
           "id": "9a97ffbb-e9f5-4691-aef6-0d80fe6e75eb",
@@ -493,7 +493,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "選文明出戰（同時）"
+          "label": "Pick civ to field (simultaneous)"
         },
         {
           "id": "ca70f74c-df03-4748-9e4c-be9a518ad350",
@@ -505,7 +505,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "選文明出戰（同時）"
+          "label": "Pick civ to field (simultaneous)"
         },
         {
           "id": "1e5f44e2-36cb-42cd-a7e3-b8396f2894ad",
@@ -517,7 +517,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "狙擊對手（同時）"
+          "label": "Snipe opponent (simultaneous)"
         },
         {
           "id": "04cba7c6-31c1-46bb-be82-8b8e8b72f2c4",
@@ -529,7 +529,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "狙擊對手（同時）"
+          "label": "Snipe opponent (simultaneous)"
         },
         {
           "id": "11acdb2d-1ddf-4a86-af8f-89b2b134ad62",
@@ -541,7 +541,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "對局結果"
+          "label": "Game result"
         },
         {
           "id": "14fdbb93-83b5-4b0e-9143-cb29f6554139",
@@ -553,7 +553,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "敗方 · 選圖開打"
+          "label": "Loser · Select map"
         },
         {
           "id": "0f1e6f22-d17f-49d1-b2f3-44efa5bffd83",
@@ -565,7 +565,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "選文明出戰（同時）"
+          "label": "Pick civ to field (simultaneous)"
         },
         {
           "id": "28c4e603-7562-49be-a0fc-d16b56158026",
@@ -577,7 +577,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "選文明出戰（同時）"
+          "label": "Pick civ to field (simultaneous)"
         },
         {
           "id": "9903d2f4-87e4-4f30-bdb6-5b88528dd3a6",
@@ -589,7 +589,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "狙擊對手（同時）"
+          "label": "Snipe opponent (simultaneous)"
         },
         {
           "id": "d5f5cdc7-15e1-4004-8961-6bd7b41d1b88",
@@ -601,7 +601,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "狙擊對手（同時）"
+          "label": "Snipe opponent (simultaneous)"
         },
         {
           "id": "487eaa3d-0f70-4944-82dd-6665a667e751",
@@ -613,7 +613,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "對局結果"
+          "label": "Game result"
         }
       ],
       "options": {
@@ -790,7 +790,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P1 ban map"
+          "label": "P1 · Ban map"
         },
         {
           "id": "MAP_BAN-1",
@@ -802,7 +802,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P2 ban map"
+          "label": "P2 · Ban map"
         },
         {
           "id": "CIV_BAN-2",
@@ -814,7 +814,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P1 pick map pool"
+          "label": "P1 · Pick map (into pool)"
         },
         {
           "id": "CIV_BAN-3",
@@ -826,7 +826,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P2 pick map pool"
+          "label": "P2 · Pick map (into pool)"
         },
         {
           "id": "CIV_PICK-4",
@@ -838,7 +838,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P1 pick map pool"
+          "label": "P1 · Pick map (into pool)"
         },
         {
           "id": "GAME_RESULT-25",
@@ -850,7 +850,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "pick map pool"
+          "label": "P2 · Pick map (into pool)"
         },
         {
           "id": "09179417-f17d-42b6-bc94-1501f9719a49",
@@ -862,7 +862,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "隨機 · 選圖開打"
+          "label": "Random · Select map"
         },
         {
           "id": "52797920-3217-40b8-afbd-40632c173ed1",
@@ -874,7 +874,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P1 · 選文明進池"
+          "label": "P1 · Pick civ into pool"
         },
         {
           "id": "85769d14-cc39-45a4-9ead-39b696a42ddb",
@@ -886,7 +886,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P2 · 選文明進池"
+          "label": "P2 · Pick civ into pool"
         },
         {
           "id": "03f9322c-efdc-4089-829a-4566c4523e3b",
@@ -898,7 +898,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P1 · 選文明進池"
+          "label": "P1 · Pick civ into pool"
         },
         {
           "id": "861d5641-ca01-44bb-8789-da1ec5ca685e",
@@ -910,7 +910,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P2 · 選文明進池"
+          "label": "P2 · Pick civ into pool"
         },
         {
           "id": "087fd67c-bd85-4134-9dfb-c4533b5307de",
@@ -922,7 +922,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P1 · 選文明進池"
+          "label": "P1 · Pick civ into pool"
         },
         {
           "id": "5f56fbdf-14d3-47b7-ba03-8ea2d57682ab",
@@ -934,7 +934,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "P2 · 選文明進池"
+          "label": "P2 · Pick civ into pool"
         },
         {
           "id": "b5325de9-5083-49a9-85f1-7d5a936668b9",
@@ -946,7 +946,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "選文明出戰（同時）"
+          "label": "Pick civ to field (simultaneous)"
         },
         {
           "id": "39cfea76-31ba-4531-81b2-690a80a32587",
@@ -958,7 +958,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "選文明出戰（同時）"
+          "label": "Pick civ to field (simultaneous)"
         },
         {
           "id": "0c08202d-531b-4eea-8b38-421f99bc9ab9",
@@ -970,7 +970,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "對局結果"
+          "label": "Game result"
         },
         {
           "id": "71cd9347-ec36-4d94-9713-05d1d221faa8",
@@ -982,7 +982,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": true,
-          "label": "敗方 · 選圖開打"
+          "label": "Loser · Select map"
         },
         {
           "id": "9a97ffbb-e9f5-4691-aef6-0d80fe6e75eb",
@@ -994,7 +994,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": false,
-          "label": "選文明出戰（同時）"
+          "label": "Pick civ to field (simultaneous)"
         },
         {
           "id": "ca70f74c-df03-4748-9e4c-be9a518ad350",
@@ -1006,7 +1006,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": false,
-          "label": "選文明出戰（同時）"
+          "label": "Pick civ to field (simultaneous)"
         },
         {
           "id": "11acdb2d-1ddf-4a86-af8f-89b2b134ad62",
@@ -1018,7 +1018,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": false,
-          "label": "對局結果"
+          "label": "Game result"
         },
         {
           "id": "14fdbb93-83b5-4b0e-9143-cb29f6554139",
@@ -1030,7 +1030,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": false,
-          "label": "敗方 · 選圖開打"
+          "label": "Loser · Select map"
         },
         {
           "id": "0f1e6f22-d17f-49d1-b2f3-44efa5bffd83",
@@ -1042,7 +1042,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": false,
-          "label": "選文明出戰（同時）"
+          "label": "Pick civ to field (simultaneous)"
         },
         {
           "id": "28c4e603-7562-49be-a0fc-d16b56158026",
@@ -1054,7 +1054,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": false,
-          "label": "選文明出戰（同時）"
+          "label": "Pick civ to field (simultaneous)"
         },
         {
           "id": "487eaa3d-0f70-4944-82dd-6665a667e751",
@@ -1066,7 +1066,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": false,
-          "label": "對局結果"
+          "label": "Game result"
         }
       ],
       "options": {

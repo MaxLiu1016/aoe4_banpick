@@ -7,25 +7,17 @@ import type { ClientPreset } from "@/lib/presets";
 import type { PresetConfig, Step, StepType, Actor, Pool, PoolEntry } from "@/lib/draft/schema";
 import { buildDefaultConfig } from "@/lib/draft/defaultPreset";
 import { validatePreset } from "@/lib/draft/validate";
+import { defaultStepLabel } from "@/lib/draft/stepLabel";
 import { ClonePresetButton } from "@/components/preset/ClonePresetButton";
 import { useI18n } from "@/lib/i18n";
 import { CIVS } from "@/data/civs";
 import { DEFAULT_MAPS } from "@/data/maps";
-
-type TFn = (k: string, v?: Record<string, string | number>) => string;
 
 const STEP_TYPES: StepType[] = [
   "MAP_BAN", "MAP_PICK", "CIV_BAN", "CIV_PICK", "MAP_SELECT", "CIV_OFFER", "CIV_SNIPE_OPPONENT", "GAME_RESULT",
 ];
 const ACTORS: Actor[] = ["HOST_DRAW", "PLAYER1", "PLAYER2", "LOSER", "WINNER"];
 const POOLS: Pool[] = ["map", "civ", "drafted_civ"];
-
-// Suggested label for a step, used as default + placeholder (localized).
-function defaultLabel(s: Pick<Step, "type" | "actor" | "count">, t: TFn): string {
-  const step = t(`step.${s.type}`);
-  if (s.type === "CIV_OFFER" || s.type === "CIV_SNIPE_OPPONENT" || s.type === "GAME_RESULT") return step;
-  return `${t(`actorShort.${s.actor}`)} · ${step}`;
-}
 
 // The pool a step operates on, derived from its type.
 function poolForType(type: StepType): Pool {
@@ -34,7 +26,7 @@ function poolForType(type: StepType): Pool {
   return "drafted_civ"; // CIV_OFFER / CIV_SNIPE_OPPONENT
 }
 
-function newStep(t: TFn): Step {
+function newStep(): Step {
   const base = {
     type: "CIV_BAN" as StepType,
     actor: "PLAYER1" as Actor,
@@ -46,7 +38,7 @@ function newStep(t: TFn): Step {
     banScope: "opponent" as const,
     pausable: false,
   };
-  return { id: crypto.randomUUID(), ...base, label: defaultLabel(base, t) };
+  return { id: crypto.randomUUID(), ...base, label: defaultStepLabel(base) };
 }
 
 export function PresetEditor({ initial }: { initial: ClientPreset }) {
@@ -112,8 +104,8 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
       const old = steps[idx];
       const merged = { ...old, ...patch };
       if (patch.type) merged.pool = poolForType(patch.type);
-      const wasAuto = !old.label || old.label === defaultLabel(old, t);
-      if (wasAuto) merged.label = defaultLabel(merged, t);
+      const wasAuto = !old.label || old.label === defaultStepLabel(old);
+      if (wasAuto) merged.label = defaultStepLabel(merged);
       steps[idx] = merged;
       return { ...c, steps };
     });
@@ -131,13 +123,13 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
     setConfig((c) => ({ ...c, steps: c.steps.filter((_, i) => i !== idx) }));
   }
   function addStep() {
-    setConfig((c) => ({ ...c, steps: [...c.steps, newStep(t)] }));
+    setConfig((c) => ({ ...c, steps: [...c.steps, newStep()] }));
   }
   // Insert a fresh step right after `idx`.
   function insertStep(idx: number) {
     setConfig((c) => {
       const steps = c.steps.slice();
-      steps.splice(idx + 1, 0, newStep(t));
+      steps.splice(idx + 1, 0, newStep());
       return { ...c, steps };
     });
   }
@@ -376,7 +368,7 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
                 <input
                   value={s.label ?? ""}
                   onChange={(e) => updateStep(i, { label: e.target.value })}
-                  placeholder={defaultLabel(s, t)}
+                  placeholder={defaultStepLabel(s)}
                   className="min-w-40 flex-1 rounded border border-border bg-surface px-2 py-1 text-foreground"
                 />
               </div>

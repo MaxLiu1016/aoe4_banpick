@@ -25,6 +25,8 @@ export default async function PresetEditPage({
 
   const preset = toClientPreset(doc as never, user.id);
   if (!preset.isOwner) redirect("/presets");
+  // Demo presets are locked — never open the editor for them.
+  if (preset.isDemo) redirect("/presets");
 
   return (
     <>

@@ -7,17 +7,35 @@ import { buildDefaultConfig } from "@/lib/draft/defaultPreset";
 import { toClientPreset } from "@/lib/presets";
 import { isValidObjectId } from "mongoose";
 
-// List the viewer's presets plus any public ones.
-export async function GET() {
+const MAX_PRESETS_PER_USER = 2;
+
+// List presets with filter (scope=mine|public), search (q) and pagination.
+export async function GET(req: Request) {
   const user = await getCurrentUser();
+  const { searchParams } = new URL(req.url);
+  const scope = searchParams.get("scope") ?? (user ? "mine" : "public");
+  const q = (searchParams.get("q") ?? "").trim();
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
+  const limit = Math.min(24, Math.max(1, parseInt(searchParams.get("limit") ?? "12", 10) || 12));
+
   await dbConnect();
 
-  const filter = user
-    ? { $or: [{ ownerId: user.id }, { isPublic: true }] }
-    : { isPublic: true };
+  const cond: Record<string, unknown> = {};
+  if (scope === "mine") {
+    if (!user) return NextResponse.json({ items: [], total: 0, page, limit });
+    cond.ownerId = user.id;
+  } else {
+    cond.isPublic = true;
+  }
+  if (q) cond.name = { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
 
-  const docs = await Preset.find(filter).sort({ updatedAt: -1 }).limit(100).lean();
-  return NextResponse.json(docs.map((d) => toClientPreset(d as never, user?.id)));
+  const total = await Preset.countDocuments(cond);
+  const docs = await Preset.find(cond)
+    .sort({ isDemo: -1, updatedAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .lean();
+  return NextResponse.json({ items: docs.map((d) => toClientPreset(d as never, user?.id)), total, page, limit });
 }
 
 const CreateSchema = z.object({
@@ -38,6 +56,17 @@ export async function POST(req: Request) {
   }
 
   await dbConnect();
+
+  // Non-admins may own at most MAX_PRESETS_PER_USER presets (clones included).
+  if (!user.isAdmin) {
+    const owned = await Preset.countDocuments({ ownerId: user.id });
+    if (owned >= MAX_PRESETS_PER_USER) {
+      return NextResponse.json(
+        { error: "limit", message: `You can have at most ${MAX_PRESETS_PER_USER} presets — delete one first.` },
+        { status: 403 }
+      );
+    }
+  }
 
   // Clone path.
   if (parsed.data.fromId) {

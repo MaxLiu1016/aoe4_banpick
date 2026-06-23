@@ -33,8 +33,8 @@ export function StartMatchButton({ presetId }: { presetId: string }) {
   }
 
   return (
-    <button onClick={start} disabled={busy} className="aoe-btn rounded px-3 py-1.5 text-sm disabled:opacity-50">
-      {busy ? "…" : t("presets.start")}
+    <button onClick={start} disabled={busy} className="aoe-btn inline-flex items-center justify-center gap-2 rounded px-3 py-1.5 text-sm disabled:opacity-50">
+      {busy ? <span className="spinner" aria-label={t("presets.start")} /> : t("presets.start")}
     </button>
   );
 }

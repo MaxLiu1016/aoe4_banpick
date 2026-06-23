@@ -23,20 +23,22 @@ export function SiteHeader() {
           {(user as { isAdmin?: boolean } | undefined)?.isAdmin && (
             <Link href="/admin" className="text-bronze hover:text-gold-bright transition">Admin</Link>
           )}
-          {status === "loading" ? null : user ? (
-            <>
-              <span className="text-muted">
-                <span className="text-gold-bright">{user.name ?? t("nav.commander")}</span>
-              </span>
+          {status === "loading" ? (
+            <span className="skeleton h-8 w-36" aria-hidden />
+          ) : user ? (
+            <span className="fade-in inline-flex items-center gap-4">
+              <Link href="/account" className="text-gold-bright hover:underline" title={t("account.title")}>
+                {user.name ?? t("nav.commander")}
+              </Link>
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
                 className="aoe-btn rounded px-3 py-1.5 text-sm"
               >
                 {t("nav.signout")}
               </button>
-            </>
+            </span>
           ) : (
-            <Link href="/login" className="aoe-btn rounded px-3 py-1.5 text-sm">
+            <Link href="/login" className="fade-in aoe-btn rounded px-3 py-1.5 text-sm">
               {t("nav.signin")}
             </Link>
           )}

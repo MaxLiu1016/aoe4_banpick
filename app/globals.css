@@ -71,6 +71,10 @@ h1, h2, h3, .font-display {
 .aoe-btn:hover { filter: brightness(1.2); }
 .aoe-btn:active { transform: translateY(1px); }
 
+/* Hand cursor on all interactive buttons (disabled ones excluded). */
+button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+
 /* Civ lock-in animation: a freshly chosen civ pops + glows into the player's strip. */
 @keyframes civ-pop {
   0% { opacity: 0; transform: scale(0.3) translateY(10px); filter: brightness(2.2); }
@@ -83,3 +87,50 @@ h1, h2, h3, .font-display {
   50% { box-shadow: 0 0 14px 2px rgba(241, 207, 108, 0.55); }
 }
 .civ-pop-glow { animation: civ-glow 1.1s ease-out 1; }
+
+/* ---- Navigation & loading motion ---------------------------------------- */
+
+/* Page enter: content gently rises + fades in on every client navigation.
+   Re-triggered by re-keying the page subtree on pathname change (RouteTransition). */
+@keyframes route-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.route-enter { animation: route-enter 0.34s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Generic fade-in for content that appears after async work (e.g. the session
+   resolving in the header). */
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.fade-in { animation: fade-in 0.3s ease both; }
+
+/* Skeleton placeholder: a soft bronze shimmer while real content loads. */
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  border-radius: 0.375rem;
+}
+
+/* Inline spinner for busy buttons (inherits the button's text colour). */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: -0.15em;
+}
+
+/* Respect users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .route-enter, .fade-in, .skeleton, .spinner, .civ-pop, .civ-pop-glow {
+    animation: none !important;
+  }
+}

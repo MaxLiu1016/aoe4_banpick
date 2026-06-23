@@ -8,6 +8,7 @@ export interface ClientPreset {
   isPublic: boolean;
   config: PresetConfig;
   isOwner: boolean;
+  isDemo: boolean;
   updatedAt?: string;
 }
 
@@ -17,6 +18,7 @@ type RawPreset = {
   name: string;
   description?: string;
   isPublic?: boolean;
+  isDemo?: boolean;
   config: PresetConfig;
   updatedAt?: Date;
 };
@@ -31,6 +33,7 @@ export function toClientPreset(doc: RawPreset, viewerId?: string): ClientPreset 
     isPublic: Boolean(doc.isPublic),
     config: doc.config,
     isOwner: viewerId === ownerId,
+    isDemo: Boolean(doc.isDemo),
     updatedAt: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : undefined,
   };
 }

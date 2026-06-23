@@ -1,3 +1,4 @@
+import "./env"; // MUST be first: loads .env.local before any module reads process.env
 import { createServer } from "node:http";
 import next from "next";
 import { Server as SocketServer } from "socket.io";

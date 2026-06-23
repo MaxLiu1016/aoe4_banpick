@@ -44,10 +44,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.uid = user.id;
         token.isAdmin = (user as { isAdmin?: boolean }).isAdmin ?? false;
+      }
+      // When the client calls update({ name }) after a rename, apply it immediately
+      // (and fall back to the DB as source of truth).
+      if (trigger === "update" && token.uid) {
+        const passed = (session as { name?: string } | undefined)?.name;
+        if (passed) {
+          token.name = passed;
+        } else {
+          await dbConnect();
+          const u = await User.findById(token.uid).lean<{ username: string }>();
+          if (u) token.name = u.username;
+        }
       }
       return token;
     },

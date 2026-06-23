@@ -550,8 +550,11 @@ function Lobby({ seats, you, amHost, loggedIn, bestOf, inviteUrl, copied, onCopy
     const mine = you === role;
     return (
       <div className={`aoe-panel rounded-xl p-5 text-center ${mine ? "ring-1 ring-gold" : ""}`}>
-        <div className="text-xs uppercase tracking-wide text-muted">{label}{mine ? ` (${t("match.you")})` : ""}</div>
-        <div className="mt-1 font-display text-xl text-foreground">{seat?.name ?? t("match.open")}</div>
+        <div className="font-display text-xl leading-tight text-foreground">
+          <span className="font-sans text-[11px] uppercase tracking-wide text-muted">{label}</span>
+          {seat?.name ? <span> · {seat.name}</span> : <span className="text-muted"> · {t("match.open")}</span>}
+        </div>
+        {mine && <div className="mt-0.5 text-[10px] text-muted">({t("match.you")})</div>}
         {seat ? (
           <div className="mt-2">
             <span className={`rounded-full px-3 py-1 text-xs ${seat.ready ? "border border-gold text-gold-bright" : "border border-border text-muted"}`}>
@@ -663,8 +666,11 @@ function SeatCard({ label, seat, role, you, turn, score, canTake, onTake, right 
   const { t } = useI18n();
   return (
     <div className={right ? "text-right" : ""}>
-      <div className={`text-xs uppercase tracking-wide ${turn === role ? "text-gold-bright" : "text-muted"}`}>{label}{you === role ? ` (${t("match.you")})` : ""}</div>
-      <div className="font-display text-lg text-foreground">{seat?.name ?? "—"}</div>
+      <div className={`font-display text-lg leading-tight ${turn === role ? "text-gold-bright" : "text-foreground"}`}>
+        <span className="font-sans text-[11px] uppercase tracking-wide text-muted">{label}</span>
+        {seat?.name ? <span> · {seat.name}</span> : <span className="text-muted"> · —</span>}
+      </div>
+      {you === role && <div className="text-[10px] text-muted">({t("match.you")})</div>}
       {!seat && canTake && (
         <button onClick={onTake} className="aoe-btn mt-1 rounded px-2 py-1 text-xs">{t("match.takeSeat")}</button>
       )}
@@ -736,7 +742,9 @@ function VersusBanner({ game, p1Name, p2Name, civById, mapById }: {
   const map = mapById(game?.map);
   const Side = ({ name, civ, tone }: { name?: string; civ?: PoolView; tone: "sky" | "rose" }) => (
     <div className="flex flex-col items-center text-center">
-      <div className={`text-xs uppercase tracking-wide ${tone === "sky" ? "text-sky-400" : "text-rose-400"}`}>{name ?? (tone === "sky" ? t("match.p1") : t("match.p2"))}</div>
+      <div className={`text-xs uppercase tracking-wide ${tone === "sky" ? "text-sky-400" : "text-rose-400"}`}>
+        {tone === "sky" ? t("match.p1") : t("match.p2")}{name ? ` · ${name}` : ""}
+      </div>
       <div className={`mt-2 rounded-full p-1 ring-2 ${tone === "sky" ? "ring-sky-500/70" : "ring-rose-500/70"}`}>
         <Thumb src={civ?.imageUrl} alt={civ?.name ?? ""} className="civ-pop h-16 w-16 object-contain" />
       </div>

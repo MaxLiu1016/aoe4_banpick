@@ -21,6 +21,11 @@ export function NewPresetButton() {
         router.push("/login");
         return;
       }
+      if (res.status === 403) {
+        alert(t("presets.limitReached"));
+        setBusy(false);
+        return;
+      }
       if (!res.ok) throw new Error("Failed to create preset");
       const preset = await res.json();
       router.push(`/presets/${preset.id}/edit`);
