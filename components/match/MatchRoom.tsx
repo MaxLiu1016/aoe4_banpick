@@ -781,7 +781,11 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
                               ? "border-bronze cursor-pointer hover:border-emerald-500 hover:bg-emerald-500/10"
                               : "border-bronze cursor-pointer hover:border-gold hover:bg-surface-2") :
                        "border-border opacity-50"),
-                oppHover === e.id ? "ring-2 ring-gold-bright" : "",
+                oppHover === e.id
+                  ? (tone === "ban" ? "ring-2 ring-danger bg-danger/20"
+                    : tone === "pick" ? "ring-2 ring-emerald-500 bg-emerald-500/20"
+                    : "ring-2 ring-gold-bright")
+                  : "",
               ].join(" ")}
               title={e.name}
             >
