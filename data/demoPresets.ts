@@ -5,7 +5,7 @@ import type { PresetConfig } from "@/lib/draft/schema";
 export const DEMO_PRESETS: { name: string; description: string; config: PresetConfig }[] = [
   {
     "name": "Bo3 Draft(BCC)",
-    "description": "Standard Bo3 — map BP, hand draft, simultaneous offer & snipe.",
+    "description": "For Border Conquest Cup, Standard Bo3 — map BP, hand draft, simultaneous offer & snipe.",
     "config": {
       "civs": [
         {
@@ -169,13 +169,6 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "imageUrl": "/maps/gorge.webp"
         }
       ],
-      "options": {
-        "bestOf": 3,
-        "publicHover": true,
-        "defaultTimeLimitSec": 30,
-        "pausable": false,
-        "resultMode": "vote"
-      },
       "steps": [
         {
           "id": "91fa4d2a-0dc7-44a1-8abc-6cddc98fee38",
@@ -745,394 +738,19 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "pausable": false,
           "label": "Game result"
         }
-      ]
-    }
-  },
-  {
-    "name": "easy Bo3 Draft",
-    "description": "Simplified Bo3 demo.",
-    "config": {
-      "civs": [
-        {
-          "id": "english",
-          "name": "English",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/6/6e/English_AoE4.png"
-        },
-        {
-          "id": "french",
-          "name": "French",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/5/5a/French_AoE4.png"
-        },
-        {
-          "id": "holy-roman-empire",
-          "name": "Holy Roman Empire",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/5/58/HRE_AoE4.png"
-        },
-        {
-          "id": "mongols",
-          "name": "Mongols",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/7/70/Mongols_AoE4.png"
-        },
-        {
-          "id": "rus",
-          "name": "Rus",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/5/5d/Rus_AoE4.png"
-        },
-        {
-          "id": "delhi-sultanate",
-          "name": "Delhi Sultanate",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/f/fb/Delhi_Sultanate_AoE4.png"
-        },
-        {
-          "id": "abbasid-dynasty",
-          "name": "Abbasid Dynasty",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/d/d5/Abbasid_Dynasty_AoE4.png"
-        },
-        {
-          "id": "chinese",
-          "name": "Chinese",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/2/20/Chinese_AoE4.png"
-        },
-        {
-          "id": "ottomans",
-          "name": "Ottomans",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/2/2a/Ottomans_AoE4.png"
-        },
-        {
-          "id": "malians",
-          "name": "Malians",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/b/bd/Malians_AoE4.png"
-        },
-        {
-          "id": "byzantines",
-          "name": "Byzantines",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/b/bd/Byzantines_AoE4.png"
-        },
-        {
-          "id": "japanese",
-          "name": "Japanese",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/3/39/Japanese_AoE4.png"
-        },
-        {
-          "id": "ayyubids",
-          "name": "Ayyubids",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/c/ce/Ayyubids_AoE4.png"
-        },
-        {
-          "id": "zhu-xis-legacy",
-          "name": "Zhu Xi's Legacy",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/0/0b/Zhu_Xis_Legacy_AoE4.png"
-        },
-        {
-          "id": "order-of-the-dragon",
-          "name": "Order of the Dragon",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/5/50/Order_of_the_Dragon_AoE4.png"
-        },
-        {
-          "id": "jeanne-darc",
-          "name": "Jeanne d'Arc",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/f/fd/Jeanne_d_Arc_AoE4.png"
-        },
-        {
-          "id": "house-of-lancaster",
-          "name": "House of Lancaster",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/5/53/House_of_Lancaster_AoE4.png"
-        },
-        {
-          "id": "knights-templar",
-          "name": "Knights Templar",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/a/ae/Knights_Templar_AoE4.png"
-        },
-        {
-          "id": "jin-dynasty",
-          "name": "Jin Dynasty",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/8/82/Jin_Dynasty.png"
-        },
-        {
-          "id": "macedonian-dynasty",
-          "name": "Macedonian Dynasty",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/7/70/Macedonian_Dynasty_AoE4.png"
-        },
-        {
-          "id": "golden-horde",
-          "name": "Golden Horde",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/2/2d/Golden_Horde_AoE4.png"
-        },
-        {
-          "id": "sengoku-daimyo",
-          "name": "Sengoku Daimyo",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/3/35/Sengoku_Daimyo_AoE4.png"
-        },
-        {
-          "id": "tughlaq-dynasty",
-          "name": "Tughlaq Dynasty",
-          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/e/e1/Tughlaq_Dynasty_AoE4.png"
-        }
-      ],
-      "maps": [
-        {
-          "id": "dry-arabia",
-          "name": "Dry Arabia"
-        },
-        {
-          "id": "lipany",
-          "name": "Lipany"
-        },
-        {
-          "id": "high-view",
-          "name": "High View"
-        },
-        {
-          "id": "hill-and-dale",
-          "name": "Hill and Dale",
-          "imageUrl": "/maps/hill-and-dale.webp"
-        },
-        {
-          "id": "king-of-the-hill",
-          "name": "King of the Hill",
-          "imageUrl": "/maps/king-of-the-hill.webp"
-        },
-        {
-          "id": "four-lakes",
-          "name": "Four Lakes",
-          "imageUrl": "/maps/four-lakes.webp"
-        },
-        {
-          "id": "boulder-bay",
-          "name": "Boulder Bay",
-          "imageUrl": "/maps/boulder-bay.webp"
-        }
-      ],
-      "steps": [
-        {
-          "id": "MAP_BAN-0",
-          "type": "MAP_BAN",
-          "actor": "PLAYER1",
-          "pool": "map",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P1 · Ban map"
-        },
-        {
-          "id": "MAP_BAN-1",
-          "type": "MAP_BAN",
-          "actor": "PLAYER2",
-          "pool": "map",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P2 · Ban map"
-        },
-        {
-          "id": "CIV_BAN-2",
-          "type": "MAP_PICK",
-          "actor": "PLAYER1",
-          "pool": "map",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P1 · Pick map (into pool)"
-        },
-        {
-          "id": "CIV_BAN-3",
-          "type": "MAP_PICK",
-          "actor": "PLAYER2",
-          "pool": "map",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P2 · Pick map (into pool)"
-        },
-        {
-          "id": "CIV_PICK-4",
-          "type": "MAP_PICK",
-          "actor": "PLAYER1",
-          "pool": "map",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P1 · Pick map (into pool)"
-        },
-        {
-          "id": "GAME_RESULT-25",
-          "type": "MAP_PICK",
-          "actor": "PLAYER2",
-          "pool": "map",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P2 · Pick map (into pool)"
-        },
-        {
-          "id": "09179417-f17d-42b6-bc94-1501f9719a49",
-          "type": "MAP_SELECT",
-          "actor": "HOST_DRAW",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Random · Select map"
-        },
-        {
-          "id": "b5325de9-5083-49a9-85f1-7d5a936668b9",
-          "type": "CIV_OFFER",
-          "actor": "PLAYER1",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Pick civ to field (simultaneous)"
-        },
-        {
-          "id": "39cfea76-31ba-4531-81b2-690a80a32587",
-          "type": "CIV_OFFER",
-          "actor": "PLAYER2",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Pick civ to field (simultaneous)"
-        },
-        {
-          "id": "0c08202d-531b-4eea-8b38-421f99bc9ab9",
-          "type": "GAME_RESULT",
-          "actor": "WINNER",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Game result"
-        },
-        {
-          "id": "71cd9347-ec36-4d94-9713-05d1d221faa8",
-          "type": "MAP_SELECT",
-          "actor": "LOSER",
-          "pool": "map",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Loser · Select map"
-        },
-        {
-          "id": "9a97ffbb-e9f5-4691-aef6-0d80fe6e75eb",
-          "type": "CIV_OFFER",
-          "actor": "PLAYER1",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
-        },
-        {
-          "id": "ca70f74c-df03-4748-9e4c-be9a518ad350",
-          "type": "CIV_OFFER",
-          "actor": "PLAYER2",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
-        },
-        {
-          "id": "11acdb2d-1ddf-4a86-af8f-89b2b134ad62",
-          "type": "GAME_RESULT",
-          "actor": "WINNER",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Game result"
-        },
-        {
-          "id": "14fdbb93-83b5-4b0e-9143-cb29f6554139",
-          "type": "MAP_SELECT",
-          "actor": "LOSER",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Loser · Select map"
-        },
-        {
-          "id": "0f1e6f22-d17f-49d1-b2f3-44efa5bffd83",
-          "type": "CIV_OFFER",
-          "actor": "PLAYER1",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
-        },
-        {
-          "id": "28c4e603-7562-49be-a0fc-d16b56158026",
-          "type": "CIV_OFFER",
-          "actor": "PLAYER2",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
-        },
-        {
-          "id": "487eaa3d-0f70-4944-82dd-6665a667e751",
-          "type": "GAME_RESULT",
-          "actor": "WINNER",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Game result"
-        }
       ],
       "options": {
         "bestOf": 3,
         "publicHover": true,
-        "resultMode": "vote",
         "defaultTimeLimitSec": 30,
-        "pausable": true
+        "pausable": false,
+        "resultMode": "vote"
       }
     }
   },
   {
     "name": "Bo5 Draft(BCC)",
-    "description": "Standard Bo5 — map BP, hand draft, simultaneous offer & snipe.",
+    "description": "For Border Conquest Cup, Standard Bo5 — map BP, hand draft, simultaneous offer & snipe.",
     "config": {
       "civs": [
         {
@@ -1296,13 +914,6 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "imageUrl": "/maps/gorge.webp"
         }
       ],
-      "options": {
-        "bestOf": 5,
-        "publicHover": true,
-        "defaultTimeLimitSec": 30,
-        "pausable": false,
-        "resultMode": "vote"
-      },
       "steps": [
         {
           "id": "c6d9dee7-1415-405b-8f18-36213c360b2d",
@@ -1388,7 +999,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": false,
-          "label": "P1 · Ban map"
+          "label": "P1 · Pick map (into pool)"
         },
         {
           "id": "32b9c16c-80e8-4ab0-a67e-99b531d099ec",
@@ -1400,7 +1011,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "pausable": false,
-          "label": "P2 · Ban map"
+          "label": "P2 · Pick map (into pool)"
         },
         {
           "id": "86cbe4f2-4b9b-425b-815a-008dea3c7ee6",
@@ -2014,12 +1625,19 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "pausable": false,
           "label": "Game result"
         }
-      ]
+      ],
+      "options": {
+        "bestOf": 5,
+        "publicHover": true,
+        "defaultTimeLimitSec": 30,
+        "pausable": false,
+        "resultMode": "vote"
+      }
     }
   },
   {
     "name": "Bo3 Draft",
-    "description": "Standard Bo3 — 4-civ hand variant.",
+    "description": "Standard Bo3 — map BP, hand draft, simultaneous offer & snipe.",
     "config": {
       "civs": [
         {
@@ -2148,6 +1766,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "name": "Lipany"
         },
         {
+          "id": "cliffside",
+          "name": "Cliffside",
+          "imageUrl": "/maps/cliffside.webp"
+        },
+        {
           "id": "hill-and-dale",
           "name": "Hill and Dale",
           "imageUrl": "/maps/hill-and-dale.webp"
@@ -2158,41 +1781,19 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "imageUrl": "/maps/four-lakes.webp"
         },
         {
-          "id": "frisian-marshes",
-          "name": "Frisian Marshes",
-          "imageUrl": "/maps/frisian-marshes.webp"
+          "id": "king-of-the-hill",
+          "name": "King of the Hill",
+          "imageUrl": "/maps/king-of-the-hill.webp"
         },
         {
-          "id": "cliffside",
-          "name": "Cliffside",
-          "imageUrl": "/maps/cliffside.webp"
-        },
-        {
-          "id": "kawasan",
-          "name": "Kawasan",
-          "imageUrl": "/maps/kawasan.png"
-        },
-        {
-          "id": "coastal-cliffs",
-          "name": "Coastal Cliffs",
-          "imageUrl": "/maps/coastal-cliffs.png"
-        },
-        {
-          "id": "gorge",
-          "name": "Gorge",
-          "imageUrl": "/maps/gorge.webp"
+          "id": "high-view",
+          "name": "High View",
+          "imageUrl": "/maps/high-view.webp"
         }
       ],
-      "options": {
-        "bestOf": 3,
-        "publicHover": true,
-        "defaultTimeLimitSec": 30,
-        "pausable": false,
-        "resultMode": "vote"
-      },
       "steps": [
         {
-          "id": "d878dce3-8fb9-40d1-b9ba-a5450fc39a5c",
+          "id": "MAP_BAN-0",
           "type": "MAP_BAN",
           "actor": "PLAYER1",
           "pool": "map",
@@ -2200,11 +1801,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "P1 · Ban map"
         },
         {
-          "id": "812e95b0-3027-4066-b9ca-a0d78ff95503",
+          "id": "MAP_BAN-1",
           "type": "MAP_BAN",
           "actor": "PLAYER2",
           "pool": "map",
@@ -2212,11 +1813,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "P2 · Ban map"
         },
         {
-          "id": "f71ba0fc-8bdf-43c1-bbd5-81c2380b099b",
+          "id": "CIV_BAN-2",
           "type": "MAP_PICK",
           "actor": "PLAYER1",
           "pool": "map",
@@ -2224,11 +1825,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "P1 · Pick map (into pool)"
         },
         {
-          "id": "3af600e4-65bd-4c4a-8eb2-88496e792da6",
+          "id": "CIV_BAN-3",
           "type": "MAP_PICK",
           "actor": "PLAYER2",
           "pool": "map",
@@ -2236,63 +1837,35 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "P2 · Pick map (into pool)"
         },
         {
-          "id": "2e5d70b9-c144-4bde-abda-e67284094a35",
-          "type": "MAP_BAN",
-          "actor": "PLAYER2",
-          "pool": "map",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Ban map"
-        },
-        {
-          "id": "4e2b609c-d5af-4480-8df1-c022a2019bfc",
-          "type": "MAP_BAN",
+          "id": "CIV_PICK-4",
+          "type": "MAP_PICK",
           "actor": "PLAYER1",
           "pool": "map",
           "count": 1,
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "banScope": "opponent",
-          "pausable": false,
-          "label": "P1 · Ban map"
+          "pausable": true,
+          "label": "P1 · Pick map (into pool)"
         },
         {
-          "id": "661c6166-e81c-499f-9379-d8f8b276ab03",
-          "type": "MAP_BAN",
-          "actor": "PLAYER1",
-          "pool": "map",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "banScope": "opponent",
-          "pausable": false,
-          "label": "P1 · Ban map"
-        },
-        {
-          "id": "21232eb5-9950-48a2-9611-c02d8c7dce98",
-          "type": "MAP_BAN",
+          "id": "GAME_RESULT-25",
+          "type": "MAP_PICK",
           "actor": "PLAYER2",
           "pool": "map",
           "count": 1,
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Ban map"
+          "pausable": true,
+          "label": "P2 · Pick map (into pool)"
         },
         {
-          "id": "ff55c3de-d14e-4349-88b9-b6881ab54868",
+          "id": "09179417-f17d-42b6-bc94-1501f9719a49",
           "type": "MAP_SELECT",
           "actor": "HOST_DRAW",
           "pool": "civ",
@@ -2304,7 +1877,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "label": "Random · Select map"
         },
         {
-          "id": "c84d3a35-1646-426f-86ca-fdbe099bdca1",
+          "id": "6c98d936-f141-42c2-b7a1-1c38ccf1b8d3",
           "type": "CIV_BAN",
           "actor": "PLAYER1",
           "pool": "civ",
@@ -2313,11 +1886,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
+          "pausable": true,
           "label": "P1 · Ban civ"
         },
         {
-          "id": "a6208641-7cf9-439c-8f24-fe4ea15b9f56",
+          "id": "86658e31-f903-4011-971b-0c52162dde6f",
           "type": "CIV_BAN",
           "actor": "PLAYER2",
           "pool": "civ",
@@ -2326,11 +1899,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
+          "pausable": true,
           "label": "P2 · Ban civ"
         },
         {
-          "id": "99495389-d92e-4586-ae7b-df7a9987d460",
+          "id": "d31394c4-448e-421e-8bbe-575b7a06debe",
           "type": "CIV_BAN",
           "actor": "PLAYER1",
           "pool": "civ",
@@ -2339,11 +1912,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
+          "pausable": true,
           "label": "P1 · Ban civ"
         },
         {
-          "id": "021b4beb-076e-4b93-a72e-da48cd749202",
+          "id": "da5bc025-4fe8-4db1-aaef-fcd48fd0378f",
           "type": "CIV_BAN",
           "actor": "PLAYER2",
           "pool": "civ",
@@ -2352,11 +1925,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
+          "pausable": true,
           "label": "P2 · Ban civ"
         },
         {
-          "id": "b8f40ee3-31f2-4310-a689-9a84213bf84d",
+          "id": "52797920-3217-40b8-afbd-40632c173ed1",
           "type": "CIV_PICK",
           "actor": "PLAYER1",
           "pool": "civ",
@@ -2364,11 +1937,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "P1 · Pick civ into pool"
         },
         {
-          "id": "5fd65280-52e7-4568-835e-6139651b2ccb",
+          "id": "85769d14-cc39-45a4-9ead-39b696a42ddb",
           "type": "CIV_PICK",
           "actor": "PLAYER2",
           "pool": "civ",
@@ -2376,50 +1949,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "P2 · Pick civ into pool"
         },
         {
-          "id": "ab2405ef-88e3-4d01-be8f-441f57550f4d",
-          "type": "CIV_PICK",
-          "actor": "PLAYER2",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Pick civ into pool"
-        },
-        {
-          "id": "d1c01e64-dbdd-4432-9e6a-93065abadd47",
-          "type": "CIV_PICK",
-          "actor": "PLAYER1",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "banScope": "opponent",
-          "pausable": false,
-          "label": "P1 · Pick civ into pool"
-        },
-        {
-          "id": "996cfeec-f105-4713-a72c-10ec8de61e61",
-          "type": "CIV_BAN",
-          "actor": "PLAYER2",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Ban civ"
-        },
-        {
-          "id": "b5fc44c2-e8d2-4cca-8faf-a1f550b0e14d",
+          "id": "defc3fc8-0259-4c62-b1c3-b9ab8cc43bc6",
           "type": "CIV_BAN",
           "actor": "PLAYER1",
           "pool": "civ",
@@ -2428,11 +1962,24 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
+          "pausable": true,
           "label": "P1 · Ban civ"
         },
         {
-          "id": "824c9f3b-82a0-44cb-a236-0bc867b73fea",
+          "id": "fca26866-5bac-4e63-b385-2f76ed01e993",
+          "type": "CIV_BAN",
+          "actor": "PLAYER2",
+          "pool": "civ",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "banScope": "opponent",
+          "pausable": true,
+          "label": "P2 · Ban civ"
+        },
+        {
+          "id": "03f9322c-efdc-4089-829a-4566c4523e3b",
           "type": "CIV_PICK",
           "actor": "PLAYER1",
           "pool": "civ",
@@ -2440,11 +1987,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "P1 · Pick civ into pool"
         },
         {
-          "id": "71ca86fc-3f29-4471-8e87-fd6dcb226a00",
+          "id": "861d5641-ca01-44bb-8789-da1ec5ca685e",
           "type": "CIV_PICK",
           "actor": "PLAYER2",
           "pool": "civ",
@@ -2452,11 +1999,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "P2 · Pick civ into pool"
         },
         {
-          "id": "830d4c7a-87fb-4839-a31e-323e2894065a",
+          "id": "ad1bd095-bb01-42d3-a553-0947b8e77823",
           "type": "CIV_PICK",
           "actor": "PLAYER1",
           "pool": "civ",
@@ -2464,11 +2011,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "P1 · Pick civ into pool"
         },
         {
-          "id": "79c07358-6c23-4193-907c-347087bdba98",
+          "id": "14184712-e0ce-4d30-af63-34fa808eec54",
           "type": "CIV_PICK",
           "actor": "PLAYER2",
           "pool": "civ",
@@ -2476,11 +2023,35 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "P2 · Pick civ into pool"
         },
         {
-          "id": "5cca8eaa-1e13-4528-b95e-69f6308216c7",
+          "id": "087fd67c-bd85-4134-9dfb-c4533b5307de",
+          "type": "CIV_PICK",
+          "actor": "PLAYER1",
+          "pool": "civ",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "P1 · Pick civ into pool"
+        },
+        {
+          "id": "5f56fbdf-14d3-47b7-ba03-8ea2d57682ab",
+          "type": "CIV_PICK",
+          "actor": "PLAYER2",
+          "pool": "civ",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "P2 · Pick civ into pool"
+        },
+        {
+          "id": "b5325de9-5083-49a9-85f1-7d5a936668b9",
           "type": "CIV_OFFER",
           "actor": "PLAYER1",
           "pool": "civ",
@@ -2488,11 +2059,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "Pick civ to field (simultaneous)"
         },
         {
-          "id": "0909e2a2-ef86-4842-ae11-915017378d86",
+          "id": "39cfea76-31ba-4531-81b2-690a80a32587",
           "type": "CIV_OFFER",
           "actor": "PLAYER2",
           "pool": "civ",
@@ -2500,11 +2071,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "Pick civ to field (simultaneous)"
         },
         {
-          "id": "27638906-73d9-4949-bba3-5d08ab109f54",
+          "id": "1ca8fed9-b8ca-44a7-b522-2fe705af95ff",
           "type": "CIV_SNIPE_OPPONENT",
           "actor": "PLAYER1",
           "pool": "civ",
@@ -2512,11 +2083,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "Snipe opponent (simultaneous)"
         },
         {
-          "id": "743966f1-935d-42e3-987e-f6818d88084c",
+          "id": "11da54e4-6175-4e8b-8b7a-ba5f9e6ed2bf",
           "type": "CIV_SNIPE_OPPONENT",
           "actor": "PLAYER2",
           "pool": "civ",
@@ -2524,11 +2095,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "Snipe opponent (simultaneous)"
         },
         {
-          "id": "22d8f492-b8bd-4316-ac06-d12e5266fae2",
+          "id": "0c08202d-531b-4eea-8b38-421f99bc9ab9",
           "type": "GAME_RESULT",
           "actor": "WINNER",
           "pool": "civ",
@@ -2536,11 +2107,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "Game result"
         },
         {
-          "id": "74d20a5e-38b5-4e04-91b4-17ec1c6da544",
+          "id": "71cd9347-ec36-4d94-9713-05d1d221faa8",
           "type": "MAP_SELECT",
           "actor": "LOSER",
           "pool": "map",
@@ -2548,11 +2119,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "Loser · Select map"
         },
         {
-          "id": "c560b388-3fad-443f-987f-3abdbe48ec78",
+          "id": "9a97ffbb-e9f5-4691-aef6-0d80fe6e75eb",
           "type": "CIV_OFFER",
           "actor": "PLAYER1",
           "pool": "civ",
@@ -2560,11 +2131,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "Pick civ to field (simultaneous)"
         },
         {
-          "id": "1ea0cc59-2319-44b8-9050-40ebd66178ed",
+          "id": "ca70f74c-df03-4748-9e4c-be9a518ad350",
           "type": "CIV_OFFER",
           "actor": "PLAYER2",
           "pool": "civ",
@@ -2572,11 +2143,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "Pick civ to field (simultaneous)"
         },
         {
-          "id": "17445c4c-2e1a-422b-82a9-9375b5d7fd36",
+          "id": "1e5f44e2-36cb-42cd-a7e3-b8396f2894ad",
           "type": "CIV_SNIPE_OPPONENT",
           "actor": "PLAYER1",
           "pool": "civ",
@@ -2584,11 +2155,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "Snipe opponent (simultaneous)"
         },
         {
-          "id": "feec11e2-3da3-4e19-a921-4f6309ff2b90",
+          "id": "04cba7c6-31c1-46bb-be82-8b8e8b72f2c4",
           "type": "CIV_SNIPE_OPPONENT",
           "actor": "PLAYER2",
           "pool": "civ",
@@ -2596,11 +2167,417 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
+          "pausable": true,
           "label": "Snipe opponent (simultaneous)"
         },
         {
-          "id": "29056fb7-a954-41a9-8bca-0933a7d8dcc6",
+          "id": "11acdb2d-1ddf-4a86-af8f-89b2b134ad62",
+          "type": "GAME_RESULT",
+          "actor": "WINNER",
+          "pool": "civ",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "Game result"
+        },
+        {
+          "id": "14fdbb93-83b5-4b0e-9143-cb29f6554139",
+          "type": "MAP_SELECT",
+          "actor": "LOSER",
+          "pool": "civ",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "Loser · Select map"
+        },
+        {
+          "id": "0f1e6f22-d17f-49d1-b2f3-44efa5bffd83",
+          "type": "CIV_OFFER",
+          "actor": "PLAYER1",
+          "pool": "civ",
+          "count": 2,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "Pick civ to field (simultaneous)"
+        },
+        {
+          "id": "28c4e603-7562-49be-a0fc-d16b56158026",
+          "type": "CIV_OFFER",
+          "actor": "PLAYER2",
+          "pool": "civ",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "Pick civ to field (simultaneous)"
+        },
+        {
+          "id": "9903d2f4-87e4-4f30-bdb6-5b88528dd3a6",
+          "type": "CIV_SNIPE_OPPONENT",
+          "actor": "PLAYER1",
+          "pool": "civ",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "Snipe opponent (simultaneous)"
+        },
+        {
+          "id": "d5f5cdc7-15e1-4004-8961-6bd7b41d1b88",
+          "type": "CIV_SNIPE_OPPONENT",
+          "actor": "PLAYER2",
+          "pool": "civ",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "Snipe opponent (simultaneous)"
+        },
+        {
+          "id": "487eaa3d-0f70-4944-82dd-6665a667e751",
+          "type": "GAME_RESULT",
+          "actor": "WINNER",
+          "pool": "civ",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "Game result"
+        }
+      ],
+      "options": {
+        "bestOf": 3,
+        "publicHover": true,
+        "defaultTimeLimitSec": 30,
+        "pausable": true,
+        "resultMode": "vote"
+      }
+    }
+  },
+  {
+    "name": "easy Bo3 Draft",
+    "description": "Simplified Bo3 demo.",
+    "config": {
+      "civs": [
+        {
+          "id": "english",
+          "name": "English",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/6/6e/English_AoE4.png"
+        },
+        {
+          "id": "french",
+          "name": "French",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/5/5a/French_AoE4.png"
+        },
+        {
+          "id": "holy-roman-empire",
+          "name": "Holy Roman Empire",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/5/58/HRE_AoE4.png"
+        },
+        {
+          "id": "mongols",
+          "name": "Mongols",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/7/70/Mongols_AoE4.png"
+        },
+        {
+          "id": "rus",
+          "name": "Rus",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/5/5d/Rus_AoE4.png"
+        },
+        {
+          "id": "delhi-sultanate",
+          "name": "Delhi Sultanate",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/f/fb/Delhi_Sultanate_AoE4.png"
+        },
+        {
+          "id": "abbasid-dynasty",
+          "name": "Abbasid Dynasty",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/d/d5/Abbasid_Dynasty_AoE4.png"
+        },
+        {
+          "id": "chinese",
+          "name": "Chinese",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/2/20/Chinese_AoE4.png"
+        },
+        {
+          "id": "ottomans",
+          "name": "Ottomans",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/2/2a/Ottomans_AoE4.png"
+        },
+        {
+          "id": "malians",
+          "name": "Malians",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/b/bd/Malians_AoE4.png"
+        },
+        {
+          "id": "byzantines",
+          "name": "Byzantines",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/b/bd/Byzantines_AoE4.png"
+        },
+        {
+          "id": "japanese",
+          "name": "Japanese",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/3/39/Japanese_AoE4.png"
+        },
+        {
+          "id": "ayyubids",
+          "name": "Ayyubids",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/c/ce/Ayyubids_AoE4.png"
+        },
+        {
+          "id": "zhu-xis-legacy",
+          "name": "Zhu Xi's Legacy",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/0/0b/Zhu_Xis_Legacy_AoE4.png"
+        },
+        {
+          "id": "order-of-the-dragon",
+          "name": "Order of the Dragon",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/5/50/Order_of_the_Dragon_AoE4.png"
+        },
+        {
+          "id": "jeanne-darc",
+          "name": "Jeanne d'Arc",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/f/fd/Jeanne_d_Arc_AoE4.png"
+        },
+        {
+          "id": "house-of-lancaster",
+          "name": "House of Lancaster",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/5/53/House_of_Lancaster_AoE4.png"
+        },
+        {
+          "id": "knights-templar",
+          "name": "Knights Templar",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/a/ae/Knights_Templar_AoE4.png"
+        },
+        {
+          "id": "jin-dynasty",
+          "name": "Jin Dynasty",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/8/82/Jin_Dynasty.png"
+        },
+        {
+          "id": "macedonian-dynasty",
+          "name": "Macedonian Dynasty",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/7/70/Macedonian_Dynasty_AoE4.png"
+        },
+        {
+          "id": "golden-horde",
+          "name": "Golden Horde",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/2/2d/Golden_Horde_AoE4.png"
+        },
+        {
+          "id": "sengoku-daimyo",
+          "name": "Sengoku Daimyo",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/3/35/Sengoku_Daimyo_AoE4.png"
+        },
+        {
+          "id": "tughlaq-dynasty",
+          "name": "Tughlaq Dynasty",
+          "imageUrl": "https://static.wikia.nocookie.net/ageofempires/images/e/e1/Tughlaq_Dynasty_AoE4.png"
+        }
+      ],
+      "maps": [
+        {
+          "id": "dry-arabia",
+          "name": "Dry Arabia"
+        },
+        {
+          "id": "lipany",
+          "name": "Lipany"
+        },
+        {
+          "id": "high-view",
+          "name": "High View"
+        },
+        {
+          "id": "hill-and-dale",
+          "name": "Hill and Dale",
+          "imageUrl": "/maps/hill-and-dale.webp"
+        },
+        {
+          "id": "king-of-the-hill",
+          "name": "King of the Hill",
+          "imageUrl": "/maps/king-of-the-hill.webp"
+        },
+        {
+          "id": "four-lakes",
+          "name": "Four Lakes",
+          "imageUrl": "/maps/four-lakes.webp"
+        },
+        {
+          "id": "boulder-bay",
+          "name": "Boulder Bay",
+          "imageUrl": "/maps/boulder-bay.webp"
+        }
+      ],
+      "steps": [
+        {
+          "id": "MAP_BAN-0",
+          "type": "MAP_BAN",
+          "actor": "PLAYER1",
+          "pool": "map",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "P1 · Ban map"
+        },
+        {
+          "id": "MAP_BAN-1",
+          "type": "MAP_BAN",
+          "actor": "PLAYER2",
+          "pool": "map",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "P2 · Ban map"
+        },
+        {
+          "id": "CIV_BAN-2",
+          "type": "MAP_PICK",
+          "actor": "PLAYER1",
+          "pool": "map",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "P1 · Pick map (into pool)"
+        },
+        {
+          "id": "CIV_BAN-3",
+          "type": "MAP_PICK",
+          "actor": "PLAYER2",
+          "pool": "map",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "P2 · Pick map (into pool)"
+        },
+        {
+          "id": "CIV_PICK-4",
+          "type": "MAP_PICK",
+          "actor": "PLAYER1",
+          "pool": "map",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "P1 · Pick map (into pool)"
+        },
+        {
+          "id": "GAME_RESULT-25",
+          "type": "MAP_PICK",
+          "actor": "PLAYER2",
+          "pool": "map",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "P2 · Pick map (into pool)"
+        },
+        {
+          "id": "09179417-f17d-42b6-bc94-1501f9719a49",
+          "type": "MAP_SELECT",
+          "actor": "HOST_DRAW",
+          "pool": "civ",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "Random · Select map"
+        },
+        {
+          "id": "b5325de9-5083-49a9-85f1-7d5a936668b9",
+          "type": "CIV_OFFER",
+          "actor": "PLAYER1",
+          "pool": "civ",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "Pick civ to field (simultaneous)"
+        },
+        {
+          "id": "39cfea76-31ba-4531-81b2-690a80a32587",
+          "type": "CIV_OFFER",
+          "actor": "PLAYER2",
+          "pool": "civ",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "Pick civ to field (simultaneous)"
+        },
+        {
+          "id": "0c08202d-531b-4eea-8b38-421f99bc9ab9",
+          "type": "GAME_RESULT",
+          "actor": "WINNER",
+          "pool": "civ",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "Game result"
+        },
+        {
+          "id": "71cd9347-ec36-4d94-9713-05d1d221faa8",
+          "type": "MAP_SELECT",
+          "actor": "LOSER",
+          "pool": "map",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "Loser · Select map"
+        },
+        {
+          "id": "9a97ffbb-e9f5-4691-aef6-0d80fe6e75eb",
+          "type": "CIV_OFFER",
+          "actor": "PLAYER1",
+          "pool": "civ",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": false,
+          "label": "Pick civ to field (simultaneous)"
+        },
+        {
+          "id": "ca70f74c-df03-4748-9e4c-be9a518ad350",
+          "type": "CIV_OFFER",
+          "actor": "PLAYER2",
+          "pool": "civ",
+          "count": 1,
+          "timeLimitSec": 30,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": false,
+          "label": "Pick civ to field (simultaneous)"
+        },
+        {
+          "id": "11acdb2d-1ddf-4a86-af8f-89b2b134ad62",
           "type": "GAME_RESULT",
           "actor": "WINNER",
           "pool": "civ",
@@ -2612,7 +2589,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "label": "Game result"
         },
         {
-          "id": "829fe483-30c2-44f2-95c4-da7d50dd5435",
+          "id": "14fdbb93-83b5-4b0e-9143-cb29f6554139",
           "type": "MAP_SELECT",
           "actor": "LOSER",
           "pool": "civ",
@@ -2624,11 +2601,11 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "label": "Loser · Select map"
         },
         {
-          "id": "3d49acd5-3a60-4685-910d-0487a6b4571d",
+          "id": "0f1e6f22-d17f-49d1-b2f3-44efa5bffd83",
           "type": "CIV_OFFER",
           "actor": "PLAYER1",
           "pool": "civ",
-          "count": 2,
+          "count": 1,
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
@@ -2636,7 +2613,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "label": "Pick civ to field (simultaneous)"
         },
         {
-          "id": "f6060b9e-54d3-4be8-b070-a1286d37b4da",
+          "id": "28c4e603-7562-49be-a0fc-d16b56158026",
           "type": "CIV_OFFER",
           "actor": "PLAYER2",
           "pool": "civ",
@@ -2648,31 +2625,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "label": "Pick civ to field (simultaneous)"
         },
         {
-          "id": "28f30b5c-bbc7-438c-9e31-054aff827405",
-          "type": "CIV_SNIPE_OPPONENT",
-          "actor": "PLAYER1",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Snipe opponent (simultaneous)"
-        },
-        {
-          "id": "308dcef1-de3e-4373-9a89-fc740a40a58d",
-          "type": "CIV_SNIPE_OPPONENT",
-          "actor": "PLAYER2",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Snipe opponent (simultaneous)"
-        },
-        {
-          "id": "2f982417-485a-4b8d-be56-ab930c5ef287",
+          "id": "487eaa3d-0f70-4944-82dd-6665a667e751",
           "type": "GAME_RESULT",
           "actor": "WINNER",
           "pool": "civ",
@@ -2683,7 +2636,14 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
           "pausable": false,
           "label": "Game result"
         }
-      ]
+      ],
+      "options": {
+        "bestOf": 3,
+        "publicHover": true,
+        "resultMode": "vote",
+        "defaultTimeLimitSec": 30,
+        "pausable": true
+      }
     }
   }
 ];

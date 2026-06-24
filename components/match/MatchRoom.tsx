@@ -311,7 +311,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           <h2 className={`font-display text-xl ${stepTone(step.type)}`}>
             {step.type === "GAME_RESULT" ? t("match.gameN", { n: state.currentGameIndex + 1 }) : (step.label || `${step.type}`)}
           </h2>
-          {step.showCurrentMap && currentMap && (
+          {currentMap && (
             <div className="mt-1 flex items-center gap-2 text-sm text-muted">
               {mapById(currentMap)?.imageUrl && (
                 <Thumb src={mapById(currentMap)?.imageUrl} alt={currentMapName ?? ""} className="h-8 w-8 rounded object-cover ring-1 ring-bronze" />

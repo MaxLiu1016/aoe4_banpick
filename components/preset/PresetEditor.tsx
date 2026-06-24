@@ -369,10 +369,6 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
                   </select>
                 )}
                 <label className="flex items-center gap-1">
-                  <input type="checkbox" checked={s.showCurrentMap} onChange={(e) => updateStep(i, { showCurrentMap: e.target.checked })} />
-                  {t("editor.showCurrentMap")}
-                </label>
-                <label className="flex items-center gap-1">
                   <input type="checkbox" checked={s.excludeUsedCivs} onChange={(e) => updateStep(i, { excludeUsedCivs: e.target.checked })} />
                   {t("editor.excludeUsedCivs")}
                 </label>
