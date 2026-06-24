@@ -119,9 +119,15 @@ function randomLegalTarget(state: DerivedState): string | null {
     case "MAP_BAN":
     case "MAP_PICK":
       return pick(state.maps.filter((m) => m.state === "available").map((m) => m.id));
-    case "CIV_BAN":
+    case "CIV_BAN": {
+      // Legal bans = available civs the current player hasn't already banned
+      // (matches validateAction, so the auto-fill never picks a rejected target).
+      const bannedBySelf = new Set(state.civBans.filter((b) => b.by === state.turn).map((b) => b.id));
+      return pick(state.civs.filter((c) => c.state === "available" && !bannedBySelf.has(c.id)).map((c) => c.id));
+    }
     case "CIV_PICK":
-      return pick(state.civs.filter((c) => c.state === "available").map((c) => c.id));
+      // Only the civs this player may actually draft (excludes opponent-banned, etc.).
+      return pick(state.civPickableIds);
     case "MAP_SELECT":
       return pick(state.selectableMapIds);
     default:
@@ -207,6 +213,9 @@ async function onExpire(io: Server, matchId: string, token: string) {
     const { match, state } = ctx;
     if (match.status === "paused" || state.finished || !state.currentStep) return;
     if (`${state.currentStepIndex}:${state.currentStepProgress}` !== token) return; // stale
+    // This timer has fired; drop its entry so the broadcast() below always lets
+    // scheduleTimer() re-arm (even if the auto-action below didn't advance the step).
+    timers.delete(matchId);
 
     if (state.simultaneous) {
       // Auto-fill any player who hasn't finished submitting — but ONLY for the
