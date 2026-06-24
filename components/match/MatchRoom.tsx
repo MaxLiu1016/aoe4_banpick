@@ -336,8 +336,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
       {showCivs && (
         <Pool title={t("match.civs")} entries={civsView} clickable={clickable} onPick={act}
           oppHover={oppHover} onHover={(id) => sendHover("civ", id)}
-          tone={step?.type === "CIV_BAN" ? "ban" : "pick"}
-          highlightSelectable={step?.type === "CIV_PICK" ? state.civPickableIds : undefined} />
+          tone={step?.type === "CIV_BAN" ? "ban" : "pick"} />
       )}
       {/* Two-pool duel: simultaneous hidden offer */}
       {showOffer && duel && (
