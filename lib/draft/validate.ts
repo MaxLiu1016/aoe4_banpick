@@ -55,6 +55,13 @@ export function validatePreset(config: PresetConfig): string[] {
     const gSteps = steps.filter((_, i) => gameOf[i] === g);
     if (!gSteps.some((s) => s.type === "MAP_SELECT")) errs.push(`Game ${g + 1}: add a “Select map” step — the game has no map.`);
     if (!gSteps.some((s) => CIV_STEPS.includes(s.type))) errs.push(`Game ${g + 1}: add a civ step (offer/snipe) — players have no civ.`);
+    // The civ a player fields is what survives the opponent's snipe, so each game
+    // must offer at least one more civ than can be sniped (offer − snipe ≥ 1).
+    const offer = gSteps.find((s) => s.type === "CIV_OFFER");
+    const snipe = gSteps.find((s) => s.type === "CIV_SNIPE_OPPONENT");
+    if (offer && offer.count - (snipe?.count ?? 0) < 1) {
+      errs.push(`Game ${g + 1}: offer (${offer.count}) minus snipe (${snipe?.count ?? 0}) must be at least 1, or a player can be left with no civ.`);
+    }
   }
 
   // --- Hand sufficiency for the offer/snipe duel with excludeUsedCivs:
