@@ -2,7 +2,18 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 
-export type Locale = "en" | "zh";
+// "zh" = Traditional Chinese (the authored strings); "cn" = Simplified, derived
+// from "zh" at runtime via the char map below.
+export type Locale = "en" | "zh" | "cn";
+
+// Traditional → Simplified character map (covers the chars used in the dictionary).
+// Lets the "cn" locale reuse the "zh" strings without a second hand-translation.
+const T2S: Record<string, string> = { "規": "规", "則": "则", "組": "组", "揮": "挥", "個": "个", "資": "资", "顯": "显", "稱": "称", "這": "这", "裡": "里", "儲": "储", "紀": "纪", "國": "国", "運": "运", "籌": "筹", "決": "决", "勝": "胜", "開": "开", "與": "与", "圖": "图", "對": "对", "戰": "战", "瀏": "浏", "覽": "览", "訂": "订", "輪": "轮", "數": "数", "擊": "击", "驟": "骤", "計": "计", "時": "时", "暫": "暂", "賽": "赛", "觀": "观", "選": "选", "標": "标", "雙": "双", "約": "约", "負": "负", "兩": "两", "邊": "边", "點": "点", "誤": "误", "陣": "阵", "為": "为", "術": "术", "來": "来", "進": "进", "廳": "厅", "帳": "帐", "號": "号", "電": "电", "郵": "邮", "碼": "码", "請": "请", "註": "注", "冊": "册", "採": "采", "員": "员", "還": "还", "沒": "没", "經": "经", "錯": "错", "敗": "败", "後": "后", "編": "编", "輯": "辑", "複": "复", "製": "制", "換": "换", "尋": "寻", "頁": "页", "刪": "删", "範": "范", "內": "内", "無": "无", "愛": "爱", "間": "间", "連": "连", "結": "结", "線": "线", "當": "当", "隊": "队", "長": "长", "準": "准", "備": "备", "傳": "传", "給": "给", "會": "会", "強": "强", "繼": "继", "續": "续", "獲": "获", "場": "场", "隨": "随", "機": "机", "隱": "隐", "鎖": "锁", "擇": "择", "緒": "绪", "張": "张", "僅": "仅", "誰": "谁", "贏": "赢", "寫": "写", "確": "确", "認": "认", "舊": "旧", "從": "从", "餘": "余", "說": "说", "項": "项", "幾": "几", "總": "总", "預": "预", "設": "设", "許": "许", "產": "产", "執": "执", "統": "统", "動": "动", "調": "调", "順": "顺", "嗎": "吗", "單": "单" };
+function toSimplified(s: string): string {
+  let out = "";
+  for (const ch of s) out += T2S[ch] ?? ch;
+  return out;
+}
 
 // Flat dictionary. {var} placeholders are interpolated by t().
 const DICT: Record<string, { en: string; zh: string }> = {
@@ -256,11 +267,14 @@ interface I18nCtx { locale: Locale; setLocale: (l: Locale) => void; t: (key: str
 const Ctx = createContext<I18nCtx | null>(null);
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("zh");
+  const [locale, setLocaleState] = useState<Locale>("en"); // default English
 
   useEffect(() => {
     const saved = (typeof localStorage !== "undefined" && localStorage.getItem("locale")) as Locale | null;
-    if (saved === "en" || saved === "zh") setLocaleState(saved);
+    if (saved === "en" || saved === "zh" || saved === "cn") { setLocaleState(saved); return; }
+    // No saved preference → follow the browser's language.
+    const lang = (typeof navigator !== "undefined" ? navigator.language : "").toLowerCase();
+    if (lang.startsWith("zh")) setLocaleState(/(cn|hans|sg|my)/.test(lang) ? "cn" : "zh");
   }, []);
 
   const setLocale = useCallback((l: Locale) => {
@@ -270,7 +284,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   const t = useCallback((key: string, vars?: Record<string, string | number>) => {
     const entry = DICT[key];
-    let str = entry ? entry[locale] : key;
+    let str = !entry ? key : locale === "cn" ? toSimplified(entry.zh) : entry[locale];
     if (vars) for (const [k, v] of Object.entries(vars)) str = str.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
     return str;
   }, [locale]);
@@ -294,11 +308,11 @@ export function LanguageToggle() {
   const { locale, setLocale } = useI18n();
   return (
     <button
-      onClick={() => setLocale(locale === "en" ? "zh" : "en")}
+      onClick={() => setLocale(locale === "en" ? "zh" : locale === "zh" ? "cn" : "en")}
       className="rounded border border-border px-2 py-1 text-xs text-muted hover:text-gold-bright"
-      title="Switch language"
+      title="Switch language / 切換語言 / 切换语言"
     >
-      {locale === "en" ? "中文" : "EN"}
+      {locale === "en" ? "EN" : locale === "zh" ? "繁中" : "简中"}
     </button>
   );
 }
