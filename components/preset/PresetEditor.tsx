@@ -396,10 +396,11 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
 
 const selectCls = "rounded border border-border bg-surface px-2 py-1 text-xs text-foreground outline-none focus:border-gold";
 
-// Short tags for the step-timeline nodes.
+// Short tags for the step-timeline nodes — distinguish map vs civ so you can tell
+// a map ban from a civ ban at a glance.
 const STEP_SHORT: Record<string, string> = {
-  MAP_BAN: "Ban", MAP_PICK: "Pick", CIV_BAN: "Ban", CIV_PICK: "Draft",
-  MAP_SELECT: "Map", CIV_OFFER: "Offer", CIV_SNIPE_OPPONENT: "Snipe", GAME_RESULT: "Result",
+  MAP_BAN: "Ban map", MAP_PICK: "Pick map", CIV_BAN: "Ban civ", CIV_PICK: "Draft civ",
+  MAP_SELECT: "Select map", CIV_OFFER: "Offer civ", CIV_SNIPE_OPPONENT: "Snipe civ", GAME_RESULT: "Result",
 };
 const ACTOR_SHORT: Record<string, string> = {
   HOST_DRAW: "🎲", PLAYER1: "P1", PLAYER2: "P2", LOSER: "L", WINNER: "W",

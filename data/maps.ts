@@ -25,13 +25,13 @@ export const DEFAULT_MAPS: PoolEntry[] = [
   { id: "golden-heights", name: "Golden Heights", imageUrl: img("golden-heights") },
   { id: "cliffside", name: "Cliffside", imageUrl: img("cliffside") },
   { id: "king-of-the-hill", name: "King of the Hill", imageUrl: img("king-of-the-hill") },
-  // TWC qualifier map pool additions (icons cropped from the r/aoe4 TWC pool image)
-  { id: "prairie", name: "Prairie", imageUrl: img("prairie") },
-  { id: "frisian-marshes", name: "Frisian Marshes", imageUrl: img("frisian-marshes") },
-  { id: "holy-island", name: "Holy Island", imageUrl: img("holy-island") },
-  { id: "front-range", name: "Front Range", imageUrl: img("front-range") },
-  { id: "rockies", name: "Rockies", imageUrl: img("rockies") },
-  { id: "pigeons-view", name: "Pigeon's View", imageUrl: img("pigeons-view") },
+  // TWC qualifier map pool additions (clean single icons self-hosted under /public/maps).
+  { id: "prairie", name: "Prairie", imageUrl: "/maps/prairie.png" },
+  { id: "frisian-marshes", name: "Frisian Marshes", imageUrl: "/maps/frisian-marshes.png" },
+  { id: "holy-island", name: "Holy Island", imageUrl: "/maps/holy-island.png" },
+  { id: "front-range", name: "Front Range", imageUrl: "/maps/front-range.png" },
+  { id: "rockies", name: "Rockies", imageUrl: "/maps/rockies.png" },
+  { id: "pigeons-view", name: "Pigeon's View", imageUrl: "/maps/pigeons-view.png" },
   { id: "hideout", name: "Hideout", imageUrl: img("hideout") },
   { id: "four-lakes", name: "Four Lakes", imageUrl: img("four-lakes") },
   // Added for the BCC map-draft pool (images self-hosted under /public/maps).
