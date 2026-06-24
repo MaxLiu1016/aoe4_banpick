@@ -37,6 +37,7 @@ const DICT: Record<string, { en: string; zh: string }> = {
   "login.forge": { en: "Forge Your Banner", zh: "建立帳號" },
   "login.username": { en: "Username", zh: "使用者名稱" },
   "login.email": { en: "Email or username", zh: "電子郵件 / 使用者名稱" },
+  "login.account": { en: "Account", zh: "帳號" },
   "login.password": { en: "Password", zh: "密碼" },
   "login.passwordHint": { en: "At least 8 characters.", zh: "密碼至少 8 個字。" },
   "login.passwordTooShort": { en: "Password must be at least 8 characters.", zh: "密碼至少需要 8 個字。" },
@@ -47,7 +48,7 @@ const DICT: Record<string, { en: string; zh: string }> = {
   "login.noBanner": { en: "No banner yet? ", zh: "還沒有帳號？" },
   "login.enlisted": { en: "Already enlisted? ", zh: "已經有帳號？" },
   "login.register": { en: "Register", zh: "註冊" },
-  "login.invalid": { en: "Invalid email or password", zh: "電子郵件或密碼錯誤" },
+  "login.invalid": { en: "Invalid account or password", zh: "帳號或密碼錯誤" },
   "login.failed": { en: "Registration failed", zh: "註冊失敗" },
   // presets
   "presets.title": { en: "Presets", zh: "規則組" },
@@ -75,6 +76,10 @@ const DICT: Record<string, { en: string; zh: string }> = {
   "common.public": { en: "Public", zh: "公開" },
   "common.private": { en: "Private", zh: "私人" },
   "presets.yours": { en: "yours", zh: "你的" },
+  "presets.by": { en: "by {name}", zh: "作者：{name}" },
+  "presets.favorite": { en: "Favorite", zh: "加入最愛" },
+  "presets.favorited": { en: "Favorited", zh: "已收藏" },
+  "presets.unfavorite": { en: "Remove from favorites", zh: "移除收藏" },
   "presets.steps": { en: "{n} steps", zh: "{n} 步驟" },
   // match room
   "match.room": { en: "Draft Room", zh: "對戰房間" },

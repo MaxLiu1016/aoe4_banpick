@@ -16,13 +16,16 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "123";
 export async function seedInitialData(): Promise<void> {
   await dbConnect();
 
+  // Accounts no longer require an email. Drop the legacy unique index on `email`
+  // so accounts created without one don't collide on a null key. Idempotent.
+  await User.collection.dropIndex("email_1").catch(() => { /* already gone */ });
+
   // --- Super-admin (always ensure the fixed admin credentials work) ---
   let admin = await User.findOne({ username: ADMIN_USERNAME });
   const hash = await bcrypt.hash(ADMIN_PASSWORD, 10);
   if (!admin) {
     admin = await User.create({
       username: ADMIN_USERNAME,
-      email: "max@admin.local",
       passwordHash: hash,
       isAdmin: true,
     });

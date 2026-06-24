@@ -34,4 +34,11 @@ export const DEFAULT_MAPS: PoolEntry[] = [
   { id: "pigeons-view", name: "Pigeon's View", imageUrl: img("pigeons-view") },
   { id: "hideout", name: "Hideout", imageUrl: img("hideout") },
   { id: "four-lakes", name: "Four Lakes", imageUrl: img("four-lakes") },
+  // Added for the BCC map-draft pool (images self-hosted under /public/maps).
+  { id: "kawasan", name: "Kawasan", imageUrl: "/maps/kawasan.png" },
+  { id: "gorge", name: "Gorge", imageUrl: img("gorge") },
+  { id: "coastal-cliffs", name: "Coastal Cliffs", imageUrl: "/maps/coastal-cliffs.png" },
+  { id: "socotra", name: "Socotra", imageUrl: "/maps/socotra.png" },
+  { id: "baldland", name: "Baldland", imageUrl: "/maps/baldland.png" },
+  { id: "mountain-clearing", name: "Mountain Clearing", imageUrl: "/maps/mountain-clearing.png" },
 ];

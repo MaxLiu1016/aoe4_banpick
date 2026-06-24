@@ -8,6 +8,7 @@ import type { ClientPreset } from "@/lib/presets";
 import { StartMatchButton } from "@/components/match/StartMatchButton";
 import { ClonePresetButton } from "@/components/preset/ClonePresetButton";
 import { PublicToggle } from "@/components/preset/PublicToggle";
+import { FavoriteButton } from "@/components/preset/FavoriteButton";
 
 const LIMIT = 9;
 
@@ -90,7 +91,8 @@ export function PresetBrowser() {
                 <p className="mt-1 text-xs text-muted">
                   Bo{p.config?.options?.bestOf ?? "?"} · {t("presets.steps", { n: p.config?.steps?.length ?? 0 })} ·{" "}
                   {p.isPublic ? t("common.public") : t("common.private")}
-                  {p.isOwner ? ` · ${t("presets.yours")}` : ""}
+                  {p.isOwner ? ` · ${t("presets.yours")}` : p.ownerName ? ` · ${t("presets.by", { name: p.ownerName })}` : ""}
+                  {!p.isOwner && p.isFavorite ? ` · ★ ${t("presets.favorited")}` : ""}
                 </p>
                 {p.description && (
                   <p className="mt-2 text-sm text-foreground/80">{p.description}</p>
@@ -99,6 +101,9 @@ export function PresetBrowser() {
               <div className="mt-4 flex flex-wrap gap-2 border-t border-border/60 pt-4">
                 <StartMatchButton presetId={p.id} />
                 {loggedIn && <ClonePresetButton presetId={p.id} />}
+                {loggedIn && !p.isOwner && p.isPublic && (
+                  <FavoriteButton presetId={p.id} initial={p.isFavorite} />
+                )}
                 {p.isDemo ? (
                   isAdmin ? (
                     <Link href={`/presets/${p.id}/edit`} className="inline-flex items-center gap-1 rounded border border-bronze px-3 py-1.5 text-sm text-gold-bright hover:brightness-110">

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { isValidObjectId } from "mongoose";
 import { dbConnect } from "@/lib/mongoose";
 import { Preset } from "@/lib/models/Preset";
+import { Favorite } from "@/lib/models/Favorite";
 import { getCurrentUser } from "@/lib/session";
 import { toClientPreset } from "@/lib/presets";
 import { PresetConfigSchema } from "@/lib/draft/schema";
@@ -80,5 +81,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   await existing.deleteOne();
+  // Remove everyone's favorites of this preset — a favorite is only a reference.
+  await Favorite.deleteMany({ presetId: id });
   return NextResponse.json({ ok: true });
 }

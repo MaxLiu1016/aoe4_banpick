@@ -6,6 +6,7 @@ import { Thumb } from "@/components/Thumb";
 import type { ClientPreset } from "@/lib/presets";
 import type { PresetConfig, Step, StepType, Actor, Pool, PoolEntry } from "@/lib/draft/schema";
 import { buildDefaultConfig } from "@/lib/draft/defaultPreset";
+import { gameIndexOfSteps } from "@/lib/draft/engine";
 import { validatePreset } from "@/lib/draft/validate";
 import { defaultStepLabel } from "@/lib/draft/stepLabel";
 import { ClonePresetButton } from "@/components/preset/ClonePresetButton";
@@ -122,14 +123,17 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
   function removeStep(idx: number) {
     setConfig((c) => ({ ...c, steps: c.steps.filter((_, i) => i !== idx) }));
   }
+  // Adding a step duplicates the last one (or a fresh default if the list is empty),
+  // so you can keep adding similar steps quickly.
   function addStep() {
-    setConfig((c) => ({ ...c, steps: [...c.steps, newStep()] }));
+    setConfig((c) => ({ ...c, steps: [...c.steps, c.steps.length ? { ...c.steps[c.steps.length - 1], id: crypto.randomUUID() } : newStep()] }));
   }
-  // Insert a fresh step right after `idx`.
+  // Insert a COPY of the clicked step right after it (a new id keeps React keys unique).
   function insertStep(idx: number) {
     setConfig((c) => {
       const steps = c.steps.slice();
-      steps.splice(idx + 1, 0, newStep());
+      const src = steps[idx] ?? newStep();
+      steps.splice(idx + 1, 0, { ...src, id: crypto.randomUUID() });
       return { ...c, steps };
     });
   }
@@ -305,10 +309,12 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
           </div>
         </div>
         <p className="mb-3 text-xs text-muted">{t("editor.tip")} · {t("editor.dragHint")}</p>
+        <StepTimeline steps={config.steps} />
         <ol className="space-y-2">
           {config.steps.map((s, i) => (
             <li
               key={s.id}
+              id={`step-node-${i}`}
               onDragOver={(e) => { if (dragIdx !== null) e.preventDefault(); }}
               onDrop={() => { if (dragIdx !== null) moveTo(dragIdx, i); setDragIdx(null); }}
               className={`rounded-lg border border-l-4 bg-surface-2/60 p-3 transition ${
@@ -370,10 +376,13 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
                   <input type="checkbox" checked={s.excludeUsedCivs} onChange={(e) => updateStep(i, { excludeUsedCivs: e.target.checked })} />
                   {t("editor.excludeUsedCivs")}
                 </label>
-                <label className="flex items-center gap-1">
-                  <input type="checkbox" checked={s.pausable} onChange={(e) => updateStep(i, { pausable: e.target.checked })} />
-                  {t("editor.pausableShort")}
-                </label>
+                {/* Per-step pause is redundant once the whole draft is pausable, so hide it then. */}
+                {!config.options.pausable && (
+                  <label className="flex items-center gap-1">
+                    <input type="checkbox" checked={s.pausable} onChange={(e) => updateStep(i, { pausable: e.target.checked })} />
+                    {t("editor.pausableShort")}
+                  </label>
+                )}
                 <input
                   value={s.label ?? ""}
                   onChange={(e) => updateStep(i, { label: e.target.value })}
@@ -390,6 +399,45 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
 }
 
 const selectCls = "rounded border border-border bg-surface px-2 py-1 text-xs text-foreground outline-none focus:border-gold";
+
+// Short tags for the step-timeline nodes.
+const STEP_SHORT: Record<string, string> = {
+  MAP_BAN: "Ban", MAP_PICK: "Pick", CIV_BAN: "Ban", CIV_PICK: "Draft",
+  MAP_SELECT: "Map", CIV_OFFER: "Offer", CIV_SNIPE_OPPONENT: "Snipe", GAME_RESULT: "Result",
+};
+const ACTOR_SHORT: Record<string, string> = {
+  HOST_DRAW: "🎲", PLAYER1: "P1", PLAYER2: "P2", LOSER: "L", WINNER: "W",
+};
+
+// A horizontal node timeline of the steps: each node briefly shows what it does
+// and which game it's in; clicking one scrolls that step into view.
+function StepTimeline({ steps }: { steps: Step[] }) {
+  const gameOf = gameIndexOfSteps(steps);
+  return (
+    <div className="mb-3 flex items-center gap-1 overflow-x-auto pb-2">
+      {steps.map((s, i) => (
+        <div key={s.id} className="flex shrink-0 items-center">
+          {i > 0 && <span className="h-px w-3 shrink-0 bg-border" />}
+          <button
+            type="button"
+            onClick={() => document.getElementById(`step-node-${i}`)?.scrollIntoView({ behavior: "smooth", block: "center" })}
+            title={`#${i + 1} · ${defaultStepLabel(s)}`}
+            className={`flex shrink-0 flex-col items-center rounded-md border bg-surface-2/60 px-2 py-1 text-[10px] leading-tight transition hover:brightness-125 ${
+              s.type === "GAME_RESULT" ? "border-amber-500/70" :
+              s.actor === "PLAYER1" ? "border-sky-500/60" :
+              s.actor === "PLAYER2" ? "border-rose-500/60" :
+              s.actor === "LOSER" || s.actor === "WINNER" ? "border-amber-500/50" : "border-bronze"
+            }`}
+          >
+            <span className="font-display text-gold-bright">{i + 1}</span>
+            <span className="whitespace-nowrap text-muted">{ACTOR_SHORT[s.actor] ?? ""} {STEP_SHORT[s.type] ?? s.type}</span>
+            <span className="text-[8px] text-muted/60">G{(gameOf[i] ?? 0) + 1}</span>
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function clamp(n: number, lo: number, hi: number) {
   if (Number.isNaN(n)) return lo;

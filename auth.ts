@@ -23,7 +23,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const user = await User.findOne({ $or: [{ email: id.toLowerCase() }, { username: id }] }).lean<{
           _id: unknown;
           username: string;
-          email: string;
+          email?: string;
           passwordHash: string;
           avatarUrl?: string;
           isAdmin?: boolean;
@@ -36,7 +36,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return {
           id: String(user._id),
           name: user.username,
-          email: user.email,
+          email: user.email ?? null,
           image: user.avatarUrl ?? null,
           isAdmin: Boolean(user.isAdmin),
         };

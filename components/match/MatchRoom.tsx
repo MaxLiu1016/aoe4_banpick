@@ -312,15 +312,17 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         </div>
       )}
 
-      {/* Pools */}
+      {/* Pools — hover tints red for a ban step, green for a pick step */}
       {(showMaps) && (
         <Pool title={t("match.maps")} entries={mapsView} clickable={clickable} onPick={act}
           oppHover={oppHover} onHover={(id) => sendHover("map", id)}
+          tone={step?.type === "MAP_BAN" ? "ban" : step?.type === "MAP_PICK" ? "pick" : "neutral"}
           highlightSelectable={step?.type === "MAP_SELECT" ? state.selectableMapIds : undefined} />
       )}
       {showCivs && (
         <Pool title={t("match.civs")} entries={civsView} clickable={clickable} onPick={act}
           oppHover={oppHover} onHover={(id) => sendHover("civ", id)}
+          tone={step?.type === "CIV_BAN" ? "ban" : "pick"}
           highlightSelectable={step?.type === "CIV_PICK" ? state.civPickableIds : undefined} />
       )}
       {/* Two-pool duel: simultaneous hidden offer */}
@@ -720,9 +722,10 @@ function SeatCard({ label, seat, role, you, turn, score, canTake, onTake, right,
   );
 }
 
-function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightSelectable, kind = "civ" }: {
+function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightSelectable, kind = "civ", tone = "neutral" }: {
   title: string; entries: PoolView[]; clickable: (e: PoolView) => boolean; onPick: (id: string) => void;
   onHover: (id: string | null) => void; oppHover: string | null; highlightSelectable?: string[]; kind?: "civ" | "map";
+  tone?: "ban" | "pick" | "neutral";
 }) {
   const isMap = kind === "map";
   return (
@@ -749,10 +752,18 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
                 banned ? "border-danger/50 opacity-40" :
                   isSelectStep
                     ? (selectable
-                        ? "border-gold bg-surface-2 ring-1 ring-gold" + (can ? " cursor-pointer hover:brightness-110" : "")
+                        // Bright gold for the player actually selecting; dimmer for
+                        // a watcher (e.g. the winner while the loser picks the map).
+                        ? (can
+                            ? "border-gold bg-surface-2 ring-1 ring-gold cursor-pointer hover:brightness-110"
+                            : "border-gold/40 bg-surface-2/50 ring-1 ring-gold/30")
                         : "border-border opacity-25")
                     : (taken ? "border-emerald-500/70 bg-surface-2" :
-                       can ? "border-bronze hover:border-gold hover:bg-surface-2 cursor-pointer" :
+                       can ? (tone === "ban"
+                              ? "border-bronze cursor-pointer hover:border-danger hover:bg-danger/10"
+                              : tone === "pick"
+                              ? "border-bronze cursor-pointer hover:border-emerald-500 hover:bg-emerald-500/10"
+                              : "border-bronze cursor-pointer hover:border-gold hover:bg-surface-2") :
                        "border-border opacity-50"),
                 oppHover === e.id ? "ring-2 ring-gold-bright" : "",
               ].join(" ")}

@@ -33,7 +33,7 @@ export default function LoginPage() {
         }
       }
       const res = await signIn("credentials", {
-        email: form.email,
+        email: form.username,
         password: form.password,
         redirect: false,
       });
@@ -57,10 +57,7 @@ export default function LoginPage() {
           <div className="aoe-rule my-4" />
 
           <form onSubmit={onSubmit} className="space-y-3">
-            {mode === "register" && (
-              <Field label={t("login.username")} value={form.username} onChange={set("username")} />
-            )}
-            <Field label={t("login.email")} type={mode === "register" ? "email" : "text"} value={form.email} onChange={set("email")} />
+            <Field label={t("login.account")} value={form.username} onChange={set("username")} />
             <Field label={t("login.password")} type="password" value={form.password} onChange={set("password")} />
             {mode === "register" && <p className="text-xs text-muted">{t("login.passwordHint")}</p>}
             {mode === "register" && (

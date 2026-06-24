@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/mongoose";
 import { Preset } from "@/lib/models/Preset";
+import { Favorite } from "@/lib/models/Favorite";
+import { User } from "@/lib/models/User";
 import { getCurrentUser } from "@/lib/session";
 import { buildDefaultConfig } from "@/lib/draft/defaultPreset";
 import { toClientPreset } from "@/lib/presets";
@@ -20,10 +22,15 @@ export async function GET(req: Request) {
 
   await dbConnect();
 
+  // The viewer's favorites (bookmarks of others' public presets).
+  const favIds = user ? await Favorite.find({ userId: user.id }).distinct("presetId") : [];
+  const favSet = new Set(favIds.map(String));
+
   const cond: Record<string, unknown> = {};
   if (scope === "mine") {
     if (!user) return NextResponse.json({ items: [], total: 0, page, limit });
-    cond.ownerId = user.id;
+    // "My rules" = presets I own + public presets I've favorited (reference only).
+    cond.$or = [{ ownerId: user.id }, { _id: { $in: favIds }, isPublic: true }];
   } else {
     cond.isPublic = true;
   }
@@ -35,7 +42,19 @@ export async function GET(req: Request) {
     .skip((page - 1) * limit)
     .limit(limit)
     .lean();
-  return NextResponse.json({ items: docs.map((d) => toClientPreset(d as never, user?.id)), total, page, limit });
+
+  // Resolve author display names for the page of results.
+  const ownerIds = [...new Set(docs.map((d) => String(d.ownerId)))];
+  const owners = await User.find({ _id: { $in: ownerIds } }).select("username").lean<{ _id: unknown; username: string }[]>();
+  const nameById = new Map(owners.map((o) => [String(o._id), o.username]));
+
+  const items = docs.map((d) =>
+    toClientPreset(d as never, user?.id, {
+      ownerName: nameById.get(String(d.ownerId)),
+      isFavorite: favSet.has(String(d._id)),
+    })
+  );
+  return NextResponse.json({ items, total, page, limit });
 }
 
 const CreateSchema = z.object({

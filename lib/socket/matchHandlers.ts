@@ -208,10 +208,16 @@ async function onExpire(io: Server, matchId: string, token: string) {
     if (`${state.currentStepIndex}:${state.currentStepProgress}` !== token) return; // stale
 
     if (state.simultaneous) {
-      // Auto-fill any player who hasn't finished submitting for this duel step.
+      // Auto-fill any player who hasn't finished submitting — but ONLY for the
+      // step that actually timed out. Offer and snipe are two adjacent
+      // simultaneous steps; without this guard the loop would roll straight past
+      // the offer into the snipe and auto-resolve it too, skipping the snipe phase
+      // (and robbing a player who DID act on time of their snipe).
+      const stepIdx = state.currentStepIndex;
       for (let i = 0; i < 50; i++) {
         const c = await getCtx(matchId);
         if (!c || !c.state.simultaneous || c.state.finished) break;
+        if (c.state.currentStepIndex !== stepIdx) break; // advanced to the next step — let it get its own timer
         const role: "player1" | "player2" | null = c.state.awaiting.player1 ? "player1" : c.state.awaiting.player2 ? "player2" : null;
         if (!role) break;
         const opts = duelTargetsFor(c.state, role);
