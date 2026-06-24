@@ -24,9 +24,9 @@ export default async function PresetEditPage({
   if (!doc) notFound();
 
   const preset = toClientPreset(doc as never, user.id);
-  if (!preset.isOwner) redirect("/presets");
-  // Demo presets are locked — never open the editor for them.
-  if (preset.isDemo) redirect("/presets");
+  // The super-admin may edit any preset, including the locked demos.
+  if (!preset.isOwner && !user.isAdmin) redirect("/presets");
+  if (preset.isDemo && !user.isAdmin) redirect("/presets");
 
   return (
     <>

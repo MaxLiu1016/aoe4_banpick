@@ -40,6 +40,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const [oppHover, setOppHover] = useState<string | null>(null);
   const [inviteUrl, setInviteUrl] = useState("");
   const [copied, setCopied] = useState(false);
+  const [minimized, setMinimized] = useState(false);
   const ticketRef = useRef<string | undefined>(undefined);
 
   const you = payload?.you ?? "spectator";
@@ -190,8 +191,27 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
     <div className="space-y-5">
       {error && <div className="rounded border border-danger/60 bg-danger/10 px-4 py-2 text-sm text-danger">{error}</div>}
 
-      {/* Scoreboard */}
+      {/* Scoreboard — collapsible to a compact status bar so the area below stays roomy */}
       <div className="aoe-panel rounded-xl p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-[10px] uppercase tracking-wide text-muted">{t("match.scoreboard")}</span>
+          <button onClick={() => setMinimized((m) => !m)}
+            className="inline-flex items-center gap-1.5 rounded-md border border-bronze bg-surface-2 px-3 py-1 text-xs font-display text-gold-bright shadow hover:brightness-110">
+            {minimized ? <>⤢ {t("match.expand")}</> : <>▭ {t("match.minimize")}</>}
+          </button>
+        </div>
+
+        {minimized && (
+          <MiniScoreboard
+            state={state} p1Name={p1Name} p2Name={p2Name} civById={civById}
+            p1Hand={p1Hand} p2Hand={p2Hand} p1Banned={p1Banned} p2Banned={p2Banned}
+            status={state.finished ? t("match.winner", { name: state.score.player1 > state.score.player2 ? p1Name : p2Name }) : payload!.status === "paused" ? t("match.paused") : turnLabel(state, t)}
+            statusTone={state.finished ? "aoe-gold-text" : payload!.status === "paused" ? "text-danger" : stepTone(state.currentStep?.type)}
+          />
+        )}
+
+        {!minimized && (
+        <>
         <div className="grid grid-cols-3 items-center">
           <SeatCard label={t("match.p1")} seat={payload!.seats.player1} role="player1" you={you} turn={state.turn}
             score={state.score.player1} canTake={!spectator && !payload!.seats.player1 && you === "spectator" && !!session}
@@ -217,46 +237,37 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
             crowned={state.finished && state.score.player2 > state.score.player1} />
         </div>
 
-        {/* Each player's hand (Pool 1) shown under them; used civs are dimmed */}
+        {/* Games overview — merged into the scoreboard, right under the score */}
+        <MatchOverview state={state} p1Name={p1Name} p2Name={p2Name} civById={civById} mapById={mapById} />
+
+        {/* Each player's civ pool (collapsible) */}
         {(p1Hand.length > 0 || p2Hand.length > 0) && (
-          <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border/50 pt-3">
-            <div>
-              <div className="mb-1 text-[10px] uppercase tracking-wide text-muted">{t("match.handP1")}</div>
+          <CollapsibleSection title={t("match.civPoolTitle")}>
+            <div className="grid grid-cols-2 gap-3">
               <CivStrip items={p1Hand} align="left" />
+              <div className="text-right"><CivStrip items={p2Hand} align="right" /></div>
             </div>
-            <div className="text-right">
-              <div className="mb-1 text-[10px] uppercase tracking-wide text-muted">{t("match.handP2")}</div>
-              <CivStrip items={p2Hand} align="right" />
-            </div>
-          </div>
+          </CollapsibleSection>
         )}
 
-        {/* Each player's map pool */}
+        {/* Each player's map pool (collapsible) */}
         {(p1Maps.length > 0 || p2Maps.length > 0) && (
-          <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border/50 pt-3">
-            <div>
-              <div className="mb-1 text-[10px] uppercase tracking-wide text-muted">{t("match.mapsP1")}</div>
+          <CollapsibleSection title={t("match.mapPoolTitle")}>
+            <div className="grid grid-cols-2 gap-3">
               <CivStrip items={p1Maps} align="left" />
+              <div className="text-right"><CivStrip items={p2Maps} align="right" /></div>
             </div>
-            <div className="text-right">
-              <div className="mb-1 text-[10px] uppercase tracking-wide text-muted">{t("match.mapsP2")}</div>
-              <CivStrip items={p2Maps} align="right" />
-            </div>
-          </div>
+          </CollapsibleSection>
         )}
 
-        {/* Civs each player banned */}
+        {/* Civs each player banned (collapsible) */}
         {(p1Banned.length > 0 || p2Banned.length > 0) && (
-          <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border/50 pt-3">
-            <div>
-              <div className="mb-1 text-[10px] uppercase tracking-wide text-danger/80">{t("match.bannedP1")}</div>
+          <CollapsibleSection title={t("match.bannedTitle")} danger>
+            <div className="grid grid-cols-2 gap-3">
               <CivStrip items={p1Banned} align="left" />
+              <div className="text-right"><CivStrip items={p2Banned} align="right" /></div>
             </div>
-            <div className="text-right">
-              <div className="mb-1 text-[10px] uppercase tracking-wide text-danger/80">{t("match.bannedP2")}</div>
-              <CivStrip items={p2Banned} align="right" />
-            </div>
-          </div>
+          </CollapsibleSection>
         )}
 
         {(you === "player1" || you === "player2" || isHost) && !state.finished && (
@@ -267,11 +278,9 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
             </button>
           </div>
         )}
+        </>
+        )}
       </div>
-
-      {/* Per-game overview: map, civs played and winner for each game — moved up
-          to the top so the current standing & matchup is clear at a glance. */}
-      <MatchOverview state={state} p1Name={p1Name} p2Name={p2Name} civById={civById} mapById={mapById} />
 
       {/* Between-games gate: hold the clock until both players acknowledge the result */}
       {payload!.awaitingAck && !state.finished && (
@@ -524,12 +533,12 @@ function CivStrip({ items, align, wide = false }: { items: { key: string; civ?: 
         it.civ ? (
           <div
             key={it.key}
-            className={`civ-pop relative flex flex-col items-center rounded-md border text-center ${wide ? "w-16 overflow-hidden" : "w-12 px-1 py-1"} ${
+            className={`civ-pop relative flex flex-col items-center rounded-md border text-center ${wide ? "w-16 overflow-hidden" : "w-14 px-1 py-1"} ${
               it.banned ? "border-danger/50 bg-danger/5 opacity-60" : it.used ? "border-border bg-surface-2/40 opacity-45" : "border-bronze bg-surface-2"
             }`}
             title={it.banned ? `${it.civ.name} (banned)` : it.used ? `${it.civ.name} (used)` : it.civ.name}
           >
-            <Thumb src={it.civ.imageUrl} alt={it.civ.name} className={`${wide ? "h-9 w-full object-cover" : "h-7 w-7 object-contain"} ${it.used || it.banned ? "grayscale" : ""}`} />
+            <Thumb src={it.civ.imageUrl} alt={it.civ.name} className={`${wide ? "h-9 w-full object-cover" : "h-10 w-10 object-contain"} ${it.used || it.banned ? "grayscale" : ""}`} />
             <span className={`w-full truncate text-[9px] leading-tight text-muted ${wide ? "px-1 py-0.5" : "mt-0.5"}`}>{it.civ.name}</span>
             {it.banned ? <span className="absolute right-0.5 top-0.5 text-[10px] text-danger">✕</span> : it.used ? <span className="absolute right-0.5 top-0.5 text-[8px] text-danger">used</span> : null}
           </div>
@@ -919,9 +928,124 @@ function AckGate({ info, p1Name, p2Name, you, onAck }: {
   );
 }
 
-// Per-game overview shown at the TOP of the match: one card per game with the
-// map, both civs played, and a crown on the game's winner. Makes the current
-// standing and matchup readable at a glance.
+// Compact scoreboard shown when minimized: just colour dots + names + score,
+// a short colour-toned status line, and each game's civs as flags (with a crown
+// on the winner). Minimal text — the colours and flags carry the meaning.
+type MiniItem = { key: string; civ?: PoolView; used?: boolean; banned?: boolean };
+function MiniScoreboard({ state, p1Name, p2Name, civById, p1Hand, p2Hand, p1Banned, p2Banned, status, statusTone }: {
+  state: DerivedState;
+  p1Name: string;
+  p2Name: string;
+  civById: (id?: string) => PoolView | undefined;
+  p1Hand: MiniItem[];
+  p2Hand: MiniItem[];
+  p1Banned: MiniItem[];
+  p2Banned: MiniItem[];
+  status: string;
+  statusTone: string;
+}) {
+  const games = state.games.filter((g) => g.civP1 || g.civP2 || g.winner);
+  const dot = (active: boolean, tone: string) =>
+    `inline-block h-2.5 w-2.5 shrink-0 rounded-full ${active ? "bg-gold-bright ring-2 ring-gold-bright/30" : tone}`;
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className={dot(state.turn === "player1", "bg-sky-500")} />
+          <span className="truncate font-display text-sm text-foreground">{p1Name}</span>
+        </div>
+        <div className="shrink-0 text-center">
+          <div className="font-display text-2xl leading-none aoe-gold-text">{state.score.player1} — {state.score.player2}</div>
+          <div className={`mt-0.5 text-[10px] ${statusTone}`}>{status}</div>
+        </div>
+        <div className="flex min-w-0 items-center justify-end gap-2">
+          <span className="truncate font-display text-sm text-foreground">{p2Name}</span>
+          <span className={dot(state.turn === "player2", "bg-rose-500")} />
+        </div>
+      </div>
+      {games.length > 0 && (
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-2 border-t border-border/40 pt-2">
+          {games.map((g) => {
+            const isCur = !state.finished && g.gameIndex === state.currentGameIndex;
+            return (
+              <div key={g.gameIndex} className={`flex items-center gap-1 rounded px-1 py-0.5 ${isCur ? "ring-1 ring-gold/50" : ""}`}>
+                <MiniFlag civ={civById(g.civP1)} won={g.winner === "player1"} tone="sky" />
+                <span className="text-[8px] text-muted">vs</span>
+                <MiniFlag civ={civById(g.civP2)} won={g.winner === "player2"} tone="rose" />
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {/* Picks — one row (P1 left, P2 right) */}
+      {(p1Hand.length > 0 || p2Hand.length > 0) && (
+        <div className="mt-2 grid grid-cols-2 gap-x-3 border-t border-border/40 pt-2">
+          <MiniIcons items={p1Hand} align="left" />
+          <MiniIcons items={p2Hand} align="right" />
+        </div>
+      )}
+      {/* Bans — separate row */}
+      {(p1Banned.length > 0 || p2Banned.length > 0) && (
+        <div className="mt-1 grid grid-cols-2 gap-x-3">
+          <MiniIcons items={p1Banned} align="left" ban />
+          <MiniIcons items={p2Banned} align="right" ban />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// One compact icon row: civs picked (dim when already used) or banned (grayscale + red ✕).
+function MiniIcons({ items, align, ban }: { items: MiniItem[]; align: "left" | "right"; ban?: boolean }) {
+  return (
+    <div className={`flex flex-wrap items-center gap-0.5 ${align === "right" ? "justify-end" : "justify-start"}`}>
+      {items.map((it) => it.civ ? (
+        ban ? (
+          <span key={it.key} className="relative inline-flex" title={`${it.civ.name} (banned)`}>
+            <Thumb src={it.civ.imageUrl} alt={it.civ.name} className="h-6 w-6 rounded object-contain opacity-60 grayscale" />
+            <span className="absolute inset-0 flex items-center justify-center text-[11px] text-danger">✕</span>
+          </span>
+        ) : (
+          <span key={it.key} className="inline-flex" title={it.used ? `${it.civ.name} (used)` : it.civ.name}>
+            <Thumb src={it.civ.imageUrl} alt={it.civ.name} className={`h-6 w-6 rounded object-contain ${it.used ? "opacity-40 grayscale" : ""}`} />
+          </span>
+        )
+      ) : null)}
+    </div>
+  );
+}
+
+function MiniFlag({ civ, won, tone }: { civ?: PoolView; won: boolean; tone: "sky" | "rose" }) {
+  return (
+    <span className="relative inline-flex">
+      {won && <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[10px] leading-none">👑</span>}
+      <span className={`flex h-7 w-7 items-center justify-center overflow-hidden rounded-full ring-1 ${won ? "ring-gold-bright" : tone === "sky" ? "ring-sky-500/50" : "ring-rose-500/50"}`}>
+        <Thumb src={civ?.imageUrl} alt={civ?.name ?? ""} className={`h-full w-full object-cover ${civ ? "" : "opacity-30"}`} />
+      </span>
+    </span>
+  );
+}
+
+// A titled section in the scoreboard that can collapse to save space.
+function CollapsibleSection({ title, danger, defaultOpen = true, children }: {
+  title: string; danger?: boolean; defaultOpen?: boolean; children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="mt-3 border-t border-border/50 pt-3">
+      <button onClick={() => setOpen((o) => !o)}
+        className={`flex w-full items-center justify-between text-[10px] uppercase tracking-wide hover:text-gold-bright ${danger ? "text-danger/80" : "text-muted"}`}>
+        <span>{title}</span>
+        <span className="text-muted">{open ? "▾" : "▸"}</span>
+      </button>
+      {open && <div className="mt-2">{children}</div>}
+    </div>
+  );
+}
+
+// Per-game overview, merged into the scoreboard right under the score: one card
+// per game with both civs, a crown on the winner, and the map (image only,
+// centered between the two civs).
 function MatchOverview({ state, p1Name, p2Name, civById, mapById }: {
   state: DerivedState;
   p1Name: string;
@@ -933,8 +1057,7 @@ function MatchOverview({ state, p1Name, p2Name, civById, mapById }: {
   const played = state.games.filter((g) => g.map || g.civP1 || g.civP2 || g.winner);
   if (played.length === 0) return null;
   return (
-    <section className="aoe-panel rounded-xl p-4">
-      <h3 className="mb-3 font-display text-sm uppercase tracking-wide text-muted">{t("match.games")}</h3>
+    <div className="mt-3 border-t border-border/50 pt-3">
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {played.map((g) => {
           const isCurrent = !state.finished && g.gameIndex === state.currentGameIndex;
@@ -942,25 +1065,24 @@ function MatchOverview({ state, p1Name, p2Name, civById, mapById }: {
           return (
             <div key={g.gameIndex}
               className={`rounded-lg border bg-surface-2/40 p-3 ${isCurrent ? "border-gold ring-1 ring-gold/40" : "border-border/70"}`}>
-              <div className="mb-2 flex items-center justify-between text-[11px] uppercase tracking-wide text-muted">
-                <span>{t("match.gameN", { n: g.gameIndex + 1 })}</span>
-                {m && (
-                  <span className="flex items-center gap-1 normal-case text-foreground/80">
-                    {m.imageUrl && <Thumb src={m.imageUrl} alt={m.name} className="h-4 w-4 rounded object-cover ring-1 ring-bronze" />}
-                    {m.name}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-start justify-between gap-2">
+              <div className="mb-2 text-center text-[11px] uppercase tracking-wide text-muted">{t("match.gameN", { n: g.gameIndex + 1 })}</div>
+              <div className="flex items-center justify-between gap-1">
                 <GameSide name={p1Name} civ={civById(g.civP1)} won={g.winner === "player1"} tone="sky" />
-                <div className="self-center font-display text-[10px] text-muted">VS</div>
+                <div className="flex shrink-0 flex-col items-center gap-1">
+                  {m?.imageUrl ? (
+                    <Thumb src={m.imageUrl} alt={m.name} className="h-14 w-20 rounded object-cover ring-1 ring-bronze" />
+                  ) : (
+                    <div className="h-14 w-20 rounded bg-surface-2/60 ring-1 ring-border" />
+                  )}
+                  <span className="font-display text-[10px] text-muted">VS</span>
+                </div>
                 <GameSide name={p2Name} civ={civById(g.civP2)} won={g.winner === "player2"} tone="rose" />
               </div>
             </div>
           );
         })}
       </div>
-    </section>
+    </div>
   );
 }
 

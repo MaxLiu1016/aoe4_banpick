@@ -33,26 +33,20 @@ export async function seedInitialData(): Promise<void> {
   }
 
   // --- Demo presets (public, cloneable, owned by admin) ---
-  // Demos are locked & canonical, so on every boot we (re)normalize their step
-  // labels to English — regardless of how they were originally seeded — and keep
-  // them public. This also upgrades demos already in the DB with localized labels.
+  // Only CREATE demos that are missing — existing demos are left untouched so the
+  // super-admin can edit them in the UI and have those edits persist across
+  // restarts. The data file is just the seed for a fresh database.
   for (const d of DEMO_PRESETS) {
-    const config = withEnglishStepLabels(d.config);
-    const existing = await Preset.findOne({ name: d.name, isDemo: true });
-    if (!existing) {
+    const exists = await Preset.findOne({ name: d.name, isDemo: true });
+    if (!exists) {
       await Preset.create({
         ownerId: admin._id,
         name: d.name,
         description: d.description,
-        config,
+        config: withEnglishStepLabels(d.config),
         isPublic: true,
         isDemo: true,
       });
-    } else {
-      existing.config = config;
-      existing.isPublic = true;
-      existing.markModified("config"); // config is a Mixed field
-      await existing.save();
     }
   }
 }

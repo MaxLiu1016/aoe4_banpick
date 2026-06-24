@@ -48,12 +48,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   await dbConnect();
   const existing = await Preset.findById(id);
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  // The seeded demo presets are locked: nobody (not even their admin owner) may
-  // edit them or flip them private — they stay public and pristine as starting points.
-  if (existing.isDemo) {
+  // Demo presets are locked for everyone EXCEPT the super-admin, who maintains them.
+  if (existing.isDemo && !user.isAdmin) {
     return NextResponse.json({ error: "Demo presets are locked and cannot be modified." }, { status: 403 });
   }
-  if (String(existing.ownerId) !== user.id) {
+  if (String(existing.ownerId) !== user.id && !user.isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -72,11 +71,12 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   await dbConnect();
   const existing = await Preset.findById(id);
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  // Demo presets are permanent — they cannot be deleted by anyone.
-  if (existing.isDemo) {
+  // Demos are locked for everyone EXCEPT the super-admin (it'll be re-seeded from
+  // the data file on the next fresh boot if a demo is missing).
+  if (existing.isDemo && !user.isAdmin) {
     return NextResponse.json({ error: "Demo presets are locked and cannot be deleted." }, { status: 403 });
   }
-  if (String(existing.ownerId) !== user.id) {
+  if (String(existing.ownerId) !== user.id && !user.isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   await existing.deleteOne();

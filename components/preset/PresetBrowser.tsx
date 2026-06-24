@@ -15,6 +15,7 @@ export function PresetBrowser() {
   const { t } = useI18n();
   const { data: session } = useSession();
   const loggedIn = !!session?.user;
+  const isAdmin = Boolean((session?.user as { isAdmin?: boolean } | undefined)?.isAdmin);
 
   const [scope, setScope] = useState<"mine" | "public">("public");
   const [q, setQ] = useState("");
@@ -99,9 +100,15 @@ export function PresetBrowser() {
                 <StartMatchButton presetId={p.id} />
                 {loggedIn && <ClonePresetButton presetId={p.id} />}
                 {p.isDemo ? (
-                  <span className="inline-flex items-center gap-1 rounded border border-border px-3 py-1.5 text-sm text-muted" title={t("presets.demoLockedHint")}>
-                    🔒 {t("common.public")}
-                  </span>
+                  isAdmin ? (
+                    <Link href={`/presets/${p.id}/edit`} className="inline-flex items-center gap-1 rounded border border-bronze px-3 py-1.5 text-sm text-gold-bright hover:brightness-110">
+                      🛠 {t("presets.edit")}
+                    </Link>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded border border-border px-3 py-1.5 text-sm text-muted" title={t("presets.demoLockedHint")}>
+                      🔒 {t("common.public")}
+                    </span>
+                  )
                 ) : (
                   <>
                     {p.isOwner && <PublicToggle presetId={p.id} initial={p.isPublic} />}
