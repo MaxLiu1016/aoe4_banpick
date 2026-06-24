@@ -66,6 +66,7 @@ async function buildPayload(matchId: string) {
     status: state.status,
     publicHover: Boolean(match.config?.options?.publicHover),
     resultMode: match.config?.options?.resultMode ?? "vote",
+    pausable: match.config?.options?.pausable ?? true,
     deadlineTs: live && t ? t.deadlineTs : null,
     awaitingAck,
     seats: {
@@ -424,6 +425,13 @@ export function registerMatchHandlers(io: Server) {
         await dbConnect();
         const match = await Match.findById(matchId);
         if (!match || match.status === "finished") return;
+        // Respect the preset's pause setting: if pausing is disabled, refuse to pause
+        // (resuming an already-paused match is always allowed).
+        const pauseAllowed = (match.config as { options?: { pausable?: boolean } })?.options?.pausable ?? true;
+        if (paused && !pauseAllowed) {
+          socket.emit(S2C.ERROR, { message: "Pausing is disabled for this draft." });
+          return;
+        }
         match.status = paused ? "paused" : "running";
         await match.save();
         await broadcast(io, matchId);

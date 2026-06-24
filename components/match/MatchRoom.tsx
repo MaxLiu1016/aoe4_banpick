@@ -21,6 +21,7 @@ interface Payload {
   status: string;
   publicHover: boolean;
   resultMode?: "vote" | "host";
+  pausable?: boolean;
   deadlineTs: number | null;
   seats: { host: string; player1: Seat; player2: Seat };
   votes: Record<number, { player1?: string; player2?: string }>;
@@ -83,7 +84,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
       socket.off("connect", join);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matchId, session?.user]);
+  }, [matchId, session?.user?.id]);
 
   function emit(event: string, data: object) { getSocket().emit(event, data); }
   function takeSeat(seat: "player1" | "player2") {
@@ -270,7 +271,8 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           </CollapsibleSection>
         )}
 
-        {(you === "player1" || you === "player2" || isHost) && !state.finished && (
+        {(you === "player1" || you === "player2" || isHost) && !state.finished
+          && (payload!.pausable !== false || payload!.status === "paused") && (
           <div className="mt-3 flex justify-center">
             <button onClick={() => emit(C2S.PAUSE, { matchId, paused: payload!.status !== "paused" })}
               className="rounded border border-border px-3 py-1 text-xs text-muted hover:text-gold-bright">
@@ -293,19 +295,31 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         />
       )}
 
-      {/* Current step prompt */}
+      {/* Current step prompt — leans to the acting player's side (P1 left, P2 right);
+          neutral prompts (simultaneous / random draw) stay centered. */}
       {step && !state.finished && (
-        <div className="text-center">
-          <h2 className={`font-display text-xl ${stepTone(step.type)}`}>{step.label || `${step.type}`}</h2>
+        <div className={`flex flex-col ${
+          state.turn === "player1" ? "items-start text-left" :
+          state.turn === "player2" ? "items-end text-right" :
+          "items-center text-center"
+        }`}>
+          {(state.turn === "player1" || state.turn === "player2") && (
+            <span className={`font-display text-sm ${state.turn === "player1" ? "text-sky-400" : "text-rose-400"}`}>
+              {state.turn === "player1" ? `${p1Name} ▸` : `◂ ${p2Name}`}
+            </span>
+          )}
+          <h2 className={`font-display text-xl ${stepTone(step.type)}`}>
+            {step.type === "GAME_RESULT" ? t("match.gameN", { n: state.currentGameIndex + 1 }) : (step.label || `${step.type}`)}
+          </h2>
           {step.showCurrentMap && currentMap && (
-            <div className="mt-1 flex items-center justify-center gap-2 text-sm text-muted">
+            <div className="mt-1 flex items-center gap-2 text-sm text-muted">
               {mapById(currentMap)?.imageUrl && (
                 <Thumb src={mapById(currentMap)?.imageUrl} alt={currentMapName ?? ""} className="h-8 w-8 rounded object-cover ring-1 ring-bronze" />
               )}
               <span>{t("match.currentMap")} <span className="text-foreground">{currentMapName}</span></span>
             </div>
           )}
-          <div className="mt-1 flex items-center justify-center gap-3 text-sm">
+          <div className="mt-1 flex items-center gap-3 text-sm">
             {myTurn && <span className="text-gold-bright">{t("match.yourMove")}</span>}
             {payload!.status !== "paused" && <Countdown deadlineTs={payload!.deadlineTs} />}
           </div>
@@ -363,18 +377,20 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
             civById={civById}
             mapById={mapById}
           />
-          <ResultControls
-            gameIndex={state.currentGameIndex}
-            mode={payload!.resultMode ?? "vote"}
-            isHost={amHost}
-            you={you}
-            votes={payload!.votes?.[state.currentGameIndex]}
-            currentWinner={state.games[state.currentGameIndex]?.winner ?? null}
-            p1Name={p1Name}
-            p2Name={p2Name}
-            onVote={(w) => voteResult(state.currentGameIndex, w)}
-            onDecide={(w) => emit(C2S.RESULT_OVERRIDE, { matchId, gameIndex: state.currentGameIndex, winner: w })}
-          />
+          {you !== "spectator" && (
+            <ResultControls
+              gameIndex={state.currentGameIndex}
+              mode={payload!.resultMode ?? "vote"}
+              isHost={amHost}
+              you={you}
+              votes={payload!.votes?.[state.currentGameIndex]}
+              currentWinner={state.games[state.currentGameIndex]?.winner ?? null}
+              p1Name={p1Name}
+              p2Name={p2Name}
+              onVote={(w) => voteResult(state.currentGameIndex, w)}
+              onDecide={(w) => emit(C2S.RESULT_OVERRIDE, { matchId, gameIndex: state.currentGameIndex, winner: w })}
+            />
+          )}
         </>
       )}
 
@@ -1079,12 +1095,13 @@ function MatchOverview({ state, p1Name, p2Name, civById, mapById }: {
               <div className="mb-2 text-center text-[11px] uppercase tracking-wide text-muted">{t("match.gameN", { n: g.gameIndex + 1 })}</div>
               <div className="flex items-center justify-between gap-1">
                 <GameSide name={p1Name} civ={civById(g.civP1)} won={g.winner === "player1"} tone="sky" />
-                <div className="flex shrink-0 flex-col items-center gap-1">
+                <div className="flex shrink-0 flex-col items-center gap-0.5">
                   {m?.imageUrl ? (
                     <Thumb src={m.imageUrl} alt={m.name} className="h-14 w-20 rounded object-cover ring-1 ring-bronze" />
                   ) : (
                     <div className="h-14 w-20 rounded bg-surface-2/60 ring-1 ring-border" />
                   )}
+                  {m && <span className="w-20 truncate text-center text-[9px] text-foreground/70" title={m.name}>{m.name}</span>}
                   <span className="font-display text-[10px] text-muted">VS</span>
                 </div>
                 <GameSide name={p2Name} civ={civById(g.civP2)} won={g.winner === "player2"} tone="rose" />

@@ -11,7 +11,7 @@ export function SiteHeader() {
 
   return (
     <header className="border-b border-border/80 bg-surface/60 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+      <div className="mx-auto flex max-w-[1280px] items-center justify-between px-4 py-3">
         <Link href="/" className="font-display text-xl aoe-gold-text">
           AoE<span className="text-foreground">IV</span> · Ban/Pick
         </Link>
