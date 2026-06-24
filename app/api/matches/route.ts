@@ -30,6 +30,8 @@ export async function POST(req: Request) {
     _id: unknown;
     ownerId: unknown;
     isPublic?: boolean;
+    name?: string;
+    description?: string;
     config: unknown;
   }>();
   if (!preset) return NextResponse.json({ error: "Preset not found" }, { status: 404 });
@@ -47,6 +49,8 @@ export async function POST(req: Request) {
   const match = await Match.create({
     presetId: preset._id,
     hostId: user.id,
+    name: preset.name ?? "", // snapshot the room name shown in the lobby / share preview
+    description: preset.description ?? "",
     config: preset.config, // snapshot
     status: "lobby",
     currentStepIndex: 0,

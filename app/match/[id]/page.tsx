@@ -1,18 +1,42 @@
+import type { Metadata } from "next";
 import { SiteHeader } from "@/components/SiteHeader";
 import { MatchRoom } from "@/components/match/MatchRoom";
 import { T } from "@/lib/i18n";
+import { getRoomMeta } from "@/lib/match/roomMeta";
 
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const room = await getRoomMeta(id);
+  const name = room?.name ?? "Ban/Pick Match";
+  const title = `${name} · AoE IV Ban/Pick`;
+  const description =
+    room?.description || `Live Age of Empires IV ban/pick draft room — ${name}${room?.bestOf ? ` (Bo${room.bestOf})` : ""}.`;
+  return {
+    title,
+    description,
+    openGraph: { title, description, type: "website" },
+    twitter: { card: "summary", title, description },
+  };
+}
+
 export default async function MatchPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const room = await getRoomMeta(id);
   return (
     <>
       <SiteHeader />
       <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="font-display text-2xl aoe-gold-text"><T k="match.room" /></h1>
-          <a href={`/watch/${id}`} className="text-xs text-muted hover:text-gold-bright" target="_blank" rel="noreferrer">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h1 className="font-display text-2xl aoe-gold-text">{room?.name ?? "Ban/Pick Match"}</h1>
+            <p className="text-xs text-muted">
+              <T k="match.room" />
+              {room?.bestOf ? ` · Bo${room.bestOf}` : ""}
+            </p>
+          </div>
+          <a href={`/watch/${id}`} className="shrink-0 text-xs text-muted hover:text-gold-bright" target="_blank" rel="noreferrer">
             <T k="match.spectatorLink" />
           </a>
         </div>
