@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useI18n } from "@/lib/i18n";
+import { INVITE_ONLY_REGISTRATION } from "@/lib/features";
 
 export default function LoginPage() {
   const { t } = useI18n();
@@ -60,7 +61,7 @@ export default function LoginPage() {
             <Field label={t("login.account")} value={form.username} onChange={set("username")} />
             <Field label={t("login.password")} type="password" value={form.password} onChange={set("password")} />
             {mode === "register" && <p className="text-xs text-muted">{t("login.passwordHint")}</p>}
-            {mode === "register" && (
+            {mode === "register" && INVITE_ONLY_REGISTRATION && (
               <>
                 <Field label={t("login.inviteCode")} value={form.inviteCode} onChange={set("inviteCode")} />
                 <p className="text-xs text-muted">{t("login.inviteHint")}</p>

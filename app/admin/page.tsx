@@ -2,10 +2,14 @@ import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getCurrentUser } from "@/lib/session";
 import { AdminPanel } from "@/components/admin/AdminPanel";
+import { INVITE_ONLY_REGISTRATION } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
+  // The only admin surface today is invite-code management; hide it while the
+  // invite system is disabled.
+  if (!INVITE_ONLY_REGISTRATION) redirect("/");
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (!user.isAdmin) redirect("/");

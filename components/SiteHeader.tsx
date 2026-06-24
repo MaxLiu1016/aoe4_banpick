@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useI18n, LanguageToggle } from "@/lib/i18n";
+import { INVITE_ONLY_REGISTRATION } from "@/lib/features";
 
 export function SiteHeader() {
   const { data: session, status } = useSession();
@@ -20,7 +21,7 @@ export function SiteHeader() {
           <Link href="/presets" className="text-muted hover:text-gold-bright transition">
             {t("nav.presets")}
           </Link>
-          {(user as { isAdmin?: boolean } | undefined)?.isAdmin && (
+          {INVITE_ONLY_REGISTRATION && (user as { isAdmin?: boolean } | undefined)?.isAdmin && (
             <Link href="/admin" className="text-bronze hover:text-gold-bright transition">Admin</Link>
           )}
           {status === "loading" ? (
