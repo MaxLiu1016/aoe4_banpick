@@ -23,6 +23,7 @@ interface Payload {
   resultMode?: "vote" | "host";
   pausable?: boolean;
   deadlineTs: number | null;
+  serverNow?: number;
   seats: { host: string; player1: Seat; player2: Seat };
   votes: Record<number, { player1?: string; player2?: string }>;
   state: DerivedState;
@@ -43,6 +44,11 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const [copied, setCopied] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const ticketRef = useRef<string | undefined>(undefined);
+  // Estimated server-minus-client clock offset (ms). Set from each payload's
+  // serverNow so the countdown tracks the server's real deadline, not the local
+  // (possibly skewed) clock. Slightly conservative by the one-way network delay,
+  // which is the safe direction (display reaches 0 a hair before the server).
+  const clockOffsetRef = useRef(0);
 
   const you = payload?.you ?? "spectator";
   const amHost = payload?.youAreHost ?? false;
@@ -56,7 +62,11 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
     const socket = getSocket();
     // Ignore broadcasts for a different match — the shared singleton socket can
     // briefly still receive a stale room's payload right after navigating here.
-    const onState = (p: Payload) => { if (p.matchId !== matchId) return; setPayload((prev) => ({ ...prev, ...p })); };
+    const onState = (p: Payload) => {
+      if (p.matchId !== matchId) return;
+      if (typeof p.serverNow === "number") clockOffsetRef.current = p.serverNow - Date.now();
+      setPayload((prev) => ({ ...prev, ...p }));
+    };
     const onError = (e: { message: string }) => { setError(e.message); setTimeout(() => setError(null), 3000); };
     const onHover = (h: Hover) => { if (h.role !== you) setOppHover(h.targetId); };
 
@@ -331,7 +341,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           )}
           <div className="mt-1 flex items-center gap-3 text-sm">
             {myTurn && <span className="text-gold-bright">{t("match.yourMove")}</span>}
-            {payload!.status !== "paused" && <Countdown deadlineTs={payload!.deadlineTs} />}
+            {payload!.status !== "paused" && <Countdown deadlineTs={payload!.deadlineTs} clockOffsetRef={clockOffsetRef} />}
           </div>
         </div>
       )}
@@ -703,7 +713,7 @@ function Lobby({ seats, you, amHost, loggedIn, bestOf, inviteUrl, copied, onCopy
   );
 }
 
-function Countdown({ deadlineTs }: { deadlineTs: number | null }) {
+function Countdown({ deadlineTs, clockOffsetRef }: { deadlineTs: number | null; clockOffsetRef: React.RefObject<number> }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!deadlineTs) return;
@@ -711,7 +721,10 @@ function Countdown({ deadlineTs }: { deadlineTs: number | null }) {
     return () => clearInterval(t);
   }, [deadlineTs]);
   if (!deadlineTs) return null;
-  const remain = Math.max(0, Math.ceil((deadlineTs - now) / 1000));
+  // Compare against the server's clock (local clock + measured offset), so the
+  // displayed seconds line up with when the server actually expires the turn.
+  const serverNow = now + (clockOffsetRef.current ?? 0);
+  const remain = Math.max(0, Math.ceil((deadlineTs - serverNow) / 1000));
   return (
     <span className={`font-display tabular-nums ${remain <= 5 ? "text-danger" : "text-muted"}`}>
       ⏱ {remain}s

@@ -68,6 +68,10 @@ async function buildPayload(matchId: string) {
     resultMode: match.config?.options?.resultMode ?? "vote",
     pausable: match.config?.options?.pausable ?? true,
     deadlineTs: live && t ? t.deadlineTs : null,
+    // Client clocks are often skewed by seconds; send our wall-clock so the
+    // client can correct the offset and display a countdown that matches when
+    // the server timer actually fires (otherwise buttons "die" early/late).
+    serverNow: Date.now(),
     awaitingAck,
     seats: {
       host: String(match.hostId),
@@ -183,7 +187,11 @@ async function scheduleTimer(io: Server, matchId: string) {
 
   if (existing?.handle) clearTimeout(existing.handle);
   const ms = limit * 1000;
-  const handle = setTimeout(() => { void onExpire(io, matchId, token); }, ms);
+  // Display deadline the client counts down to, but fire the auto-fill a touch
+  // later so a press sent right as the clock hits 0 (plus its network latency)
+  // still lands instead of being beaten to it by the expiry.
+  const GRACE_MS = 1200;
+  const handle = setTimeout(() => { void onExpire(io, matchId, token); }, ms + GRACE_MS);
   timers.set(matchId, { token, deadlineTs: Date.now() + ms, handle });
 }
 
