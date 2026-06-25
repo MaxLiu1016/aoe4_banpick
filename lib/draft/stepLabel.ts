@@ -10,6 +10,7 @@ const STEP_EN: Record<string, string> = {
   CIV_BAN: "Ban civ",
   CIV_PICK: "Pick civ into pool",
   MAP_SELECT: "Select map",
+  SYNC_CONFIRM: "Both players confirm to continue",
   CIV_OFFER: "Pick civ to field (simultaneous)",
   CIV_SNIPE_OPPONENT: "Snipe opponent (simultaneous)",
   GAME_RESULT: "Game result",
@@ -27,7 +28,7 @@ const ACTOR_SHORT_EN: Record<string, string> = {
 // single actor, so they omit the actor prefix.
 export function defaultStepLabel(s: Pick<Step, "type" | "actor">): string {
   const step = STEP_EN[s.type] ?? s.type;
-  if (s.type === "CIV_OFFER" || s.type === "CIV_SNIPE_OPPONENT" || s.type === "GAME_RESULT") return step;
+  if (s.type === "CIV_OFFER" || s.type === "CIV_SNIPE_OPPONENT" || s.type === "GAME_RESULT" || s.type === "SYNC_CONFIRM") return step;
   return `${ACTOR_SHORT_EN[s.actor] ?? s.actor} · ${step}`;
 }
 

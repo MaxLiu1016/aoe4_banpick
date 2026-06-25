@@ -15,7 +15,7 @@ import { CIVS } from "@/data/civs";
 import { DEFAULT_MAPS } from "@/data/maps";
 
 const STEP_TYPES: StepType[] = [
-  "MAP_BAN", "MAP_PICK", "CIV_BAN", "CIV_PICK", "MAP_SELECT", "CIV_OFFER", "CIV_SNIPE_OPPONENT", "GAME_RESULT",
+  "MAP_BAN", "MAP_PICK", "CIV_BAN", "CIV_PICK", "MAP_SELECT", "SYNC_CONFIRM", "CIV_OFFER", "CIV_SNIPE_OPPONENT", "GAME_RESULT",
 ];
 const ACTORS: Actor[] = ["HOST_DRAW", "PLAYER1", "PLAYER2", "LOSER", "WINNER"];
 const POOLS: Pool[] = ["map", "civ", "drafted_civ"];
@@ -23,7 +23,7 @@ const POOLS: Pool[] = ["map", "civ", "drafted_civ"];
 // The pool a step operates on, derived from its type.
 function poolForType(type: StepType): Pool {
   if (type === "MAP_BAN" || type === "MAP_PICK" || type === "MAP_SELECT" || type === "GAME_RESULT") return "map";
-  if (type === "CIV_BAN" || type === "CIV_PICK") return "civ";
+  if (type === "CIV_BAN" || type === "CIV_PICK" || type === "SYNC_CONFIRM") return "civ"; // SYNC_CONFIRM has no pool; value unused
   return "drafted_civ"; // CIV_OFFER / CIV_SNIPE_OPPONENT
 }
 
@@ -400,7 +400,7 @@ const selectCls = "rounded border border-border bg-surface px-2 py-1 text-xs tex
 // a map ban from a civ ban at a glance.
 const STEP_SHORT: Record<string, string> = {
   MAP_BAN: "Ban map", MAP_PICK: "Pick map", CIV_BAN: "Ban civ", CIV_PICK: "Draft civ",
-  MAP_SELECT: "Select map", CIV_OFFER: "Offer civ", CIV_SNIPE_OPPONENT: "Snipe civ", GAME_RESULT: "Result",
+  MAP_SELECT: "Select map", SYNC_CONFIRM: "Confirm", CIV_OFFER: "Offer civ", CIV_SNIPE_OPPONENT: "Snipe civ", GAME_RESULT: "Result",
 };
 const ACTOR_SHORT: Record<string, string> = {
   HOST_DRAW: "🎲", PLAYER1: "P1", PLAYER2: "P2", LOSER: "L", WINNER: "W",

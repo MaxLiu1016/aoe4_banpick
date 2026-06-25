@@ -147,6 +147,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const showCivs = step?.type === "CIV_BAN" || step?.type === "CIV_PICK";
   const showOffer = step?.type === "CIV_OFFER";
   const showSnipeOpp = step?.type === "CIV_SNIPE_OPPONENT";
+  const showConfirm = step?.type === "SYNC_CONFIRM";
   const showResult = step?.type === "GAME_RESULT";
 
   // Duel helpers
@@ -370,6 +371,19 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           canAct={canActDuel}
           onSnipe={act}
           civById={civById}
+        />
+      )}
+
+      {/* Synchronized gate: both players must press confirm before the draft proceeds */}
+      {showConfirm && (
+        <ConfirmGate
+          p1Name={p1Name}
+          p2Name={p2Name}
+          p1Confirmed={!state.awaiting.player1}
+          p2Confirmed={!state.awaiting.player2}
+          you={you}
+          canConfirm={canActDuel}
+          onConfirm={() => act("confirm")}
         />
       )}
 
@@ -706,6 +720,52 @@ function Countdown({ deadlineTs }: { deadlineTs: number | null }) {
 type TFn = (k: string, v?: Record<string, string | number>) => string;
 
 // Colour cue: pick/select = green, ban/snipe = red, otherwise gold.
+function ConfirmGate({ p1Name, p2Name, p1Confirmed, p2Confirmed, you, canConfirm, onConfirm }: {
+  p1Name: string; p2Name: string; p1Confirmed: boolean; p2Confirmed: boolean;
+  you: string; canConfirm: boolean; onConfirm: () => void;
+}) {
+  const { t } = useI18n();
+  const isPlayer = you === "player1" || you === "player2";
+  const youConfirmed = you === "player1" ? p1Confirmed : you === "player2" ? p2Confirmed : false;
+  return (
+    <div className="aoe-panel space-y-4 rounded-xl p-6 text-center">
+      <div className="flex items-center justify-center gap-8">
+        <ConfirmSeat name={p1Name} confirmed={p1Confirmed} tone="text-sky-400" />
+        <span className="font-display text-muted">vs</span>
+        <ConfirmSeat name={p2Name} confirmed={p2Confirmed} tone="text-rose-400" />
+      </div>
+      {isPlayer && (
+        youConfirmed ? (
+          <p className="text-sm text-muted">{t("match.confirmWaitingOpp")}</p>
+        ) : (
+          <div className="space-y-2">
+            <button onClick={onConfirm} disabled={!canConfirm}
+              className="aoe-btn rounded px-8 py-3 font-display text-lg disabled:opacity-50">
+              ✓ {t("match.confirm")}
+            </button>
+            <p className="text-xs text-muted">{t("match.confirmWaitingYou")}</p>
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
+function ConfirmSeat({ name, confirmed, tone }: { name: string; confirmed: boolean; tone: string }) {
+  const { t } = useI18n();
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div className={`flex h-12 w-12 items-center justify-center rounded-full border-2 text-2xl transition ${
+        confirmed ? "border-emerald-500 bg-emerald-500/15 text-emerald-400" : "border-border text-muted"
+      }`}>
+        {confirmed ? "✓" : "…"}
+      </div>
+      <span className={`font-display text-sm ${tone}`}>{name}</span>
+      <span className={`text-[11px] ${confirmed ? "text-emerald-400" : "text-muted"}`}>{confirmed ? t("match.confirmed") : "—"}</span>
+    </div>
+  );
+}
+
 function stepTone(ty?: string): string {
   if (!ty) return "aoe-gold-text";
   if (ty.includes("BAN") || ty === "CIV_SNIPE_OPPONENT") return "text-danger";
@@ -715,7 +775,10 @@ function stepTone(ty?: string): string {
 
 function turnLabel(state: DerivedState, t: TFn): string {
   if (!state.currentStep) return "";
-  if (state.simultaneous) return state.currentStep.type === "CIV_OFFER" ? t("turn.offerBoth") : t("turn.snipeBoth");
+  if (state.simultaneous)
+    return state.currentStep.type === "CIV_OFFER" ? t("turn.offerBoth")
+      : state.currentStep.type === "SYNC_CONFIRM" ? t("turn.confirmBoth")
+      : t("turn.snipeBoth");
   if (state.turn === "host") return t("turn.randomDraw");
   if (!state.turn) return t("turn.awaitResult");
   const p = state.turn === "player1" ? t("match.p1") : t("match.p2");

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/SiteHeader";
 import { MatchRoom } from "@/components/match/MatchRoom";
+import { ConnectionBanner } from "@/components/match/ConnectionBanner";
 import { T } from "@/lib/i18n";
 import { getRoomMeta } from "@/lib/match/roomMeta";
 
@@ -26,6 +27,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   const room = await getRoomMeta(id);
   return (
     <>
+      <ConnectionBanner />
       <SiteHeader />
       <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-6">
         <div className="mb-4 flex items-start justify-between gap-3">

@@ -31,6 +31,7 @@ export const StepTypeSchema = z.enum([
   "CIV_BAN",
   "CIV_PICK", // build each player's persistent civ pool ("hand")
   "MAP_SELECT", // choose the map actually played this game
+  "SYNC_CONFIRM", // a synchronized gate: both players must press confirm before the draft proceeds (custom copy via the step label)
   // --- Two-pool duel: simultaneous hidden offer, then simultaneous hidden counter-snipe ---
   "CIV_OFFER", // both players secretly offer N civs from their hand for this game, then reveal
   "CIV_SNIPE_OPPONENT", // both players secretly ban M of the opponent's offer (this game only), then reveal

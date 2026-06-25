@@ -230,9 +230,17 @@ async function onExpire(io: Server, matchId: string, token: string) {
         if (c.state.currentStepIndex !== stepIdx) break; // advanced to the next step — let it get its own timer
         const role: "player1" | "player2" | null = c.state.awaiting.player1 ? "player1" : c.state.awaiting.player2 ? "player2" : null;
         if (!role) break;
-        const opts = duelTargetsFor(c.state, role);
-        if (!opts.length) break;
-        const res = await applyAction(matchId, role, opts[Math.floor(Math.random() * opts.length)]);
+        // SYNC_CONFIRM just needs a confirm from whoever hasn't pressed yet; the
+        // duel steps draw a random legal civ from that player's targets.
+        let target: string | null;
+        if (c.state.currentStep?.type === "SYNC_CONFIRM") {
+          target = "confirm";
+        } else {
+          const opts = duelTargetsFor(c.state, role);
+          target = opts.length ? opts[Math.floor(Math.random() * opts.length)] : null;
+        }
+        if (!target) break;
+        const res = await applyAction(matchId, role, target);
         if (!res.ok) break;
       }
       await broadcast(io, matchId);

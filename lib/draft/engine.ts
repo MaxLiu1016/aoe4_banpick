@@ -1,7 +1,7 @@
 import type { PresetConfig, Step, PoolEntry } from "./schema";
 
 export type SeatRole = "player1" | "player2" | "host";
-export type ActionType = "ban" | "pick" | "select" | "snipe" | "result" | "offer" | "gsnipe";
+export type ActionType = "ban" | "pick" | "select" | "snipe" | "result" | "offer" | "gsnipe" | "confirm";
 
 /** A persisted, already-resolved action (actor is a concrete seat, not LOSER/WINNER). */
 export interface EngineAction {
@@ -142,6 +142,8 @@ export function deriveState(
   const offerP1 = blank(), offerP2 = blank();
   const snipeByP1 = blank(), snipeByP2 = blank(); // civs each player removed from opponent's offer
   const civBans: CivBan[] = [];
+  // SYNC_CONFIRM: whether each player has pressed confirm, keyed by step index.
+  const confirmedByStep = new Map<number, { player1: boolean; player2: boolean }>();
 
   for (const a of actions) {
     const g = a.gameIndex ?? gameOf[a.stepIndex] ?? 0;
@@ -181,6 +183,13 @@ export function deriveState(
       case "result":
         if (a.target === "player1" || a.target === "player2") resultByGame.set(g, a.target);
         break;
+      case "confirm": {
+        const c = confirmedByStep.get(a.stepIndex) ?? { player1: false, player2: false };
+        if (a.actor === "player1") c.player1 = true;
+        else if (a.actor === "player2") c.player2 = true;
+        confirmedByStep.set(a.stepIndex, c);
+        break;
+      }
     }
   }
   for (const [g, w] of resultByGame) if (games[g]) games[g].winner = w;
@@ -213,6 +222,10 @@ export function deriveState(
         return offerP1[g].length >= s.count && offerP2[g].length >= s.count;
       case "CIV_SNIPE_OPPONENT":
         return snipeByP1[g].length >= s.count && snipeByP2[g].length >= s.count;
+      case "SYNC_CONFIRM": {
+        const c = confirmedByStep.get(i);
+        return !!c?.player1 && !!c?.player2;
+      }
       default:
         return (actionsByStep.get(i) ?? 0) >= s.count;
     }
@@ -271,6 +284,11 @@ export function deriveState(
       simultaneous = true;
       awaiting.player1 = snipeByP1[cg].length < currentStep.count;
       awaiting.player2 = snipeByP2[cg].length < currentStep.count;
+    } else if (currentStep.type === "SYNC_CONFIRM") {
+      simultaneous = true;
+      const c = confirmedByStep.get(currentStepIndex);
+      awaiting.player1 = !c?.player1;
+      awaiting.player2 = !c?.player2;
     } else {
       turn = resolveActor(currentStep, cg, games);
       awaiting.player1 = turn === "player1";
@@ -425,6 +443,11 @@ export function validateAction(state: DerivedState, role: SeatRole, target: stri
       const alreadySniped = (role === "player1" ? duel?.snipedBy.player1 : duel?.snipedBy.player2) ?? [];
       if (alreadySniped.includes(target)) return { ok: false, error: "Already sniped this civ." };
       return { ok: true, resolved: { actionType: "gsnipe", gameIndex } };
+    }
+    case "SYNC_CONFIRM": {
+      if (role !== "player1" && role !== "player2") return { ok: false, error: "Only players may confirm." };
+      if (!state.awaiting[role]) return { ok: false, error: "You have already confirmed." };
+      return { ok: true, resolved: { actionType: "confirm", gameIndex } };
     }
     default:
       return { ok: false, error: "Current step does not accept this action." };
