@@ -54,7 +54,9 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
 
   useEffect(() => {
     const socket = getSocket();
-    const onState = (p: Payload) => { setPayload((prev) => ({ ...prev, ...p })); };
+    // Ignore broadcasts for a different match — the shared singleton socket can
+    // briefly still receive a stale room's payload right after navigating here.
+    const onState = (p: Payload) => { if (p.matchId !== matchId) return; setPayload((prev) => ({ ...prev, ...p })); };
     const onError = (e: { message: string }) => { setError(e.message); setTimeout(() => setError(null), 3000); };
     const onHover = (h: Hover) => { if (h.role !== you) setOppHover(h.targetId); };
 

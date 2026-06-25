@@ -334,6 +334,13 @@ export function registerMatchHandlers(io: Server) {
         if (!match) { socket.emit(S2C.ERROR, { message: "Match not found." }); return; }
 
         socket.join(ROOM(p.matchId));
+        // The browser reuses one shared socket across navigations; leave any other
+        // match rooms it joined earlier so a stale broadcast (e.g. a timer firing)
+        // from a match the user navigated away from can't bleed into this view.
+        const keep = ROOM(p.matchId);
+        for (const room of [...socket.rooms]) {
+          if (room !== socket.id && room !== keep) socket.leave(room);
+        }
         socket.data.matchId = p.matchId;
 
         // Identity comes ONLY from a verified ticket, never from the raw payload.
