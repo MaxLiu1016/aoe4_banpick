@@ -63,25 +63,32 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
     socket.on(S2C.HOVER, onHover);
 
     let cancelled = false;
-    const join = () => socket.emit(C2S.JOIN, { matchId, ticket: ticketRef.current });
-    (async () => {
-      // Fetch a session-bound ticket so the server can trust our identity.
+    // (Re)join on EVERY connect — not just the first. The socket auto-reconnects
+    // after an idle drop or a long wait (e.g. a 30-min game between rounds), and
+    // each reconnect is a fresh server-side socket with no role, so we must
+    // re-send JOIN to restore our seat/host power. Refresh the identity ticket
+    // first: the old one may have expired while away, which would otherwise
+    // silently demote us to spectator and make every control stop working.
+    const joinRoom = async () => {
       if (session?.user && !spectator) {
         try {
           const r = await fetch("/api/socket-token");
           if (r.ok) ticketRef.current = (await r.json()).ticket;
-        } catch { /* spectate as fallback */ }
+        } catch { /* fall back to spectating */ }
       }
       if (cancelled) return;
-      if (socket.connected) join(); else socket.once("connect", join);
-    })();
+      socket.emit(C2S.JOIN, { matchId, ticket: ticketRef.current });
+    };
+
+    socket.on("connect", joinRoom);
+    if (socket.connected) joinRoom();
 
     return () => {
       cancelled = true;
       socket.off(S2C.STATE, onState);
       socket.off(S2C.ERROR, onError);
       socket.off(S2C.HOVER, onHover);
-      socket.off("connect", join);
+      socket.off("connect", joinRoom);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchId, session?.user?.id]);
