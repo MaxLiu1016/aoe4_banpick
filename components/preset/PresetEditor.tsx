@@ -368,6 +368,12 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
                     <option value="opponent">{t("editor.banOpponent")}</option>
                   </select>
                 )}
+                {s.type === "MAP_SELECT" && (
+                  <select value={s.mapScope ?? "own"} onChange={(e) => updateStep(i, { mapScope: e.target.value as "own" | "shared" })} className={selectCls}>
+                    <option value="own">{t("editor.mapOwn")}</option>
+                    <option value="shared">{t("editor.mapShared")}</option>
+                  </select>
+                )}
                 <label className="flex items-center gap-1">
                   <input type="checkbox" checked={s.excludeUsedCivs} onChange={(e) => updateStep(i, { excludeUsedCivs: e.target.checked })} />
                   {t("editor.excludeUsedCivs")}

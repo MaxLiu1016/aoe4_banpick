@@ -261,6 +261,8 @@ const DICT: Record<string, { en: string; zh: string }> = {
   "editor.tip": { en: "Tip: a Select map step with the 🎲 Random actor auto-picks a random pool map — no one has to choose.", zh: "提示：把「選圖開打」步驟的執行者設為 🎲 隨機，系統會自動從池中隨機抽圖，不需要有人選。" },
   "editor.banPool": { en: "ban: civ pool (global)", zh: "ban 文明池（全域）" },
   "editor.banOpponent": { en: "ban: opponent only", zh: "ban 對方選手" },
+  "editor.mapOwn": { en: "pick from: own map pool", zh: "選圖：自己的池" },
+  "editor.mapShared": { en: "pick from: both players' pools", zh: "選圖：雙方的池" },
   "editor.showCurrentMap": { en: "show current map", zh: "顯示當前地圖" },
   "editor.excludeUsedCivs": { en: "exclude used civs", zh: "排除已用文明" },
   "editor.pausableShort": { en: "pausable", zh: "可暫停" },

@@ -273,6 +273,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "730f90b7-c2f5-4ff1-8455-6908120345fe",
           "type": "MAP_SELECT",
+          "mapScope": "shared",
           "actor": "HOST_DRAW",
           "pool": "civ",
           "count": 1,
@@ -597,6 +598,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "ec1065bd-7bdc-4544-bb23-89e57a89b8fb",
           "type": "MAP_SELECT",
+          "mapScope": "shared",
           "actor": "LOSER",
           "pool": "map",
           "count": 1,
@@ -669,6 +671,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "1ad7be64-8bdd-4a47-8600-a52769337832",
           "type": "MAP_SELECT",
+          "mapScope": "shared",
           "actor": "LOSER",
           "pool": "civ",
           "count": 1,
@@ -1016,6 +1019,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "86cbe4f2-4b9b-425b-815a-008dea3c7ee6",
           "type": "MAP_SELECT",
+          "mapScope": "shared",
           "actor": "HOST_DRAW",
           "pool": "civ",
           "count": 1,
@@ -1340,6 +1344,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "a2c1a987-7121-4c53-8a80-9c97381dd398",
           "type": "MAP_SELECT",
+          "mapScope": "shared",
           "actor": "LOSER",
           "pool": "map",
           "count": 1,
@@ -1412,6 +1417,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "5d824f69-96f4-491f-afed-aeeae25b54ba",
           "type": "MAP_SELECT",
+          "mapScope": "shared",
           "actor": "LOSER",
           "pool": "map",
           "count": 1,
@@ -1484,6 +1490,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "8855d05a-be85-4b5d-bd59-392282fb65d1",
           "type": "MAP_SELECT",
+          "mapScope": "shared",
           "actor": "LOSER",
           "pool": "map",
           "count": 1,
@@ -1556,6 +1563,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "bb7da104-471e-42e5-9782-2bea82480f4b",
           "type": "MAP_SELECT",
+          "mapScope": "shared",
           "actor": "LOSER",
           "pool": "map",
           "count": 1,
@@ -1867,6 +1875,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "09179417-f17d-42b6-bc94-1501f9719a49",
           "type": "MAP_SELECT",
+          "mapScope": "shared",
           "actor": "HOST_DRAW",
           "pool": "civ",
           "count": 1,
@@ -2113,6 +2122,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "71cd9347-ec36-4d94-9713-05d1d221faa8",
           "type": "MAP_SELECT",
+          "mapScope": "shared",
           "actor": "LOSER",
           "pool": "map",
           "count": 1,
@@ -2185,6 +2195,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "14fdbb93-83b5-4b0e-9143-cb29f6554139",
           "type": "MAP_SELECT",
+          "mapScope": "shared",
           "actor": "LOSER",
           "pool": "civ",
           "count": 1,
@@ -2495,6 +2506,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "09179417-f17d-42b6-bc94-1501f9719a49",
           "type": "MAP_SELECT",
+          "mapScope": "shared",
           "actor": "HOST_DRAW",
           "pool": "civ",
           "count": 1,
@@ -2543,6 +2555,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "71cd9347-ec36-4d94-9713-05d1d221faa8",
           "type": "MAP_SELECT",
+          "mapScope": "shared",
           "actor": "LOSER",
           "pool": "map",
           "count": 1,
@@ -2591,6 +2604,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         {
           "id": "14fdbb93-83b5-4b0e-9143-cb29f6554139",
           "type": "MAP_SELECT",
+          "mapScope": "shared",
           "actor": "LOSER",
           "pool": "civ",
           "count": 1,

@@ -300,10 +300,16 @@ export function deriveState(
   // (HOST_DRAW) draw uses the LEFTOVER neutral maps (un-banned and not in either
   // player's pool) — never a player's picked map.
   const neutralMaps = maps.filter((m) => m.state === "available").map((m) => m.id);
+  // The combined pool of maps BOTH players picked (for "shared" map selection).
+  const pickedMaps = maps.filter((m) => m.state === "picked").map((m) => m.id);
   let mapSelectBase: string[];
-  if (currentStep?.type === "MAP_SELECT" && turn === "player1") mapSelectBase = mapsByP1.length ? mapsByP1 : neutralMaps;
-  else if (currentStep?.type === "MAP_SELECT" && turn === "player2") mapSelectBase = mapsByP2.length ? mapsByP2 : neutralMaps;
-  else mapSelectBase = neutralMaps;
+  if (currentStep?.type === "MAP_SELECT") {
+    const scope = currentStep.mapScope ?? "own";
+    if (scope === "shared") mapSelectBase = pickedMaps.length ? pickedMaps : neutralMaps;
+    else if (turn === "player1") mapSelectBase = mapsByP1.length ? mapsByP1 : neutralMaps;
+    else if (turn === "player2") mapSelectBase = mapsByP2.length ? mapsByP2 : neutralMaps;
+    else mapSelectBase = neutralMaps;
+  } else mapSelectBase = neutralMaps;
   if (mapSelectBase.length === 0) mapSelectBase = maps.filter((m) => m.state !== "banned").map((m) => m.id);
   const notPlayedMaps = mapSelectBase.filter((id) => !playedMaps.has(id));
   const selectableMapIds = notPlayedMaps.length > 0 ? notPlayedMaps : mapSelectBase;

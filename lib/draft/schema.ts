@@ -53,6 +53,9 @@ export const StepSchema = z.object({
   // For CIV_BAN: "pool" = removed for everyone; "opponent" = only the opponent
   // of the banning player can't use it (the banner still can). Default "pool".
   banScope: z.enum(["pool", "opponent"]).optional(),
+  // For MAP_SELECT: "own" = choose from your OWN picked map pool; "shared" =
+  // choose from the maps BOTH players picked (the combined pool). Default "own".
+  mapScope: z.enum(["own", "shared"]).optional(),
   // Whether this step may be paused.
   pausable: z.boolean().default(true),
   label: z.string().max(120).optional(),
