@@ -305,7 +305,10 @@ export function deriveState(
   let mapSelectBase: string[];
   if (currentStep?.type === "MAP_SELECT") {
     const scope = currentStep.mapScope ?? "own";
-    if (scope === "shared") mapSelectBase = pickedMaps.length ? pickedMaps : neutralMaps;
+    // A random (HOST_DRAW) draw always uses the leftover neutral maps — never a
+    // player's picked pool — regardless of scope.
+    if (turn === "host") mapSelectBase = neutralMaps;
+    else if (scope === "shared") mapSelectBase = pickedMaps.length ? pickedMaps : neutralMaps;
     else if (turn === "player1") mapSelectBase = mapsByP1.length ? mapsByP1 : neutralMaps;
     else if (turn === "player2") mapSelectBase = mapsByP2.length ? mapsByP2 : neutralMaps;
     else mapSelectBase = neutralMaps;
