@@ -1,6 +1,5 @@
 import type { PresetConfig, Step } from "@/lib/draft/schema";
-import { BASE_CIVS } from "@/data/civs";
-import { DEFAULT_MAPS } from "@/data/maps";
+import { CIVS } from "@/data/civs";
 
 let counter = 0;
 const sid = (t: string) => `${t}-${counter++}`;
@@ -48,8 +47,16 @@ export function buildDefaultConfig(bestOf = 5): PresetConfig {
   }
 
   return {
-    civs: BASE_CIVS,
-    maps: DEFAULT_MAPS,
+    // Every civ in, no map in. The two pools are not symmetric in practice: the
+    // civ list only changes when the game ships a civ, so starting from "all of
+    // them" and banning down is the normal move — and starting from base-only
+    // silently dropped the 11 variant civs from any new preset. Map pools rotate
+    // every season and every tournament, so there is no set that is right by
+    // default; shipping last season's would just look authoritative while being
+    // wrong. A new preset therefore opens with a "pick your maps" validation
+    // error, which is the intended nudge.
+    civs: CIVS,
+    maps: [],
     steps,
     options: { bestOf, publicHover: false, defaultTimeLimitSec: 30, pausable: false, resultMode: "vote", anonymous: false },
   };
