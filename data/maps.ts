@@ -41,4 +41,6 @@ export const DEFAULT_MAPS: PoolEntry[] = [
   { id: "socotra", name: "Socotra", imageUrl: "/maps/socotra.png" },
   { id: "baldland", name: "Baldland", imageUrl: "/maps/baldland.png" },
   { id: "mountain-clearing", name: "Mountain Clearing", imageUrl: "/maps/mountain-clearing.png" },
+  // Reported missing from the default pool by a player building a tournament preset.
+  { id: "himeyama", name: "Himeyama", imageUrl: img("himeyama") },
 ];

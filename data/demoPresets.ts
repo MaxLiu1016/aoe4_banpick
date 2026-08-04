@@ -744,7 +744,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
       ],
       "options": {
         "bestOf": 3,
-        "publicHover": true,
+        "publicHover": false,
         "defaultTimeLimitSec": 30,
         "pausable": false,
         "resultMode": "vote"
@@ -1636,7 +1636,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
       ],
       "options": {
         "bestOf": 5,
-        "publicHover": true,
+        "publicHover": false,
         "defaultTimeLimitSec": 30,
         "pausable": false,
         "resultMode": "vote"
@@ -2268,7 +2268,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
       ],
       "options": {
         "bestOf": 3,
-        "publicHover": true,
+        "publicHover": false,
         "defaultTimeLimitSec": 30,
         "pausable": true,
         "resultMode": "vote"
@@ -2653,7 +2653,7 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
       ],
       "options": {
         "bestOf": 3,
-        "publicHover": true,
+        "publicHover": false,
         "resultMode": "vote",
         "defaultTimeLimitSec": 30,
         "pausable": true

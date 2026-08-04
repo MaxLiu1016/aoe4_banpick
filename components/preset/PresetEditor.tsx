@@ -330,7 +330,7 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
                   draggable
                   onDragStart={() => setDragIdx(i)}
                   onDragEnd={() => setDragIdx(null)}
-                  title={t("editor.dragHint")}
+                  title={`${t("editor.stepNo")} · ${t("editor.dragHint")}`}
                   className="flex w-8 shrink-0 cursor-grab select-none items-center justify-center gap-0.5 font-display text-gold-bright active:cursor-grabbing"
                 >
                   <span className="text-muted">⠿</span>{i + 1}
@@ -344,12 +344,12 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
                 <select value={s.pool} onChange={(e) => updateStep(i, { pool: e.target.value as Pool })} className={selectCls}>
                   {POOLS.map((pl) => <option key={pl} value={pl}>{t(`pool.${pl}`)}</option>)}
                 </select>
-                <label className="flex items-center gap-1 text-xs text-muted">
+                <label className="flex items-center gap-1 text-xs text-muted" title={t("editor.countHint")}>
                   ×<input type="number" min={1} max={50} value={s.count}
                     onChange={(e) => updateStepMeta(i, { count: clamp(+e.target.value, 1, 50) })}
                     className="w-14 rounded border border-border bg-surface px-2 py-1 text-foreground" />
                 </label>
-                <label className="flex items-center gap-1 text-xs text-muted">
+                <label className="flex items-center gap-1 text-xs text-muted" title={t("editor.timerHint")}>
                   ⏱<input type="number" min={0} max={3600} value={s.timeLimitSec}
                     onChange={(e) => updateStep(i, { timeLimitSec: clamp(+e.target.value, 0, 3600) })}
                     className="w-16 rounded border border-border bg-surface px-2 py-1 text-foreground" />

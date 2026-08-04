@@ -15,6 +15,25 @@ import type { DerivedState, PoolView, SeatRole, CivDuel } from "@/lib/draft/engi
 const CIV_IMG = new Map(CIVS.map((c) => [c.id, c.imageUrl]));
 const MAP_IMG = new Map(DEFAULT_MAPS.map((m) => [m.id, m.imageUrl]));
 
+// Colour means OWNERSHIP, not action: P1 is blue, P2 is red, everywhere an entry
+// is attributed to a player. Bans are deliberately colourless (greyscale + ✕) so
+// red always reads as "player 2" — players were misreading the old green "pick"
+// tint as "it's my turn". Gold is reserved for "you are the one acting now".
+type OwnerTone = { text: string; border: string; ring: string; bg: string };
+const OWNER: Record<"player1" | "player2", OwnerTone> = {
+  player1: { text: "text-sky-400", border: "border-sky-400", ring: "ring-sky-400", bg: "bg-sky-400/10" },
+  player2: { text: "text-rose-400", border: "border-rose-400", ring: "ring-rose-400", bg: "bg-rose-400/10" },
+};
+function ownerOf(by?: string) {
+  return by === "player1" ? OWNER.player1 : by === "player2" ? OWNER.player2 : null;
+}
+
+// Pool grid sizing. auto-fit + a minimum cell keeps every entry on one screen at
+// 1200px while making each icon far bigger than the old fixed 48px — the pool is
+// scanned at a glance during a draft, so "see them all" beats "see them huge".
+const GRID_CIV = { gridTemplateColumns: "repeat(auto-fit, minmax(112px, 1fr))" };
+const GRID_MAP = { gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" };
+
 type Seat = { id: string; name?: string; ready?: boolean } | null;
 interface Payload {
   matchId: string;
@@ -227,7 +246,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
             state={state} p1Name={p1Name} p2Name={p2Name} civById={civById}
             p1Hand={p1Hand} p2Hand={p2Hand} p1Banned={p1Banned} p2Banned={p2Banned}
             status={state.finished ? t("match.winner", { name: state.score.player1 > state.score.player2 ? p1Name : p2Name }) : payload!.status === "paused" ? t("match.paused") : turnLabel(state, t)}
-            statusTone={state.finished ? "aoe-gold-text" : payload!.status === "paused" ? "text-danger" : stepTone(state.currentStep?.type)}
+            statusTone={payload!.status === "paused" && !state.finished ? "text-danger" : "aoe-gold-text"}
           />
         )}
 
@@ -248,7 +267,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
               ) : payload!.status === "paused" ? (
                 <span className="text-xs text-danger">{t("match.paused")}</span>
               ) : (
-                <span className={`text-xs ${stepTone(state.currentStep?.type)}`}>{turnLabel(state, t)}</span>
+                <span className="text-sm aoe-gold-text">{turnLabel(state, t)}</span>
               )}
             </div>
           </div>
@@ -324,11 +343,13 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           "items-center text-center"
         }`}>
           {(state.turn === "player1" || state.turn === "player2") && (
-            <span className={`font-display text-sm ${state.turn === "player1" ? "text-sky-400" : "text-rose-400"}`}>
+            <span className={`font-display text-base ${OWNER[state.turn as "player1" | "player2"].text}`}>
               {state.turn === "player1" ? `${p1Name} ▸` : `◂ ${p2Name}`}
             </span>
           )}
-          <h2 className={`font-display text-xl ${stepTone(step.type)}`}>
+          {/* Always gold: this used to turn green on any pick-type step, which
+              players read as "it's my turn" rather than "this is a pick step". */}
+          <h2 className="font-display text-2xl aoe-gold-text">
             {step.type === "GAME_RESULT" ? t("match.gameN", { n: state.currentGameIndex + 1 }) : (step.label || `${step.type}`)}
           </h2>
           {currentMap && (
@@ -348,7 +369,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
 
       {/* Pools — hover tints red for a ban step, green for a pick step */}
       {(showMaps) && (
-        <Pool title={t("match.maps")} entries={mapsView} clickable={clickable} onPick={act}
+        <Pool title={t("match.maps")} entries={mapsView} clickable={clickable} onPick={act} kind="map"
           oppHover={oppHover} onHover={(id) => sendHover("map", id)}
           tone={step?.type === "MAP_BAN" ? "ban" : step?.type === "MAP_PICK" ? "pick" : "neutral"}
           highlightSelectable={step?.type === "MAP_SELECT" ? state.selectableMapIds : undefined} />
@@ -433,17 +454,17 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
 function CivChip({ civ, dim, mark, animate }: { civ?: PoolView; dim?: boolean; mark?: "x" | "check"; animate?: boolean }) {
   if (!civ) return null;
   return (
-    <div className={`relative flex w-14 flex-col items-center rounded-md border border-bronze bg-surface-2 px-1 py-1 text-center ${dim ? "opacity-40" : ""} ${animate ? "civ-pop" : ""}`} title={civ.name}>
-      <Thumb src={civ.imageUrl} alt={civ.name} className={`h-8 w-8 object-contain ${mark === "x" ? "grayscale" : ""}`} />
-      <span className="mt-0.5 w-full truncate text-[9px] leading-tight text-muted">{civ.name}</span>
-      {mark === "x" && <span className="absolute inset-0 flex items-center justify-center text-lg text-danger">✕</span>}
+    <div className={`relative flex w-16 flex-col items-center rounded-md border-2 border-bronze bg-surface-2 px-1 py-1 text-center ${dim ? "opacity-40" : ""} ${mark === "x" ? "opacity-60 saturate-0" : ""} ${animate ? "civ-pop" : ""}`} title={civ.name}>
+      <Thumb src={civ.imageUrl} alt={civ.name} className={`aspect-square w-full object-contain ${mark === "x" ? "grayscale" : ""}`} />
+      <span className="mt-0.5 w-full truncate text-[10px] leading-tight text-muted">{civ.name}</span>
+      {mark === "x" && <span className="absolute inset-0 flex items-center justify-center text-2xl text-muted/70">✕</span>}
       {mark === "check" && <span className="absolute right-0.5 top-0.5 text-[10px] text-gold-bright">●</span>}
     </div>
   );
 }
 
 function HiddenSlot() {
-  return <div className="flex h-[52px] w-14 items-center justify-center rounded-md border border-dashed border-border bg-surface-2/40 text-muted">?</div>;
+  return <div className="flex h-[84px] w-16 items-center justify-center rounded-md border-2 border-dashed border-border bg-surface-2/40 text-muted">?</div>;
 }
 
 function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed, onOffer, civById }: {
@@ -488,19 +509,19 @@ function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed
       {canAct ? (
         <div className="mt-4">
           <div className="mb-2 text-xs text-muted">{t("offer.chooseHand", { n: duel.offerCount })}</div>
-          <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+          <div className="grid gap-2" style={GRID_CIV}>
             {hand.map((c) => {
               const used = excludeUsed && usedSet.has(c.id);
               const offered = offeredSet.has(c.id);
               const disabled = used || offered;
               return (
                 <button key={c.id} disabled={disabled} onClick={() => onOffer(c.id)}
-                  className={`relative flex flex-col items-center rounded-lg border p-2 transition ${
-                    offered ? "border-gold bg-surface-2" : used ? "border-border opacity-30" : "border-bronze hover:border-gold hover:bg-surface-2 cursor-pointer"}`}
+                  className={`relative flex flex-col items-center rounded-lg border-2 p-2 transition ${
+                    offered ? "border-gold bg-surface-2 ring-2 ring-gold" : used ? "border-border opacity-30 saturate-0" : "border-bronze hover:border-gold hover:bg-surface-2 cursor-pointer"}`}
                   title={c.name}>
-                  <Thumb src={c.imageUrl} alt={c.name} className="h-11 w-11 object-contain" />
-                  <span className="mt-1 text-[10px] leading-tight text-muted">{c.name}</span>
-                  {used && <span className="absolute right-1 top-1 text-[8px] text-danger">{t("match.used")}</span>}
+                  <Thumb src={c.imageUrl} alt={c.name} className="aspect-square w-full object-contain" />
+                  <span className="mt-1.5 w-full truncate text-xs leading-tight text-foreground">{c.name}</span>
+                  {used && <span className="absolute right-1 top-1 text-[9px] text-muted">{t("match.used")}</span>}
                 </button>
               );
             })}
@@ -544,7 +565,7 @@ function SnipePhase({ duel, youPlayer, opp, canAct, onSnipe, civById }: {
                 const sniped = mySnipes.has(id);
                 return (
                   <button key={id} disabled={!canAct || sniped} onClick={() => onSnipe(id)}
-                    className={`rounded-md transition ${canAct && !sniped ? "hover:scale-105 cursor-pointer" : ""} ${sniped ? "ring-2 ring-danger" : ""}`}>
+                    className={`rounded-md transition ${canAct && !sniped ? "hover:scale-105 cursor-pointer" : ""} ${sniped ? "ring-2 ring-gold" : ""}`}>
                     <CivChip civ={civById(id)} mark={sniped ? "x" : undefined} />
                   </button>
                 );
@@ -576,21 +597,24 @@ function SnipePhase({ duel, youPlayer, opp, canAct, onSnipe, civById }: {
   );
 }
 
+// Every call site lays P1 out on the left and P2 on the right, so the side IS the
+// owner — no need to thread a separate prop through.
 function CivStrip({ items, align, wide = false }: { items: { key: string; civ?: PoolView; used?: boolean; banned?: boolean }[]; align: "left" | "right"; wide?: boolean }) {
+  const own = align === "left" ? OWNER.player1 : OWNER.player2;
   return (
     <div className={`flex flex-wrap items-end gap-1.5 ${align === "right" ? "justify-end" : "justify-start"}`}>
       {items.map((it) =>
         it.civ ? (
           <div
             key={it.key}
-            className={`civ-pop relative flex flex-col items-center rounded-md border text-center ${wide ? "w-16 overflow-hidden" : "w-14 px-1 py-1"} ${
-              it.banned ? "border-danger/50 bg-danger/5 opacity-60" : it.used ? "border-border bg-surface-2/40 opacity-45" : "border-bronze bg-surface-2"
+            className={`civ-pop relative flex flex-col items-center rounded-md border-2 text-center ${wide ? "w-20 overflow-hidden" : "w-16 px-1 py-1"} ${
+              it.banned ? "border-border bg-surface-2/40 opacity-50 saturate-0" : it.used ? "border-border bg-surface-2/40 opacity-45" : `${own.border} bg-surface-2`
             }`}
             title={it.banned ? `${it.civ.name} (banned)` : it.used ? `${it.civ.name} (used)` : it.civ.name}
           >
-            <Thumb src={it.civ.imageUrl} alt={it.civ.name} className={`${wide ? "h-9 w-full object-cover" : "h-10 w-10 object-contain"} ${it.used || it.banned ? "grayscale" : ""}`} />
-            <span className={`w-full truncate text-[9px] leading-tight text-muted ${wide ? "px-1 py-0.5" : "mt-0.5"}`}>{it.civ.name}</span>
-            {it.banned ? <span className="absolute right-0.5 top-0.5 text-[10px] text-danger">✕</span> : it.used ? <span className="absolute right-0.5 top-0.5 text-[8px] text-danger">used</span> : null}
+            <Thumb src={it.civ.imageUrl} alt={it.civ.name} className={`w-full ${wide ? "aspect-[16/10] object-cover" : "aspect-square object-contain"} ${it.used || it.banned ? "grayscale" : ""}`} />
+            <span className={`w-full truncate text-[10px] leading-tight text-muted ${wide ? "px-1 py-0.5" : "mt-0.5"}`}>{it.civ.name}</span>
+            {it.banned ? <span className="absolute inset-0 flex items-center justify-center text-2xl text-muted/70">✕</span> : it.used ? <span className="absolute right-0.5 top-0.5 text-[8px] text-muted">used</span> : null}
           </div>
         ) : null
       )}
@@ -745,9 +769,9 @@ function ConfirmGate({ p1Name, p2Name, p1Confirmed, p2Confirmed, you, canConfirm
   return (
     <div className="aoe-panel space-y-4 rounded-xl p-6 text-center">
       <div className="flex items-center justify-center gap-8">
-        <ConfirmSeat name={p1Name} confirmed={p1Confirmed} tone="text-sky-400" />
+        <ConfirmSeat name={p1Name} confirmed={p1Confirmed} tone={OWNER.player1} />
         <span className="font-display text-muted">vs</span>
-        <ConfirmSeat name={p2Name} confirmed={p2Confirmed} tone="text-rose-400" />
+        <ConfirmSeat name={p2Name} confirmed={p2Confirmed} tone={OWNER.player2} />
       </div>
       {isPlayer && (
         youConfirmed ? (
@@ -766,26 +790,21 @@ function ConfirmGate({ p1Name, p2Name, p1Confirmed, p2Confirmed, you, canConfirm
   );
 }
 
-function ConfirmSeat({ name, confirmed, tone }: { name: string; confirmed: boolean; tone: string }) {
+// A confirmed seat lights up in that player's OWN colour rather than a generic
+// green — same rule as everywhere else, and it keeps green off the draft screen.
+function ConfirmSeat({ name, confirmed, tone }: { name: string; confirmed: boolean; tone: OwnerTone }) {
   const { t } = useI18n();
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className={`flex h-12 w-12 items-center justify-center rounded-full border-2 text-2xl transition ${
-        confirmed ? "border-emerald-500 bg-emerald-500/15 text-emerald-400" : "border-border text-muted"
+      <div className={`flex h-14 w-14 items-center justify-center rounded-full border-2 text-3xl transition ${
+        confirmed ? `${tone.border} ${tone.bg} ${tone.text}` : "border-border text-muted"
       }`}>
         {confirmed ? "✓" : "…"}
       </div>
-      <span className={`font-display text-sm ${tone}`}>{name}</span>
-      <span className={`text-[11px] ${confirmed ? "text-emerald-400" : "text-muted"}`}>{confirmed ? t("match.confirmed") : "—"}</span>
+      <span className={`font-display text-base ${tone.text}`}>{name}</span>
+      <span className={`text-xs ${confirmed ? tone.text : "text-muted"}`}>{confirmed ? t("match.confirmed") : "—"}</span>
     </div>
   );
-}
-
-function stepTone(ty?: string): string {
-  if (!ty) return "aoe-gold-text";
-  if (ty.includes("BAN") || ty === "CIV_SNIPE_OPPONENT") return "text-danger";
-  if (ty === "CIV_PICK" || ty === "MAP_PICK" || ty === "MAP_SELECT" || ty === "CIV_OFFER") return "text-emerald-400";
-  return "aoe-gold-text";
 }
 
 function turnLabel(state: DerivedState, t: TFn): string {
@@ -831,7 +850,7 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
   return (
     <section className="aoe-panel rounded-xl p-4">
       <h3 className="mb-3 font-display text-sm uppercase tracking-wide text-muted">{title}</h3>
-      <div className={`grid gap-2 ${isMap ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3 sm:grid-cols-6"}`}>
+      <div className="grid gap-2" style={isMap ? GRID_MAP : GRID_CIV}>
         {entries.map((e) => {
           const can = clickable(e);
           // During a select step (highlightSelectable given), only those entries are highlighted.
@@ -839,6 +858,7 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
           const selectable = highlightSelectable ? highlightSelectable.includes(e.id) : true;
           const banned = e.state === "banned";
           const taken = e.state === "picked" || e.state === "drafted";
+          const own = taken ? ownerOf(e.by) : null;
           return (
             <button
               key={e.id}
@@ -847,36 +867,35 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
               onMouseEnter={() => onHover(e.id)}
               onMouseLeave={() => onHover(null)}
               className={[
-                "relative flex flex-col items-center overflow-hidden rounded-lg border transition",
+                "relative flex flex-col items-center overflow-hidden rounded-lg border-2 transition",
                 isMap ? "" : "p-2",
-                banned ? "border-danger/50 opacity-40" :
+                // Banned entries are colourless on purpose — grey, faded, ✕.
+                banned ? "border-border opacity-30 saturate-0" :
                   isSelectStep
                     ? (selectable
                         // Bright gold for the player actually selecting; dimmer for
                         // a watcher (e.g. the winner while the loser picks the map).
                         ? (can
-                            ? "border-gold bg-surface-2 ring-1 ring-gold cursor-pointer hover:brightness-110"
+                            ? "border-gold bg-surface-2 ring-2 ring-gold cursor-pointer hover:brightness-110"
                             : "border-gold/40 bg-surface-2/50 ring-1 ring-gold/30")
                         : "border-border opacity-25")
-                    : (taken ? "border-emerald-500/70 bg-surface-2" :
+                    : (taken ? `${own ? `${own.border} ${own.bg}` : "border-bronze"} bg-surface-2` :
                        can ? (tone === "ban"
+                              // Ban hover stays red: it is transient, follows your own
+                              // cursor, and can't be mistaken for "this is P2's".
                               ? "border-bronze cursor-pointer hover:border-danger hover:bg-danger/10"
-                              : tone === "pick"
-                              ? "border-bronze cursor-pointer hover:border-emerald-500 hover:bg-emerald-500/10"
                               : "border-bronze cursor-pointer hover:border-gold hover:bg-surface-2") :
                        "border-border opacity-50"),
                 oppHover === e.id
-                  ? (tone === "ban" ? "ring-2 ring-danger bg-danger/20"
-                    : tone === "pick" ? "ring-2 ring-emerald-500 bg-emerald-500/20"
-                    : "ring-2 ring-gold-bright")
+                  ? (tone === "ban" ? "ring-2 ring-danger bg-danger/20" : "ring-2 ring-gold-bright bg-gold/10")
                   : "",
               ].join(" ")}
               title={e.name}
             >
-              <Thumb src={e.imageUrl} alt={e.name} className={`${isMap ? "h-24 w-full object-cover" : "h-12 w-12 object-contain"} ${banned ? "grayscale" : ""}`} />
-              <span className={`leading-tight text-muted ${isMap ? "w-full truncate px-2 py-1 text-[11px]" : "mt-1 text-[10px]"}`}>{e.name}</span>
-              {banned && <span className="absolute right-1 top-1 text-danger">✕</span>}
-              {(e.state === "drafted" || e.state === "picked") && <span className="absolute right-1 top-1 text-[9px] text-emerald-400">●</span>}
+              <Thumb src={e.imageUrl} alt={e.name} className={`w-full ${isMap ? "aspect-[16/10] object-cover" : "aspect-square object-contain"} ${banned ? "grayscale" : ""}`} />
+              <span className={`w-full truncate leading-tight ${banned ? "text-muted" : "text-foreground"} ${isMap ? "px-2 py-1.5 text-sm" : "mt-1.5 text-xs"}`}>{e.name}</span>
+              {banned && <span className="absolute inset-0 flex items-center justify-center text-4xl text-muted/70">✕</span>}
+              {taken && <span className={`absolute right-1 top-1 text-xs ${own?.text ?? "text-gold-bright"}`}>●</span>}
             </button>
           );
         })}
@@ -1110,7 +1129,7 @@ function MiniScoreboard({ state, p1Name, p2Name, civById, p1Hand, p2Hand, p1Bann
   );
 }
 
-// One compact icon row: civs picked (dim when already used) or banned (grayscale + red ✕).
+// One compact icon row: civs picked (dim when already used) or banned (grayscale + ✕).
 function MiniIcons({ items, align, ban }: { items: MiniItem[]; align: "left" | "right"; ban?: boolean }) {
   return (
     <div className={`flex flex-wrap items-center gap-0.5 ${align === "right" ? "justify-end" : "justify-start"}`}>
@@ -1118,7 +1137,7 @@ function MiniIcons({ items, align, ban }: { items: MiniItem[]; align: "left" | "
         ban ? (
           <span key={it.key} className="relative inline-flex" title={`${it.civ.name} (banned)`}>
             <Thumb src={it.civ.imageUrl} alt={it.civ.name} className="h-6 w-6 rounded object-contain opacity-60 grayscale" />
-            <span className="absolute inset-0 flex items-center justify-center text-[11px] text-danger">✕</span>
+            <span className="absolute inset-0 flex items-center justify-center text-[11px] text-muted">✕</span>
           </span>
         ) : (
           <span key={it.key} className="inline-flex" title={it.used ? `${it.civ.name} (used)` : it.civ.name}>
