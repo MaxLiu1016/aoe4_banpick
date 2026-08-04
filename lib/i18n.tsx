@@ -8,7 +8,7 @@ export type Locale = "en" | "zh" | "cn" | "ja";
 
 // Traditional → Simplified character map (covers the chars used in the dictionary).
 // Lets the "cn" locale reuse the "zh" strings without a second hand-translation.
-const T2S: Record<string, string> = { "規": "规", "則": "则", "組": "组", "揮": "挥", "個": "个", "資": "资", "顯": "显", "稱": "称", "這": "这", "裡": "里", "儲": "储", "紀": "纪", "國": "国", "運": "运", "籌": "筹", "決": "决", "勝": "胜", "開": "开", "與": "与", "圖": "图", "對": "对", "戰": "战", "瀏": "浏", "覽": "览", "訂": "订", "輪": "轮", "數": "数", "擊": "击", "驟": "骤", "計": "计", "時": "时", "暫": "暂", "賽": "赛", "觀": "观", "選": "选", "標": "标", "雙": "双", "約": "约", "負": "负", "兩": "两", "邊": "边", "點": "点", "誤": "误", "陣": "阵", "為": "为", "術": "术", "來": "来", "進": "进", "廳": "厅", "帳": "帐", "號": "号", "電": "电", "郵": "邮", "碼": "码", "請": "请", "註": "注", "冊": "册", "採": "采", "員": "员", "還": "还", "沒": "没", "經": "经", "錯": "错", "敗": "败", "後": "后", "編": "编", "輯": "辑", "複": "复", "製": "制", "換": "换", "尋": "寻", "頁": "页", "刪": "删", "範": "范", "內": "内", "無": "无", "愛": "爱", "間": "间", "連": "连", "結": "结", "線": "线", "當": "当", "隊": "队", "長": "长", "準": "准", "備": "备", "傳": "传", "給": "给", "會": "会", "強": "强", "繼": "继", "續": "续", "獲": "获", "場": "场", "隨": "随", "機": "机", "隱": "隐", "鎖": "锁", "擇": "择", "緒": "绪", "張": "张", "僅": "仅", "誰": "谁", "贏": "赢", "寫": "写", "確": "确", "認": "认", "舊": "旧", "從": "从", "餘": "余", "說": "说", "項": "项", "幾": "几", "總": "总", "預": "预", "設": "设", "許": "许", "產": "产", "執": "执", "統": "统", "動": "动", "調": "调", "順": "顺", "嗎": "吗", "單": "单", "錄": "录", "種": "种", "關": "关", "閉": "闭", "東": "东", "須": "须", "現": "现", "況": "况", "於": "于", "夠": "够", "參": "参", "過": "过", "純": "纯", "斷": "断", "曉": "晓", "眾": "众", "欄": "栏" };
+const T2S: Record<string, string> = { "規": "规", "則": "则", "組": "组", "揮": "挥", "個": "个", "資": "资", "顯": "显", "稱": "称", "這": "这", "裡": "里", "儲": "储", "紀": "纪", "國": "国", "運": "运", "籌": "筹", "決": "决", "勝": "胜", "開": "开", "與": "与", "圖": "图", "對": "对", "戰": "战", "瀏": "浏", "覽": "览", "訂": "订", "輪": "轮", "數": "数", "擊": "击", "驟": "骤", "計": "计", "時": "时", "暫": "暂", "賽": "赛", "觀": "观", "選": "选", "標": "标", "雙": "双", "約": "约", "負": "负", "兩": "两", "邊": "边", "點": "点", "誤": "误", "陣": "阵", "為": "为", "術": "术", "來": "来", "進": "进", "廳": "厅", "帳": "帐", "號": "号", "電": "电", "郵": "邮", "碼": "码", "請": "请", "註": "注", "冊": "册", "採": "采", "員": "员", "還": "还", "沒": "没", "經": "经", "錯": "错", "敗": "败", "後": "后", "編": "编", "輯": "辑", "複": "复", "製": "制", "換": "换", "尋": "寻", "頁": "页", "刪": "删", "範": "范", "內": "内", "無": "无", "愛": "爱", "間": "间", "連": "连", "結": "结", "線": "线", "當": "当", "隊": "队", "長": "长", "準": "准", "備": "备", "傳": "传", "給": "给", "會": "会", "強": "强", "繼": "继", "續": "续", "獲": "获", "場": "场", "隨": "随", "機": "机", "隱": "隐", "鎖": "锁", "擇": "择", "緒": "绪", "張": "张", "僅": "仅", "誰": "谁", "贏": "赢", "寫": "写", "確": "确", "認": "认", "舊": "旧", "從": "从", "餘": "余", "說": "说", "項": "项", "幾": "几", "總": "总", "預": "预", "設": "设", "許": "许", "產": "产", "執": "执", "統": "统", "動": "动", "調": "调", "順": "顺", "嗎": "吗", "單": "单", "錄": "录", "種": "种", "關": "关", "閉": "闭", "東": "东", "須": "须", "現": "现", "況": "况", "於": "于", "夠": "够", "靜": "静", "練": "练", "習": "习", "參": "参", "過": "过", "純": "纯", "斷": "断", "曉": "晓", "眾": "众", "欄": "栏" };
 function toSimplified(s: string): string {
   let out = "";
   for (const ch of s) out += T2S[ch] ?? ch;
@@ -165,6 +165,8 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "match.bannedP1": { en: "Player 1 · banned", zh: "玩家 1 · 已 ban", ja: "プレイヤー 1 · BAN 済み" },
   "match.bannedP2": { en: "Player 2 · banned", zh: "玩家 2 · 已 ban", ja: "プレイヤー 2 · BAN 済み" },
   "match.scoreboard": { en: "Scoreboard", zh: "計分板", ja: "スコアボード" },
+  "match.privacy": { en: "Privacy for this draft", zh: "本場對戰的隱私設定", ja: "この対戦のプライバシー設定" },
+  "match.privacyGuestHint": { en: "Host only, before the draft starts.", zh: "僅房主可改，且限開賽前。", ja: "ホストのみ・開始前まで。" },
   "match.anonymous": { en: "Anonymous", zh: "匿名", ja: "匿名" },
   "match.anonymousHint": { en: "Spectators can't see the players' names in this match.", zh: "本場對戰的觀眾看不到雙方的名字。", ja: "この試合では観戦者にプレイヤー名が表示されません。" },
   "match.minimize": { en: "Minimize", zh: "最小化", ja: "最小化" },
@@ -296,12 +298,12 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "editor.showCurrentMap": { en: "show current map", zh: "顯示當前地圖", ja: "現在のマップを表示" },
   "editor.excludeUsedCivs": { en: "exclude used civs", zh: "排除已用文明", ja: "使用済みの文明を除外" },
   "editor.simultaneous": { en: "simultaneous", zh: "同時進行", ja: "同時進行" },
-  "editor.simultaneousAlwaysHint": { en: "This step type is always simultaneous — both players act at once and it cannot be switched off. One row covers BOTH players; do not add a second row for the other one. The count applies to EACH player.", zh: "這種步驟一定是同時進行，無法關閉。一列就代表雙方，不需要再為對手加第二列。數量是「每人」各幾個。", ja: "このステップは常に同時進行で、解除できません。1 行で両プレイヤー分を表すので、相手用にもう 1 行追加する必要はありません。数は「各プレイヤーあたり」です。" },
+  "editor.simultaneousAlwaysHint": { en: "Always simultaneous. One row covers both players — the count is per player.", zh: "這種步驟一定同時進行。一列就代表雙方，數量是每人各幾個。", ja: "常に同時進行。1 行で両プレイヤー分を表し、数は各プレイヤーあたりです。" },
   "editor.both": { en: "Both", zh: "雙方", ja: "両者" },
   "editor.resultByVote": { en: "by player vote", zh: "由雙方投票", ja: "両プレイヤーの投票" },
   "editor.resultByHost": { en: "by the host", zh: "由房主裁定", ja: "ホストが判定" },
-  "editor.resultByHint": { en: "Who records the winner is set once for the whole preset, in Options above — this step has nothing to choose.", zh: "由誰認定勝負是在上方「選項」統一設定的，這個步驟沒有東西要選。", ja: "勝者を誰が記録するかは上の「オプション」でプリセット全体に対して設定します。このステップで選ぶものはありません。" },
-  "editor.bothHint": { en: "Both players act at the same time, so this step has no single actor — one row covers both.", zh: "雙方同時進行，這個步驟沒有單一執行者 —— 一列就代表兩個人。", ja: "両プレイヤーが同時に行うため、このステップに単独の実行者はありません。1 行で両者を表します。" },
+  "editor.resultByHint": { en: "Set in Options above, for the whole preset.", zh: "在上方「選項」統一設定，這個步驟沒有東西要選。", ja: "上の「オプション」でプリセット全体に設定します。" },
+  "editor.bothHint": { en: "Both players act at once — one row covers both.", zh: "雙方同時進行，一列就代表兩個人。", ja: "両プレイヤーが同時に行い、1 行で両者を表します。" },
   "editor.simultaneousHint": { en: "Both players ban at the same time, each hidden until both submit. The step's actor is ignored, and the count applies to EACH player.", zh: "雙方同時 ban，互相隱藏到都送出才揭曉。此時執行者欄位無效，數量是「每人」各 ban 幾個。", ja: "両プレイヤーが同時に BAN し、両者が送信するまで互いに伏せられます。実行者欄は無視され、数は「各プレイヤーあたり」です。" },
   "editor.pausableShort": { en: "pausable", zh: "可暫停", ja: "一時停止可" },
   "editor.stepNo": { en: "Step order — the draft runs top to bottom", zh: "步驟順序——由上往下依序執行", ja: "ステップ順 — 上から順に実行されます" },

@@ -533,6 +533,29 @@ export function registerMatchHandlers(io: Server) {
       } catch { /* ignore */ }
     });
 
+    // Privacy is per-session, not per-format: a tournament preset is shared and
+    // public, but "let me quietly practise it with you" has to be settable
+    // without cloning the whole preset. The preset's values are the defaults;
+    // the host can override them here, and only while still in the lobby —
+    // flipping anonymity mid-draft would retroactively expose names spectators
+    // had already been shown (or hide names they had already seen).
+    socket.on(C2S.SET_PRIVACY, async ({ matchId, anonymous, publicHover }: { matchId: string; anonymous?: boolean; publicHover?: boolean }) => {
+      try {
+        if (!socket.data.isHost || socket.data.matchId !== matchId) return;
+        await dbConnect();
+        const m = await Match.findById(matchId);
+        if (!m || m.status !== "lobby") return;
+        const set: Record<string, boolean> = {};
+        if (typeof anonymous === "boolean") set["config.options.anonymous"] = anonymous;
+        if (typeof publicHover === "boolean") set["config.options.publicHover"] = publicHover;
+        if (!Object.keys(set).length) return;
+        // config is a Mixed field, so a dotted $set is the way to touch one key
+        // without rewriting (and racing on) the whole snapshot.
+        await Match.updateOne({ _id: matchId }, { $set: set });
+        await broadcast(io, matchId);
+      } catch { /* ignore */ }
+    });
+
     socket.on(C2S.RENAME, async ({ matchId, name }: { matchId: string; name: string }) => {
       try {
         const role = socket.data.role as Role | undefined;

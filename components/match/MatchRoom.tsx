@@ -135,6 +135,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   function voteResult(gameIndex: number, winner: "player1" | "player2") { emit(C2S.RESULT_CLICK, { matchId, gameIndex, winner }); }
   function rename(name: string) { emit(C2S.RENAME, { matchId, name }); }
   function forceStart() { emit(C2S.START, { matchId }); }
+  function setPrivacy(p: { anonymous?: boolean; publicHover?: boolean }) { emit(C2S.SET_PRIVACY, { matchId, ...p }); }
   function copyInvite() {
     navigator.clipboard?.writeText(inviteUrl).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); });
   }
@@ -159,11 +160,14 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         bestOf={state.bestOf}
         inviteUrl={inviteUrl}
         copied={copied}
+        anonymous={Boolean(payload!.anonymous)}
+        publicHover={Boolean(payload!.publicHover)}
         onCopy={copyInvite}
         onTake={takeSeat}
         onReady={setReady}
         onRename={rename}
         onStart={forceStart}
+        onPrivacy={setPrivacy}
         error={error}
       />
     );
@@ -784,7 +788,7 @@ function RenameControl({ current, onRename }: { current: string; onRename: (name
   );
 }
 
-function Lobby({ seats, you, amHost, loggedIn, bestOf, inviteUrl, copied, onCopy, onTake, onReady, onRename, onStart, error }: {
+function Lobby({ seats, you, amHost, loggedIn, bestOf, inviteUrl, copied, anonymous, publicHover, onCopy, onTake, onReady, onRename, onStart, onPrivacy, error }: {
   seats: { host: string; player1: Seat; player2: Seat };
   you: SeatRole | "spectator";
   amHost: boolean;
@@ -792,11 +796,14 @@ function Lobby({ seats, you, amHost, loggedIn, bestOf, inviteUrl, copied, onCopy
   bestOf: number;
   inviteUrl: string;
   copied: boolean;
+  anonymous: boolean;
+  publicHover: boolean;
   onCopy: () => void;
   onTake: (seat: "player1" | "player2") => void;
   onReady: (ready: boolean) => void;
   onRename: (name: string) => void;
   onStart: () => void;
+  onPrivacy: (p: { anonymous?: boolean; publicHover?: boolean }) => void;
   error: string | null;
 }) {
   const { t } = useI18n();
@@ -865,6 +872,29 @@ function Lobby({ seats, you, amHost, loggedIn, bestOf, inviteUrl, copied, onCopy
         <p className="mt-2 text-xs text-muted">{t("match.shareHint")}</p>
       </div>
 
+      {/* Privacy for THIS draft. The preset seeded these; the host can change
+          them until the draft starts, so practising a shared tournament format
+          quietly doesn't mean cloning the format. Everyone sees the current
+          state — a player deserves to know whether they're being watched. */}
+      <div className="aoe-panel rounded-xl p-5">
+        <h3 className="font-display text-sm uppercase tracking-wide text-muted">{t("match.privacy")}</h3>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <PrivacyToggle
+            label={t("editor.anonymous")} hint={t("editor.anonymousHint")}
+            checked={anonymous} disabled={!amHost}
+            onChange={(v) => onPrivacy({ anonymous: v })}
+          />
+          <PrivacyToggle
+            label={t("editor.publicHover")} hint={t("editor.publicHoverHint")}
+            checked={publicHover} disabled={!amHost}
+            onChange={(v) => onPrivacy({ publicHover: v })}
+          />
+        </div>
+        {/* The host needs no explanation — the toggles say what they do, and they
+            are live. A guest does need to know why they're greyed out. */}
+        {!amHost && <p className="mt-3 text-xs text-muted">{t("match.privacyGuestHint")}</p>}
+      </div>
+
       <div className="text-center">
         <p className="text-sm text-muted">
           {!bothSeated ? t("match.waitSeats") :
@@ -877,6 +907,20 @@ function Lobby({ seats, you, amHost, loggedIn, bestOf, inviteUrl, copied, onCopy
         )}
       </div>
     </div>
+  );
+}
+
+function PrivacyToggle({ label, hint, checked, disabled, onChange }: {
+  label: string; hint: string; checked: boolean; disabled: boolean; onChange: (v: boolean) => void;
+}) {
+  return (
+    <label className={`flex gap-2 rounded border border-border bg-surface-2/60 p-3 ${disabled ? "opacity-70" : "cursor-pointer hover:border-bronze"}`}>
+      <input type="checkbox" className="mt-0.5" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
+      <span>
+        <span className="block text-sm text-foreground">{label}</span>
+        <span className="block text-xs text-muted">{hint}</span>
+      </span>
+    </label>
   );
 }
 
