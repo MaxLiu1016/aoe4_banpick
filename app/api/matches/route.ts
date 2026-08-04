@@ -4,6 +4,7 @@ import { z } from "zod";
 import { isValidObjectId } from "mongoose";
 import { dbConnect } from "@/lib/mongoose";
 import { Match } from "@/lib/models/Match";
+import { MatchGame } from "@/lib/models/MatchGame";
 import { Preset } from "@/lib/models/Preset";
 import { getCurrentUser } from "@/lib/session";
 import { validatePreset } from "@/lib/draft/validate";
@@ -60,6 +61,10 @@ export async function POST(req: Request) {
   return NextResponse.json({ id: String(match._id), shareCode: match.shareCode }, { status: 201 });
 }
 
+/**
+ * The signed-in user's draft history. "Participated" means they held a seat or
+ * hosted the room — merely spectating a draft never puts it in your list.
+ */
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json([]);
@@ -70,12 +75,41 @@ export async function GET() {
     .sort({ updatedAt: -1 })
     .limit(50)
     .lean();
+
+  // Scores come from the per-game records in one batched query rather than
+  // replaying every match's action log.
+  const ids = docs.map((d) => d._id);
+  const games = await MatchGame.find({ matchId: { $in: ids }, winner: { $ne: null } })
+    .select("matchId winner")
+    .lean<{ matchId: unknown; winner: "player1" | "player2" }[]>();
+  const scores = new Map<string, { player1: number; player2: number }>();
+  for (const g of games) {
+    const k = String(g.matchId);
+    const s = scores.get(k) ?? { player1: 0, player2: 0 };
+    s[g.winner]++;
+    scores.set(k, s);
+  }
+
   return NextResponse.json(
-    docs.map((d) => ({
-      id: String(d._id),
-      status: d.status,
-      shareCode: d.shareCode,
-      bestOf: (d.config as { options?: { bestOf?: number } })?.options?.bestOf,
-    }))
+    docs.map((d) => {
+      const id = String(d._id);
+      const anonymous = Boolean((d.config as { options?: { anonymous?: boolean } })?.options?.anonymous);
+      const asP1 = String(d.player1Id ?? "") === user.id;
+      const asP2 = String(d.player2Id ?? "") === user.id;
+      return {
+        id,
+        name: d.name || "",
+        status: d.status,
+        shareCode: d.shareCode,
+        bestOf: (d.config as { options?: { bestOf?: number } })?.options?.bestOf,
+        anonymous,
+        // Your seat in that match — "host" only when you never took a seat.
+        role: asP1 ? "player1" : asP2 ? "player2" : "host",
+        player1Name: d.player1Name ?? null,
+        player2Name: d.player2Name ?? null,
+        score: scores.get(id) ?? { player1: 0, player2: 0 },
+        updatedAt: d.updatedAt,
+      };
+    })
   );
 }
