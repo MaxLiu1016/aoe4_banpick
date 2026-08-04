@@ -79,5 +79,5 @@ See `PLAN.md` for the original architecture plan.
 ## Licence
 
 Source code is [MIT](./LICENSE). The bundled civ/map artwork under `public/` is
-**not** — it comes from the Age of Empires Wiki and belongs to its respective
-owners. This project is not affiliated with or endorsed by Microsoft.
+**not** — see [`NOTICE.md`](./NOTICE.md). This project is not affiliated with or
+endorsed by Microsoft.

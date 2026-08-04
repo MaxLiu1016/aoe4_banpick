@@ -19,15 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-NOTE ON BUNDLED ARTWORK
-
-The licence above covers the source code only. Civilisation and map images
-under `public/` are sourced from the Age of Empires Wiki
-(ageofempires.fandom.com) and remain the property of their respective owners
-(Microsoft / World's Edge / Relic Entertainment). They are included for
-non-commercial community tournament use and are NOT covered by the MIT licence
-above. Age of Empires IV is a trademark of Microsoft Corporation; this project
-is not affiliated with or endorsed by Microsoft.
