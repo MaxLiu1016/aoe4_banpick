@@ -8,6 +8,11 @@ interface Row {
   id: string;
   name: string;
   status: "lobby" | "running" | "paused" | "finished";
+  /** Series is over. Computed from the score, so drafts that finished before the
+   *  status was ever persisted still read correctly. */
+  decided: boolean;
+  /** Undecided and silent for long enough to call it walked-away-from. */
+  stale: boolean;
   bestOf?: number;
   anonymous: boolean;
   // null in the global feed for drafts you had no part in.
@@ -87,12 +92,9 @@ export function HistoryList({ loggedIn }: { loggedIn: boolean }) {
       {rows.map((m) => {
         const p1 = m.player1Name || t("match.p1");
         const p2 = m.player2Name || t("match.p2");
-        const decided = m.status === "finished";
-        const youWon = decided && (
-          (m.role === "player1" && m.score.player1 > m.score.player2) ||
-          (m.role === "player2" && m.score.player2 > m.score.player1)
-        );
-        const youLost = decided && m.role !== "host" && !youWon && m.score.player1 !== m.score.player2;
+        // No won/lost caption: the score is right next to it, so the label only
+        // has to say the draft is over.
+        const decided = m.decided;
         return (
           <li key={m.id}>
             <Link href={`/watch/${m.id}`}
@@ -116,8 +118,8 @@ export function HistoryList({ loggedIn }: { loggedIn: boolean }) {
                 </div>
                 <div className="text-[11px] text-muted">
                   {decided
-                    ? (youWon ? t("history.won") : youLost ? t("history.lost") : t("history.done"))
-                    : t(`history.status.${m.status}`)}
+                    ? t("history.done")
+                    : m.stale ? t("history.status.abandoned") : t(`history.status.${m.status}`)}
                 </div>
               </div>
               <div className="hidden shrink-0 text-right text-[11px] text-muted sm:block">

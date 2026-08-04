@@ -345,6 +345,12 @@ async function broadcast(io: Server, matchId: string) {
   await scheduleTimer(io, matchId);
   const full = await buildPayload(matchId);
   if (!full) return;
+  // "Finished" was only ever derived for the live payload, never written down, so
+  // every completed draft sat in the database as "running" forever and the history
+  // list said so. Persist it once, the moment the engine says the series is over.
+  if (full.state.finished) {
+    await Match.updateOne({ _id: matchId, status: { $ne: "finished" } }, { $set: { status: "finished" } });
+  }
   const sockets = await io.in(ROOM(matchId)).fetchSockets();
   for (const s of sockets) {
     const role = (s.data.role as Role) ?? "spectator";

@@ -103,7 +103,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "history.noneGlobal": { en: "No public drafts yet.", zh: "目前還沒有公開的對戰紀錄。", ja: "公開されている対戦はまだありません。" },
   "history.won": { en: "You won", zh: "你獲勝", ja: "あなたの勝ち" },
   "history.lost": { en: "You lost", zh: "你落敗", ja: "あなたの負け" },
-  "history.done": { en: "Finished", zh: "已結束", ja: "終了" },
+  "history.done": { en: "Finished", zh: "完成", ja: "終了" },
   "history.role.player1": { en: "you were P1", zh: "你是 P1", ja: "あなたは P1" },
   "history.role.player2": { en: "you were P2", zh: "你是 P2", ja: "あなたは P2" },
   "history.role.host": { en: "you hosted", zh: "你是房主", ja: "あなたが主催" },
@@ -111,6 +111,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "history.status.running": { en: "In progress", zh: "進行中", ja: "進行中" },
   "history.status.paused": { en: "Paused", zh: "已暫停", ja: "一時停止中" },
   "history.status.finished": { en: "Finished", zh: "已結束", ja: "終了" },
+  "history.status.abandoned": { en: "Abandoned", zh: "已中止", ja: "中断" },
   "nav.history": { en: "History", zh: "紀錄", ja: "履歴" },
   // match room
   "match.room": { en: "Draft Room", zh: "對戰房間", ja: "ドラフトルーム" },

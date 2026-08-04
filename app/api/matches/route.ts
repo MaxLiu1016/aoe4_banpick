@@ -99,10 +99,33 @@ export async function GET(req: Request) {
     scores.set(k, s);
   }
 
+  // Drafts get abandoned mid-way — someone closes the tab and never comes back.
+  // Calling those "finished" would be a lie; leaving them "in progress" forever is
+  // worse. A day of silence is well past any real session, pauses included, and if
+  // one does resume its updatedAt moves and the label reverts on its own. Judged
+  // against the server's clock rather than the viewer's.
+  const staleBefore = Date.now() - 24 * 60 * 60 * 1000;
+
   return NextResponse.json(
     docs.map((d) => {
       const id = String(d._id);
-      const anonymous = Boolean((d.config as { options?: { anonymous?: boolean } })?.options?.anonymous);
+      const cfg = d.config as {
+        options?: { anonymous?: boolean; bestOf?: number; playAll?: boolean };
+        steps?: { type?: string }[];
+      };
+      const anonymous = Boolean(cfg?.options?.anonymous);
+      // Worked out here rather than trusted from `status`: drafts finished before
+      // the status was ever persisted are still stored as "running", and a
+      // migration to fix them would be a lot of ceremony for a derived value.
+      const score = scores.get(id) ?? { player1: 0, player2: 0 };
+      const bestOf = cfg?.options?.bestOf ?? 0;
+      const gamesInSeries = (cfg?.steps ?? []).filter((s) => s.type === "GAME_RESULT").length;
+      // A missing bestOf must not make a 1-0 look decided, hence Infinity rather
+      // than the 1 that floor(0 / 2) + 1 would give.
+      const target = bestOf >= 1 ? Math.floor(bestOf / 2) + 1 : Infinity;
+      const decided = d.status === "finished" || (cfg?.options?.playAll
+        ? gamesInSeries > 0 && score.player1 + score.player2 >= gamesInSeries
+        : Math.max(score.player1, score.player2) >= target);
       const asP1 = !!user && String(d.player1Id ?? "") === user.id;
       const asP2 = !!user && String(d.player2Id ?? "") === user.id;
       const asHost = !!user && String(d.hostId ?? "") === user.id;
@@ -111,14 +134,16 @@ export async function GET(req: Request) {
         name: d.name || "",
         status: d.status,
         shareCode: d.shareCode,
-        bestOf: (d.config as { options?: { bestOf?: number } })?.options?.bestOf,
+        bestOf: bestOf || undefined,
+        decided,
+        stale: !decided && new Date(d.updatedAt as Date).getTime() < staleBefore,
         anonymous,
         // Your seat in that match — "host" only when you never took a seat, and
         // null in the global feed, where most rows have nothing to do with you.
         role: asP1 ? "player1" : asP2 ? "player2" : asHost ? "host" : null,
         player1Name: d.player1Name ?? null,
         player2Name: d.player2Name ?? null,
-        score: scores.get(id) ?? { player1: 0, player2: 0 },
+        score,
         updatedAt: d.updatedAt,
       };
     })
