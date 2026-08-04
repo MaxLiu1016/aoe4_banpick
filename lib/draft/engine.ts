@@ -58,6 +58,12 @@ export interface DerivedState {
   currentGameIndex: number;
   /** Single-actor turn (turn-based steps). null for simultaneous/duel steps. */
   turn: SeatRole | null;
+  /**
+   * Every step in order, flattened for the progress bar so players can see the
+   * whole flow and where they are in it. `actor` is null for simultaneous steps
+   * (nobody owns them) and for LOSER/WINNER steps whose game hasn't resolved.
+   */
+  stepBar: { type: string; label: string; gameIndex: number; actor: SeatRole | null }[];
   /** True when the current step is a simultaneous (hidden) duel step. */
   simultaneous: boolean;
   /**
@@ -392,6 +398,15 @@ export function deriveState(
     };
   }
 
+  const stepBar = steps.map((s, i) => ({
+    type: s.type as string,
+    label: s.label || (s.type as string),
+    gameIndex: gameOf[i],
+    actor: isSimulBan(i) || s.type === "CIV_OFFER" || s.type === "CIV_SNIPE_OPPONENT" || s.type === "SYNC_CONFIRM"
+      ? null
+      : resolveActor(s, gameOf[i], games),
+  }));
+
   const finished = !currentStep || p1 >= target || p2 >= target;
 
   return {
@@ -401,6 +416,7 @@ export function deriveState(
     currentStepProgress: currentStep ? actionsByStep.get(currentStepIndex) ?? 0 : 0,
     currentGameIndex,
     turn,
+    stepBar,
     simultaneous,
     pendingBans,
     awaiting,

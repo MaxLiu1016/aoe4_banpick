@@ -238,6 +238,8 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
 
   return (
     <div className="space-y-5">
+      <StepBar steps={state.stepBar} currentIndex={state.currentStepIndex} finished={state.finished} />
+
       {error && <div className="rounded border border-danger/60 bg-danger/10 px-4 py-2 text-sm text-danger">{error}</div>}
 
       {/* Scoreboard — collapsible to a compact status bar so the area below stays roomy */}
@@ -622,6 +624,54 @@ function SnipePhase({ duel, youPlayer, opp, canAct, onSnipe, civById }: {
 
 // Every call site lays P1 out on the left and P2 on the right, so the side IS the
 // owner — no need to thread a separate prop through.
+/**
+ * Always-visible strip of the whole draft flow with the current step marked —
+ * players asked for the aoe2cm-style bar so they can see what is coming and how
+ * far along the draft is without having to remember the format. Sticks to the
+ * top and auto-scrolls the current step into view.
+ */
+function StepBar({ steps, currentIndex, finished }: {
+  steps: DerivedState["stepBar"];
+  currentIndex: number;
+  finished: boolean;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    ref.current?.querySelector('[data-current="1"]')?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [currentIndex]);
+
+  if (steps.length === 0) return null;
+  return (
+    <div ref={ref} className="sticky top-0 z-20 -mx-4 flex gap-1 overflow-x-auto border-b border-border bg-background/95 px-4 py-2 backdrop-blur">
+      {steps.map((s, i) => {
+        const done = finished || i < currentIndex;
+        const current = !finished && i === currentIndex;
+        const own = ownerOf(s.actor ?? undefined);
+        const newGame = i > 0 && s.gameIndex !== steps[i - 1].gameIndex;
+        return (
+          <div key={i} className="flex shrink-0 items-center gap-1">
+            {newGame && <span className="mx-1 h-4 w-px bg-border" aria-hidden />}
+            <span
+              data-current={current ? "1" : undefined}
+              title={s.label}
+              className={[
+                "flex shrink-0 items-center gap-1 rounded border px-2 py-1 text-[11px] leading-none whitespace-nowrap transition",
+                current ? "border-gold bg-gold/15 text-gold-bright ring-1 ring-gold font-semibold"
+                  : done ? "border-border/60 bg-surface-2/40 text-muted opacity-60"
+                  : "border-border text-muted",
+              ].join(" ")}
+            >
+              {own && <span className={`${own.text} font-bold`}>●</span>}
+              {done && !current && <span aria-hidden>✓</span>}
+              {s.label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // Header for a simultaneous ban step: your own locked-in bans (nobody else can
 // see them) plus whether the opponent has finished. Deliberately shows the
 // opponent's *progress* only — never their targets.
