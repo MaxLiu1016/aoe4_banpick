@@ -65,12 +65,9 @@ All civ/map names and images are sourced from the **Age of Empires Wiki**
 
 Bug reports and feature requests are very welcome via issues, in any of those languages.
 
-**關於 Pull Request**:這個專案目前由我一個人維護,程式碼一律由我這邊修改,
-所以**不接受外部 PR**。請改用 issue 描述問題,我會排進來處理。
-This repository does not accept outside pull requests — please open an issue instead.
-
-程式碼公開是為了透明與方便討論,**未附授權條款**,保留一切權利。
-Source is public for transparency and discussion only; no licence is granted.
+**Pull Request 採「issue 優先」**:歡迎送 PR,但請**先開 issue 討論**,方向談定後再動手,
+以免寫了一版卻要整個換方向。細節見 [`CONTRIBUTING.md`](./CONTRIBUTING.md)。
+Pull requests are welcome — please open an issue to agree on the approach first.
 
 ## Status
 
@@ -78,3 +75,9 @@ Live and in community testing. Working today: accounts (invite-only), the preset
 editor, the full draft room (map/civ ban & pick, snipe, simultaneous bans, timers),
 live spectating, match history, and en / 繁中 / 简中 / 日本語 localisation.
 See `PLAN.md` for the original architecture plan.
+
+## Licence
+
+Source code is [MIT](./LICENSE). The bundled civ/map artwork under `public/` is
+**not** — it comes from the Age of Empires Wiki and belongs to its respective
+owners. This project is not affiliated with or endorsed by Microsoft.
