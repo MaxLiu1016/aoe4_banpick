@@ -60,6 +60,13 @@ export interface DerivedState {
   turn: SeatRole | null;
   /** True when the current step is a simultaneous (hidden) duel step. */
   simultaneous: boolean;
+  /**
+   * Bans submitted in the CURRENT simultaneous ban step but not yet revealed
+   * (the step is still waiting on the other player). These are deliberately
+   * NOT reflected in `maps`/`civs` yet; the socket layer redacts the opponent's
+   * list before sending. Empty for every other kind of step.
+   */
+  pendingBans: { player1: string[]; player2: string[] };
   /** Which players still owe input for the current step. */
   awaiting: { player1: boolean; player2: boolean };
   finished: boolean;
@@ -144,11 +151,43 @@ export function deriveState(
   const civBans: CivBan[] = [];
   // SYNC_CONFIRM: whether each player has pressed confirm, keyed by step index.
   const confirmedByStep = new Map<number, { player1: boolean; player2: boolean }>();
+  const pendingBans: { player1: string[]; player2: string[] } = { player1: [], player2: [] };
 
+  // --- Pass 1 -------------------------------------------------------------
+  // A simultaneous ban step must not reveal either player's bans until BOTH
+  // have submitted, so we have to know whether the step is finished BEFORE
+  // deciding whether to apply its bans to the pools. That is only knowable by
+  // counting each player's actions per step first, hence the separate pass.
+  const perStepByActor = new Map<number, { player1: number; player2: number }>();
+  for (const a of actions) {
+    const e = perStepByActor.get(a.stepIndex) ?? { player1: 0, player2: 0 };
+    if (a.actor === "player1") e.player1++;
+    else if (a.actor === "player2") e.player2++;
+    perStepByActor.set(a.stepIndex, e);
+  }
+  const isSimulBan = (i: number): boolean => {
+    const s = steps[i];
+    return !!s?.simultaneous && (s.type === "MAP_BAN" || s.type === "CIV_BAN");
+  };
+  const simulBanDone = (i: number): boolean => {
+    const s = steps[i];
+    if (!s) return false;
+    const e = perStepByActor.get(i) ?? { player1: 0, player2: 0 };
+    return e.player1 >= s.count && e.player2 >= s.count;
+  };
+
+  // --- Pass 2 -------------------------------------------------------------
   for (const a of actions) {
     const g = a.gameIndex ?? gameOf[a.stepIndex] ?? 0;
     switch (a.actionType) {
       case "ban":
+        // Withhold this step's bans while it is still waiting on a player —
+        // applying them now would leak the choice to the opponent mid-step.
+        if (isSimulBan(a.stepIndex) && !simulBanDone(a.stepIndex)) {
+          if (a.actor === "player1") pendingBans.player1.push(a.target);
+          else if (a.actor === "player2") pendingBans.player2.push(a.target);
+          break;
+        }
         if (a.pool === "map") {
           mapSt.set(a.target, { state: "banned", by: a.actor });
         } else {
@@ -227,6 +266,9 @@ export function deriveState(
         return !!c?.player1 && !!c?.player2;
       }
       default:
+        // A simultaneous ban needs `count` from EACH player, not `count` total —
+        // otherwise one fast player alone would complete the step.
+        if (isSimulBan(i)) return simulBanDone(i);
         return (actionsByStep.get(i) ?? 0) >= s.count;
     }
   };
@@ -289,6 +331,11 @@ export function deriveState(
       const c = confirmedByStep.get(currentStepIndex);
       awaiting.player1 = !c?.player1;
       awaiting.player2 = !c?.player2;
+    } else if (isSimulBan(currentStepIndex)) {
+      simultaneous = true;
+      const e = perStepByActor.get(currentStepIndex) ?? { player1: 0, player2: 0 };
+      awaiting.player1 = e.player1 < currentStep.count;
+      awaiting.player2 = e.player2 < currentStep.count;
     } else {
       turn = resolveActor(currentStep, cg, games);
       awaiting.player1 = turn === "player1";
@@ -355,6 +402,7 @@ export function deriveState(
     currentGameIndex,
     turn,
     simultaneous,
+    pendingBans,
     awaiting,
     finished,
     bestOf: config.options.bestOf,
@@ -392,18 +440,33 @@ export function validateAction(state: DerivedState, role: SeatRole, target: stri
 
   const gameIndex = state.currentGameIndex;
   const duel = state.civDuel;
+  // A simultaneous ban has no turn — instead both players are gated on `awaiting`,
+  // and a player must not re-ban something already sitting in their own hidden list.
+  const simulBan = Boolean(step.simultaneous) && (step.type === "MAP_BAN" || step.type === "CIV_BAN");
+  const simulBanGate = (): ValidationResult | null => {
+    if (role !== "player1" && role !== "player2") return { ok: false, error: "Only players may ban." };
+    if (!state.awaiting[role]) return { ok: false, error: "You have already banned." };
+    if (state.pendingBans[role].includes(target)) return { ok: false, error: "You already banned that." };
+    return null;
+  };
 
   switch (step.type) {
     case "MAP_BAN":
     case "MAP_PICK": {
-      if (state.turn !== role) return { ok: false, error: "It is not your turn." };
+      if (simulBan) {
+        const gate = simulBanGate();
+        if (gate) return gate;
+      } else if (state.turn !== role) return { ok: false, error: "It is not your turn." };
       const entry = state.maps.find((m) => m.id === target);
       if (!entry) return { ok: false, error: "Unknown map." };
       if (entry.state !== "available") return { ok: false, error: "Map already taken." };
       return { ok: true, resolved: { actionType: step.type === "MAP_BAN" ? "ban" : "pick", pool: "map", gameIndex } };
     }
     case "CIV_BAN": {
-      if (state.turn !== role) return { ok: false, error: "It is not your turn." };
+      if (simulBan) {
+        const gate = simulBanGate();
+        if (gate) return gate;
+      } else if (state.turn !== role) return { ok: false, error: "It is not your turn." };
       const entry = state.civs.find((c) => c.id === target);
       if (!entry) return { ok: false, error: "Unknown civ." };
       const scope = step.banScope ?? "pool";

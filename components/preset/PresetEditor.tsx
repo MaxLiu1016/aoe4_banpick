@@ -374,6 +374,12 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
                     <option value="shared">{t("editor.mapShared")}</option>
                   </select>
                 )}
+                {(s.type === "MAP_BAN" || s.type === "CIV_BAN") && (
+                  <label className="flex items-center gap-1" title={t("editor.simultaneousHint")}>
+                    <input type="checkbox" checked={Boolean(s.simultaneous)} onChange={(e) => updateStep(i, { simultaneous: e.target.checked })} />
+                    {t("editor.simultaneous")}
+                  </label>
+                )}
                 <label className="flex items-center gap-1">
                   <input type="checkbox" checked={s.excludeUsedCivs} onChange={(e) => updateStep(i, { excludeUsedCivs: e.target.checked })} />
                   {t("editor.excludeUsedCivs")}

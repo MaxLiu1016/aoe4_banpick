@@ -186,6 +186,11 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const opp = youPlayer === "player1" ? "player2" : youPlayer === "player2" ? "player1" : null;
   const duel = state.civDuel;
   const canActDuel = !spectator && !!youPlayer && state.awaiting[youPlayer] && payload!.status === "running" && !ackPending;
+  // Simultaneous ban: there is no "turn" — both players act at once, gated on
+  // `awaiting`, and each other's picks stay hidden until both have submitted.
+  const simulBan = Boolean(step?.simultaneous) && (step?.type === "MAP_BAN" || step?.type === "CIV_BAN");
+  const myPendingBans = youPlayer ? state.pendingBans[youPlayer] : [];
+  const canSimulBan = simulBan && canActDuel;
   const usedByYou = youPlayer
     ? state.games.filter((g) => g.gameIndex < state.currentGameIndex).map((g) => (youPlayer === "player1" ? g.civP1 : g.civP2)).filter(Boolean) as string[]
     : [];
@@ -193,7 +198,11 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const handIds = youPlayer === "player1" ? state.offerableP1 : youPlayer === "player2" ? state.offerableP2 : [];
 
   function clickable(entry: PoolView): boolean {
-    if (!myTurn || !step) return false;
+    if (!step) return false;
+    if (simulBan) {
+      return canSimulBan && entry.state === "available" && !myPendingBans.includes(entry.id);
+    }
+    if (!myTurn) return false;
     if (step.type === "MAP_BAN" || step.type === "MAP_PICK") return entry.state === "available";
     if (step.type === "MAP_SELECT") return state!.selectableMapIds.includes(entry.id);
     if (step.type === "CIV_BAN") return entry.state === "available";
@@ -367,15 +376,29 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         </div>
       )}
 
-      {/* Pools — hover tints red for a ban step, green for a pick step */}
+      {/* Simultaneous ban: show your own held bans and whether the opponent is done */}
+      {simulBan && step && (
+        <SimulBanStatus
+          count={step.count}
+          mine={myPendingBans}
+          youAwaited={youPlayer ? state.awaiting[youPlayer] : false}
+          oppAwaited={opp ? state.awaiting[opp] : true}
+          isPlayer={!!youPlayer && !spectator}
+          entryById={step.type === "MAP_BAN" ? mapById : civById}
+        />
+      )}
+
+      {/* Pools — hover tints red for a ban step, gold for a pick step */}
       {(showMaps) && (
         <Pool title={t("match.maps")} entries={mapsView} clickable={clickable} onPick={act} kind="map"
+          pendingIds={simulBan ? myPendingBans : undefined}
           oppHover={oppHover} onHover={(id) => sendHover("map", id)}
           tone={step?.type === "MAP_BAN" ? "ban" : step?.type === "MAP_PICK" ? "pick" : "neutral"}
           highlightSelectable={step?.type === "MAP_SELECT" ? state.selectableMapIds : undefined} />
       )}
       {showCivs && (
         <Pool title={t("match.civs")} entries={civsView} clickable={clickable} onPick={act}
+          pendingIds={simulBan ? myPendingBans : undefined}
           oppHover={oppHover} onHover={(id) => sendHover("civ", id)}
           tone={step?.type === "CIV_BAN" ? "ban" : "pick"} />
       )}
@@ -599,6 +622,51 @@ function SnipePhase({ duel, youPlayer, opp, canAct, onSnipe, civById }: {
 
 // Every call site lays P1 out on the left and P2 on the right, so the side IS the
 // owner — no need to thread a separate prop through.
+// Header for a simultaneous ban step: your own locked-in bans (nobody else can
+// see them) plus whether the opponent has finished. Deliberately shows the
+// opponent's *progress* only — never their targets.
+function SimulBanStatus({ count, mine, youAwaited, oppAwaited, isPlayer, entryById }: {
+  count: number;
+  mine: string[];
+  youAwaited: boolean;
+  oppAwaited: boolean;
+  isPlayer: boolean;
+  entryById: (id?: string) => PoolView | undefined;
+}) {
+  const { t } = useI18n();
+  return (
+    <section className="aoe-panel rounded-xl p-5">
+      <h3 className="font-display text-lg aoe-gold-text text-center">{t("simulban.title", { n: count })}</h3>
+      <p className="mt-1 text-center text-xs text-muted">{t("simulban.hint")}</p>
+      <div className="aoe-rule my-3" />
+      {isPlayer ? (
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <div className="text-xs uppercase tracking-wide text-muted">
+              {t("simulban.yours")} {youAwaited ? `(${mine.length}/${count})` : t("offer.locked")}
+            </div>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {mine.map((id) => <CivChip key={id} civ={entryById(id)} mark="x" animate />)}
+              {Array.from({ length: Math.max(0, count - mine.length) }).map((_, i) => <HiddenSlot key={i} />)}
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-xs uppercase tracking-wide text-muted">
+              {oppAwaited ? t("offer.oppChoosing") : t("offer.oppReady")}
+            </div>
+            <div className="mt-1 flex justify-end gap-1.5">
+              {Array.from({ length: count }).map((_, i) => <HiddenSlot key={i} />)}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <p className="text-center text-sm text-muted">{t("simulban.secret")}</p>
+      )}
+      {isPlayer && !youAwaited && <p className="mt-4 text-center text-sm text-gold-bright">{t("simulban.lockedWait")}</p>}
+    </section>
+  );
+}
+
 function CivStrip({ items, align, wide = false }: { items: { key: string; civ?: PoolView; used?: boolean; banned?: boolean }[]; align: "left" | "right"; wide?: boolean }) {
   const own = align === "left" ? OWNER.player1 : OWNER.player2;
   return (
@@ -809,10 +877,13 @@ function ConfirmSeat({ name, confirmed, tone }: { name: string; confirmed: boole
 
 function turnLabel(state: DerivedState, t: TFn): string {
   if (!state.currentStep) return "";
-  if (state.simultaneous)
-    return state.currentStep.type === "CIV_OFFER" ? t("turn.offerBoth")
-      : state.currentStep.type === "SYNC_CONFIRM" ? t("turn.confirmBoth")
+  if (state.simultaneous) {
+    const ty = state.currentStep.type;
+    return ty === "CIV_OFFER" ? t("turn.offerBoth")
+      : ty === "SYNC_CONFIRM" ? t("turn.confirmBoth")
+      : ty === "MAP_BAN" || ty === "CIV_BAN" ? t("turn.banBoth")
       : t("turn.snipeBoth");
+  }
   if (state.turn === "host") return t("turn.randomDraw");
   if (!state.turn) return t("turn.awaitResult");
   const p = state.turn === "player1" ? t("match.p1") : t("match.p2");
@@ -841,12 +912,15 @@ function SeatCard({ label, seat, role, you, turn, score, canTake, onTake, right,
   );
 }
 
-function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightSelectable, kind = "civ", tone = "neutral" }: {
+function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightSelectable, pendingIds, kind = "civ", tone = "neutral" }: {
   title: string; entries: PoolView[]; clickable: (e: PoolView) => boolean; onPick: (id: string) => void;
   onHover: (id: string | null) => void; oppHover: string | null; highlightSelectable?: string[]; kind?: "civ" | "map";
+  /** Your own not-yet-revealed simultaneous bans — shown only to you. */
+  pendingIds?: string[];
   tone?: "ban" | "pick" | "neutral";
 }) {
   const isMap = kind === "map";
+  const pending = new Set(pendingIds ?? []);
   return (
     <section className="aoe-panel rounded-xl p-4">
       <h3 className="mb-3 font-display text-sm uppercase tracking-wide text-muted">{title}</h3>
@@ -859,6 +933,7 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
           const banned = e.state === "banned";
           const taken = e.state === "picked" || e.state === "drafted";
           const own = taken ? ownerOf(e.by) : null;
+          const isPending = pending.has(e.id);
           return (
             <button
               key={e.id}
@@ -886,6 +961,8 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
                               ? "border-bronze cursor-pointer hover:border-danger hover:bg-danger/10"
                               : "border-bronze cursor-pointer hover:border-gold hover:bg-surface-2") :
                        "border-border opacity-50"),
+                // Your own pending simultaneous ban — locked in, not yet revealed.
+                isPending ? "border-gold ring-2 ring-gold bg-gold/10 saturate-50" : "",
                 oppHover === e.id
                   ? (tone === "ban" ? "ring-2 ring-danger bg-danger/20" : "ring-2 ring-gold-bright bg-gold/10")
                   : "",
@@ -896,6 +973,7 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
               <span className={`w-full truncate leading-tight ${banned ? "text-muted" : "text-foreground"} ${isMap ? "px-2 py-1.5 text-sm" : "mt-1.5 text-xs"}`}>{e.name}</span>
               {banned && <span className="absolute inset-0 flex items-center justify-center text-4xl text-muted/70">✕</span>}
               {taken && <span className={`absolute right-1 top-1 text-xs ${own?.text ?? "text-gold-bright"}`}>●</span>}
+              {isPending && <span className="absolute left-1 top-1 text-sm text-gold-bright">🔒</span>}
             </button>
           );
         })}

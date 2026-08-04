@@ -70,6 +70,13 @@ async function main() {
     await waitUntil(s, (p) => !!taken(p, t));
     ok(true, label);
   }
+  // Between games the clock is held until BOTH players acknowledge the result;
+  // without this the next step never becomes actionable.
+  async function ackBoth(gameIndex: number) {
+    P1.emit(C2S.RESULT_ACK, { matchId, gameIndex });
+    P2.emit(C2S.RESULT_ACK, { matchId, gameIndex });
+    await sleep(300);
+  }
   async function offer(s: Socket & { latest?: Payload }, role: "player1" | "player2", civ: string) {
     s.emit(C2S.ACTION, { matchId, target: civ });
     await waitUntil(s, (p) => Boolean(p.state.civDuel?.offered[role].includes(civ)));
@@ -127,6 +134,7 @@ async function main() {
   P2.emit(C2S.RESULT_CLICK, { matchId, gameIndex: 0, winner: "player1" });
   await waitUntil(P1, (p) => p.state.score.player1 === 1);
   ok(true, "game1 -> P1 1-0");
+  await ackBoth(0);
 
   // game2: loser (P2) picks map from THEIR OWN pool, then duel again
   await expect(P2, (p) => p.state.currentStep?.type === "MAP_SELECT" && p.state.turn === "player2" && p.state.selectableMapIds.every((id) => ["french-pass", "danube-river"].includes(id)), "loser(P2) selects from own map pool");

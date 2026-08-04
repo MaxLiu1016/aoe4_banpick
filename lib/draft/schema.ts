@@ -56,6 +56,10 @@ export const StepSchema = z.object({
   // For MAP_SELECT: "own" = choose from your OWN picked map pool; "shared" =
   // choose from the maps BOTH players picked (the combined pool). Default "own".
   mapScope: z.enum(["own", "shared"]).optional(),
+  // For MAP_BAN / CIV_BAN: both players ban at the same time and each other's
+  // picks stay hidden until BOTH have submitted, then reveal together. The step's
+  // `actor` is ignored for these (like the other simultaneous step types).
+  simultaneous: z.boolean().optional(),
   // Whether this step may be paused.
   pausable: z.boolean().default(true),
   label: z.string().max(120).optional(),

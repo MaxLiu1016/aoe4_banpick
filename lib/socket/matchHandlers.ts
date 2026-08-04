@@ -282,26 +282,44 @@ async function autoResolve(matchId: string) {
 
 type FullPayload = NonNullable<Awaited<ReturnType<typeof buildPayload>>>;
 
-// Hide not-yet-revealed duel info from each recipient (simultaneous reveal).
+// Hide not-yet-revealed simultaneous info from each recipient. Note that
+// `awaiting` is NOT redacted — the UI needs "opponent has submitted" without
+// learning WHAT they submitted.
 function redactFor(payload: FullPayload, role: Role): FullPayload {
-  const duel = payload.state.civDuel;
-  const cs = payload.state.currentStep?.type;
-  if (!duel || (cs !== "CIV_OFFER" && cs !== "CIV_SNIPE_OPPONENT")) return payload;
-
-  const d = { ...duel, offered: { ...duel.offered }, snipedBy: { ...duel.snipedBy } };
   const hideOther = (obj: { player1: string[]; player2: string[] }) => {
     if (role === "player1") obj.player2 = [];
     else if (role === "player2") obj.player1 = [];
     else { obj.player1 = []; obj.player2 = []; }
   };
-  if (cs === "CIV_OFFER") {
-    hideOther(d.offered); // offers hidden until both submit (then step advances)
-    d.snipedBy = { player1: [], player2: [] };
-  } else {
-    // CIV_SNIPE_OPPONENT: offers revealed; each player's snipe hidden until both done
-    hideOther(d.snipedBy);
+
+  let state = payload.state;
+  let touched = false;
+
+  // Simultaneous ban in progress: you may see your own held bans, nobody else's.
+  const pb = state.pendingBans;
+  if (pb && (pb.player1.length > 0 || pb.player2.length > 0)) {
+    const next = { player1: [...pb.player1], player2: [...pb.player2] };
+    hideOther(next);
+    state = { ...state, pendingBans: next };
+    touched = true;
   }
-  return { ...payload, state: { ...payload.state, civDuel: d } };
+
+  const duel = state.civDuel;
+  const cs = state.currentStep?.type;
+  if (duel && (cs === "CIV_OFFER" || cs === "CIV_SNIPE_OPPONENT")) {
+    const d = { ...duel, offered: { ...duel.offered }, snipedBy: { ...duel.snipedBy } };
+    if (cs === "CIV_OFFER") {
+      hideOther(d.offered); // offers hidden until both submit (then step advances)
+      d.snipedBy = { player1: [], player2: [] };
+    } else {
+      // CIV_SNIPE_OPPONENT: offers revealed; each player's snipe hidden until both done
+      hideOther(d.snipedBy);
+    }
+    state = { ...state, civDuel: d };
+    touched = true;
+  }
+
+  return touched ? { ...payload, state } : payload;
 }
 
 async function broadcast(io: Server, matchId: string) {
