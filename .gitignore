@@ -33,6 +33,11 @@ devlog.txt
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# Raw community feedback: verbatim quotes + handles from private Discord channels.
+# Kept locally, never published.
+/docs/feedback-*.md
 
 # vercel
 .vercel

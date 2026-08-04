@@ -1,0 +1,63 @@
+name: Bug 回報 / Bug report
+description: 網站行為不符預期 — BP 卡住、顯示錯誤、斷線等 / Something behaves incorrectly
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        中文、English、日本語 皆可 / Any of these languages is fine.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: 發生了什麼 / What happened
+      description: 也請說明你「預期」會發生什麼 / Also describe what you expected instead
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 重現步驟 / Steps to reproduce
+      placeholder: |
+        1. 開房間,規則選 ...
+        2. 走到第 3 步(地圖 BAN)
+        3. 兩邊同時點 ...
+    validations:
+      required: true
+
+  - type: input
+    id: match
+    attributes:
+      label: 房間連結或 ID / Match link or ID
+      description: 有的話請附上,可以直接回放當時的動作紀錄 / Lets the action log be replayed
+    validations:
+      required: false
+
+  - type: dropdown
+    id: role
+    attributes:
+      label: 你的身分 / Your role
+      options:
+        - 選手 P1 / Player 1
+        - 選手 P2 / Player 2
+        - 觀眾 / Spectator
+        - 房主 / Host
+    validations:
+      required: false
+
+  - type: input
+    id: env
+    attributes:
+      label: 瀏覽器 / 裝置 / Browser & device
+      placeholder: Chrome 141 / Windows 11 · Safari / iPhone
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 截圖或其他補充 / Screenshots or anything else
+      description: 截圖對介面問題特別有幫助 / Screenshots help a lot for UI issues
+    validations:
+      required: false

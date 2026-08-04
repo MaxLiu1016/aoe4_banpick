@@ -5,9 +5,13 @@ import { Preset } from "./models/Preset";
 import { DEMO_PRESETS } from "../data/demoPresets";
 import { withEnglishStepLabels } from "./draft/stepLabel";
 
-// Admin credentials come from env vars; fall back to simple defaults for local dev.
+// Admin credentials come from env vars. There is deliberately NO fallback password:
+// this seed force-resets the admin's password on every boot, so a default here would
+// mean any deployment that forgets to set ADMIN_PASSWORD ships a known super-admin
+// login — and in a public repo that default is public knowledge. No password set =
+// no admin seeding at all.
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "Max";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "123";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 /**
  * Idempotent startup seed: ensures the super-admin and the demo presets exist on
@@ -22,17 +26,26 @@ export async function seedInitialData(): Promise<void> {
 
   // --- Super-admin (always ensure the fixed admin credentials work) ---
   let admin = await User.findOne({ username: ADMIN_USERNAME });
-  const hash = await bcrypt.hash(ADMIN_PASSWORD, 10);
-  if (!admin) {
-    admin = await User.create({
-      username: ADMIN_USERNAME,
-      passwordHash: hash,
-      isAdmin: true,
-    });
+  if (ADMIN_PASSWORD) {
+    const hash = await bcrypt.hash(ADMIN_PASSWORD, 10);
+    if (!admin) {
+      admin = await User.create({
+        username: ADMIN_USERNAME,
+        passwordHash: hash,
+        isAdmin: true,
+      });
+    } else {
+      admin.isAdmin = true;
+      admin.passwordHash = hash; // enforce the configured admin password
+      await admin.save();
+    }
+  } else if (!admin) {
+    // Nothing to own the demo presets and no safe password to invent — bail out
+    // rather than create a super-admin nobody configured.
+    console.warn("[seed] ADMIN_PASSWORD is not set — skipping admin + demo preset seeding.");
+    return;
   } else {
-    admin.isAdmin = true;
-    admin.passwordHash = hash; // enforce the configured admin password
-    await admin.save();
+    console.warn("[seed] ADMIN_PASSWORD is not set — leaving the existing admin's password untouched.");
   }
 
   // --- Demo presets (public, cloneable, owned by admin) ---

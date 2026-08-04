@@ -35,6 +35,7 @@ npm run dev                  # custom server + Socket.IO on http://localhost:300
 | `AUTH_URL` | App base URL |
 | `PORT` | Server port (default 3000) |
 | `NEXT_PUBLIC_SOCKET_URL` | Socket origin for the browser (blank = same origin) |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | Super-admin seeded on boot. No default password — leave blank to skip admin seeding |
 
 ## Project layout
 
@@ -57,8 +58,23 @@ data/                     # civs.ts, maps.ts (sourced from the AoE fandom wiki)
 All civ/map names and images are sourced from the **Age of Empires Wiki**
 (`ageofempires.fandom.com`) only. Do **not** use aoe4world.com.
 
+## 回報問題 / Feedback
+
+歡迎開 **[Issue](../../issues/new/choose)** 回報 bug 或提介面／功能建議 — 中文、English、日本語 皆可。
+社群的反饋就是這個站台的開發順序來源。
+
+Bug reports and feature requests are very welcome via issues, in any of those languages.
+
+**關於 Pull Request**:這個專案目前由我一個人維護,程式碼一律由我這邊修改,
+所以**不接受外部 PR**。請改用 issue 描述問題,我會排進來處理。
+This repository does not accept outside pull requests — please open an issue instead.
+
+程式碼公開是為了透明與方便討論,**未附授權條款**,保留一切權利。
+Source is public for transparency and discussion only; no licence is granted.
+
 ## Status
 
-M0 (skeleton) complete: scaffolding, data layer, auth, custom Socket.IO server,
-themed pages. Next up: M1 auth wiring → M2 preset editor → M3+ live match room.
-See `PLAN.md` §6.
+Live and in community testing. Working today: accounts (invite-only), the preset
+editor, the full draft room (map/civ ban & pick, snipe, simultaneous bans, timers),
+live spectating, match history, and en / 繁中 / 简中 / 日本語 localisation.
+See `PLAN.md` for the original architecture plan.

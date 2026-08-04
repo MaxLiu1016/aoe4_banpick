@@ -1,0 +1,48 @@
+name: 介面 / 功能建議 · Feedback or feature request
+description: 用起來不順、想要的功能、規則設定不夠用 / UI friction, missing features, rules you can't express
+labels: ["feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        中文、English、日本語 皆可 / Any of these languages is fine.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你遇到的問題 / The problem
+      description: 先講「痛點」而不是解法 — 比較好判斷怎麼修最合適 / Describe the pain, not just the fix
+      placeholder: 例:地圖 BP 階段看不出對手 ban 到哪一步
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: 你希望怎麼改 / What you'd like instead
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 相關區域 / Area
+      multiple: true
+      options:
+        - BP 畫面 / Draft room
+        - 規則編輯器 / Preset editor
+        - 觀戰 / Spectating
+        - 歷史紀錄 / History
+        - 帳號 / Accounts
+        - 翻譯 / Translations
+        - 其他 / Other
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 截圖或參考 / Screenshots or references
+      description: 其他 BP 網站的做法也歡迎附上 / Links to how other draft sites do it are welcome
+    validations:
+      required: false
