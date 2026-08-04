@@ -18,13 +18,75 @@ const STEP_TYPES: StepType[] = [
   "MAP_BAN", "MAP_PICK", "CIV_BAN", "CIV_PICK", "MAP_SELECT", "SYNC_CONFIRM", "CIV_OFFER", "CIV_SNIPE_OPPONENT", "GAME_RESULT",
 ];
 const ACTORS: Actor[] = ["HOST_DRAW", "PLAYER1", "PLAYER2", "LOSER", "WINNER"];
-const POOLS: Pool[] = ["map", "civ", "drafted_civ"];
+// No POOLS list any more: a step's pool is fully determined by its type
+// (see poolForType), so offering it as a dropdown only let you build presets
+// whose pool contradicted their type.
 
 // The pool a step operates on, derived from its type.
 function poolForType(type: StepType): Pool {
   if (type === "MAP_BAN" || type === "MAP_PICK" || type === "MAP_SELECT" || type === "GAME_RESULT") return "map";
   if (type === "CIV_BAN" || type === "CIV_PICK" || type === "SYNC_CONFIRM") return "civ"; // SYNC_CONFIRM has no pool; value unused
   return "drafted_civ"; // CIV_OFFER / CIV_SNIPE_OPPONENT
+}
+
+/**
+ * Which controls actually mean anything for a given step type.
+ *
+ * The engine already ignores the rest: `schema.ts` says the actor "is ignored"
+ * for simultaneous steps, and a GAME_RESULT winner comes from
+ * `options.resultMode` (vote or host), not from a seat or a pool. The editor
+ * used to render every control for every type anyway — which is what made a
+ * simultaneous step look like it belonged to player 1, and left "who decides
+ * the result?" as a question with no correct answer.
+ */
+type StepFields = {
+  actor: boolean;
+  count: boolean;
+  timer: boolean;
+  excludeUsedCivs: boolean;
+  // "always" = simultaneity is inherent to the type, so it can't be switched off.
+  simultaneous: false | "editable" | "always";
+};
+
+function fieldsFor(s: Step): StepFields {
+  switch (s.type) {
+    case "MAP_BAN":
+      return { actor: !s.simultaneous, count: true, timer: true, excludeUsedCivs: false, simultaneous: "editable" };
+    case "CIV_BAN":
+      return { actor: !s.simultaneous, count: true, timer: true, excludeUsedCivs: true, simultaneous: "editable" };
+    case "MAP_PICK":
+      return { actor: true, count: true, timer: true, excludeUsedCivs: false, simultaneous: false };
+    case "CIV_PICK":
+      return { actor: true, count: true, timer: true, excludeUsedCivs: true, simultaneous: false };
+    case "MAP_SELECT":
+      // Selects the single map played this game, so a count would mean nothing.
+      return { actor: true, count: false, timer: true, excludeUsedCivs: false, simultaneous: false };
+    case "CIV_OFFER":
+    case "CIV_SNIPE_OPPONENT":
+      return { actor: false, count: true, timer: true, excludeUsedCivs: true, simultaneous: "always" };
+    case "SYNC_CONFIRM":
+      return { actor: false, count: false, timer: true, excludeUsedCivs: false, simultaneous: "always" };
+    case "GAME_RESULT":
+      return { actor: false, count: false, timer: false, excludeUsedCivs: false, simultaneous: false };
+  }
+}
+
+// A simultaneous step's edge is player 1's blue running into player 2's rose —
+// literally "both of them". Gold was the obvious pick but the palette already
+// spends amber on prev-game winner/loser and on the game result, and a third
+// yellow next to those two reads as the same colour.
+const EDGE_BOTH =
+  "border-l-transparent before:absolute before:inset-y-0 before:-left-1 before:w-1 " +
+  "before:bg-gradient-to-b before:from-sky-500/80 before:to-rose-500/80";
+
+// Left edge = who acts.
+function edgeClass(s: Step): string {
+  if (s.type === "GAME_RESULT") return "border-l-amber-500/60";
+  if (!fieldsFor(s).actor) return EDGE_BOTH;
+  if (s.actor === "PLAYER1") return "border-l-sky-500/70";
+  if (s.actor === "PLAYER2") return "border-l-rose-500/70";
+  if (s.actor === "LOSER" || s.actor === "WINNER") return "border-l-amber-500/60";
+  return "border-l-bronze";
 }
 
 function newStep(): Step {
@@ -188,7 +250,7 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
         <div className="rounded-lg border border-danger/60 bg-danger/10 p-4 text-sm">
           <p className="font-display text-danger">{t("editor.notReady")}</p>
           <ul className="mt-1 list-disc pl-5 text-muted">
-            {problems.map((p, i) => <li key={i}>{p}</li>)}
+            {problems.map((p, i) => <li key={i}>{t(`validate.${p.code}`, p.params)}</li>)}
           </ul>
         </div>
       )}
@@ -313,18 +375,16 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
         <p className="mb-3 text-xs text-muted">{t("editor.tip")} · {t("editor.dragHint")}</p>
         <StepTimeline steps={config.steps} />
         <ol className="space-y-2">
-          {config.steps.map((s, i) => (
+          {config.steps.map((s, i) => {
+            const f = fieldsFor(s);
+            return (
             <li
               key={s.id}
               id={`step-node-${i}`}
               onDragOver={(e) => { if (dragIdx !== null) e.preventDefault(); }}
               onDrop={() => { if (dragIdx !== null) moveTo(dragIdx, i); setDragIdx(null); }}
-              className={`rounded-lg border border-l-4 bg-surface-2/60 p-3 transition ${
-                dragIdx === i ? "border-gold opacity-60" :
-                s.actor === "PLAYER1" ? "border-border border-l-sky-500/70" :
-                s.actor === "PLAYER2" ? "border-border border-l-rose-500/70" :
-                s.actor === "LOSER" || s.actor === "WINNER" ? "border-border border-l-amber-500/60" :
-                "border-border border-l-bronze"
+              className={`relative rounded-lg border border-l-4 bg-surface-2/60 p-3 transition ${
+                dragIdx === i ? "border-gold opacity-60" : `border-border ${edgeClass(s)}`
               }`}
             >
               <div className="flex items-center gap-2">
@@ -340,22 +400,42 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
                 <select value={s.type} onChange={(e) => updateStepMeta(i, { type: e.target.value as StepType })} className={selectCls}>
                   {STEP_TYPES.map((st) => <option key={st} value={st}>{t(`step.${st}`)}</option>)}
                 </select>
-                <select value={s.actor} onChange={(e) => updateStepMeta(i, { actor: e.target.value as Actor })} className={selectCls}>
-                  {ACTORS.map((a) => <option key={a} value={a}>{t(`actor.${a}`)}</option>)}
-                </select>
-                <select value={s.pool} onChange={(e) => updateStep(i, { pool: e.target.value as Pool })} className={selectCls}>
-                  {POOLS.map((pl) => <option key={pl} value={pl}>{t(`pool.${pl}`)}</option>)}
-                </select>
-                <label className="flex items-center gap-1 text-xs text-muted" title={t("editor.countHint")}>
-                  ×<input type="number" min={1} max={50} value={s.count}
-                    onChange={(e) => updateStepMeta(i, { count: clamp(+e.target.value, 1, 50) })}
-                    className="w-14 rounded border border-border bg-surface px-2 py-1 text-foreground" />
-                </label>
-                <label className="flex items-center gap-1 text-xs text-muted" title={t("editor.timerHint")}>
-                  ⏱<input type="number" min={0} max={3600} value={s.timeLimitSec}
-                    onChange={(e) => updateStep(i, { timeLimitSec: clamp(+e.target.value, 0, 3600) })}
-                    className="w-16 rounded border border-border bg-surface px-2 py-1 text-foreground" />
-                </label>
+                {f.actor ? (
+                  <select value={s.actor} onChange={(e) => updateStepMeta(i, { actor: e.target.value as Actor })} className={selectCls}>
+                    {ACTORS.map((a) => <option key={a} value={a}>{t(`actor.${a}`)}</option>)}
+                  </select>
+                ) : f.simultaneous !== false ? (
+                  <span
+                    title={t("editor.bothHint")}
+                    className="rounded border border-sky-500/40 bg-gradient-to-r from-sky-500/20 to-rose-500/20 px-2 py-1 text-xs whitespace-nowrap text-foreground"
+                  >
+                    {t("editor.both")}
+                  </span>
+                ) : s.type === "GAME_RESULT" ? (
+                  // Not "both at once" — the winner comes from options.resultMode.
+                  // Saying which answers "who decides this?" instead of leaving a
+                  // dropdown whose value never mattered.
+                  <span
+                    title={t("editor.resultByHint")}
+                    className="rounded border border-border px-2 py-1 text-xs whitespace-nowrap text-muted"
+                  >
+                    {t(config.options.resultMode === "host" ? "editor.resultByHost" : "editor.resultByVote")}
+                  </span>
+                ) : null}
+                {f.count && (
+                  <label className="flex items-center gap-1 text-xs text-muted" title={t("editor.countHint")}>
+                    ×<input type="number" min={1} max={50} value={s.count}
+                      onChange={(e) => updateStepMeta(i, { count: clamp(+e.target.value, 1, 50) })}
+                      className="w-14 rounded border border-border bg-surface px-2 py-1 text-foreground" />
+                  </label>
+                )}
+                {f.timer && (
+                  <label className="flex items-center gap-1 text-xs text-muted" title={t("editor.timerHint")}>
+                    ⏱<input type="number" min={0} max={3600} value={s.timeLimitSec}
+                      onChange={(e) => updateStep(i, { timeLimitSec: clamp(+e.target.value, 0, 3600) })}
+                      className="w-16 rounded border border-border bg-surface px-2 py-1 text-foreground" />
+                  </label>
+                )}
                 <div className="ml-auto flex gap-1">
                   <button onClick={() => insertStep(i)} className="rounded border border-bronze px-2 text-gold-bright hover:bg-surface" title={t("editor.insert")}>＋</button>
                   <button onClick={() => moveStep(i, -1)} className="rounded border border-border px-2 text-muted hover:text-gold-bright" title="↑">↑</button>
@@ -376,16 +456,27 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
                     <option value="shared">{t("editor.mapShared")}</option>
                   </select>
                 )}
-                {(s.type === "MAP_BAN" || s.type === "CIV_BAN") && (
+                {f.simultaneous === "editable" && (
                   <label className="flex items-center gap-1" title={t("editor.simultaneousHint")}>
                     <input type="checkbox" checked={Boolean(s.simultaneous)} onChange={(e) => updateStep(i, { simultaneous: e.target.checked })} />
                     {t("editor.simultaneous")}
                   </label>
                 )}
-                <label className="flex items-center gap-1">
-                  <input type="checkbox" checked={s.excludeUsedCivs} onChange={(e) => updateStep(i, { excludeUsedCivs: e.target.checked })} />
-                  {t("editor.excludeUsedCivs")}
-                </label>
+                {/* Shown checked-and-locked rather than hidden: this type is always
+                    simultaneous, and saying so is what stops "does one row cover
+                    both players?" from being a question at all. */}
+                {f.simultaneous === "always" && (
+                  <label className="flex items-center gap-1 text-gold-bright/80" title={t("editor.simultaneousAlwaysHint")}>
+                    <input type="checkbox" checked readOnly disabled />
+                    {t("editor.simultaneous")}
+                  </label>
+                )}
+                {f.excludeUsedCivs && (
+                  <label className="flex items-center gap-1">
+                    <input type="checkbox" checked={s.excludeUsedCivs} onChange={(e) => updateStep(i, { excludeUsedCivs: e.target.checked })} />
+                    {t("editor.excludeUsedCivs")}
+                  </label>
+                )}
                 {/* Per-step pause is redundant once the whole draft is pausable, so hide it then. */}
                 {!config.options.pausable && (
                   <label className="flex items-center gap-1">
@@ -401,7 +492,8 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
                 />
               </div>
             </li>
-          ))}
+            );
+          })}
         </ol>
       </section>
     </div>
@@ -420,6 +512,14 @@ const ACTOR_SHORT: Record<string, string> = {
   HOST_DRAW: "🎲", PLAYER1: "P1", PLAYER2: "P2", LOSER: "L", WINNER: "W",
 };
 
+// Timeline tag for who acts. "⇄" means both players at once; a step that simply
+// has no actor at all (the game result) gets nothing rather than a wrong symbol.
+function actorShortOf(s: Step): string {
+  const f = fieldsFor(s);
+  if (f.actor) return ACTOR_SHORT[s.actor] ?? "";
+  return f.simultaneous === false ? "" : "⇄";
+}
+
 // A horizontal node timeline of the steps: each node briefly shows what it does
 // and which game it's in; clicking one scrolls that step into view.
 function StepTimeline({ steps }: { steps: Step[] }) {
@@ -435,13 +535,17 @@ function StepTimeline({ steps }: { steps: Step[] }) {
             title={`#${i + 1} · ${defaultStepLabel(s)}`}
             className={`flex shrink-0 flex-col items-center rounded-md border bg-surface-2/60 px-2 py-1 text-[10px] leading-tight transition hover:brightness-125 ${
               s.type === "GAME_RESULT" ? "border-amber-500/70" :
+              // Same "both players" split as the step rows, so the two views agree.
+              !fieldsFor(s).actor ? "border-transparent bg-gradient-to-r from-sky-500/25 to-rose-500/25" :
               s.actor === "PLAYER1" ? "border-sky-500/60" :
               s.actor === "PLAYER2" ? "border-rose-500/60" :
               s.actor === "LOSER" || s.actor === "WINNER" ? "border-amber-500/50" : "border-bronze"
             }`}
           >
             <span className="font-display text-gold-bright">{i + 1}</span>
-            <span className="whitespace-nowrap text-muted">{ACTOR_SHORT[s.actor] ?? ""} {STEP_SHORT[s.type] ?? s.type}</span>
+            <span className="whitespace-nowrap text-muted">
+              {actorShortOf(s)} {STEP_SHORT[s.type] ?? s.type}
+            </span>
             <span className="text-[8px] text-muted/60">G{(gameOf[i] ?? 0) + 1}</span>
           </button>
         </div>

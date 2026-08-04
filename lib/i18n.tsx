@@ -8,7 +8,7 @@ export type Locale = "en" | "zh" | "cn" | "ja";
 
 // Traditional → Simplified character map (covers the chars used in the dictionary).
 // Lets the "cn" locale reuse the "zh" strings without a second hand-translation.
-const T2S: Record<string, string> = { "規": "规", "則": "则", "組": "组", "揮": "挥", "個": "个", "資": "资", "顯": "显", "稱": "称", "這": "这", "裡": "里", "儲": "储", "紀": "纪", "國": "国", "運": "运", "籌": "筹", "決": "决", "勝": "胜", "開": "开", "與": "与", "圖": "图", "對": "对", "戰": "战", "瀏": "浏", "覽": "览", "訂": "订", "輪": "轮", "數": "数", "擊": "击", "驟": "骤", "計": "计", "時": "时", "暫": "暂", "賽": "赛", "觀": "观", "選": "选", "標": "标", "雙": "双", "約": "约", "負": "负", "兩": "两", "邊": "边", "點": "点", "誤": "误", "陣": "阵", "為": "为", "術": "术", "來": "来", "進": "进", "廳": "厅", "帳": "帐", "號": "号", "電": "电", "郵": "邮", "碼": "码", "請": "请", "註": "注", "冊": "册", "採": "采", "員": "员", "還": "还", "沒": "没", "經": "经", "錯": "错", "敗": "败", "後": "后", "編": "编", "輯": "辑", "複": "复", "製": "制", "換": "换", "尋": "寻", "頁": "页", "刪": "删", "範": "范", "內": "内", "無": "无", "愛": "爱", "間": "间", "連": "连", "結": "结", "線": "线", "當": "当", "隊": "队", "長": "长", "準": "准", "備": "备", "傳": "传", "給": "给", "會": "会", "強": "强", "繼": "继", "續": "续", "獲": "获", "場": "场", "隨": "随", "機": "机", "隱": "隐", "鎖": "锁", "擇": "择", "緒": "绪", "張": "张", "僅": "仅", "誰": "谁", "贏": "赢", "寫": "写", "確": "确", "認": "认", "舊": "旧", "從": "从", "餘": "余", "說": "说", "項": "项", "幾": "几", "總": "总", "預": "预", "設": "设", "許": "许", "產": "产", "執": "执", "統": "统", "動": "动", "調": "调", "順": "顺", "嗎": "吗", "單": "单", "錄": "录", "參": "参", "過": "过", "純": "纯", "斷": "断", "曉": "晓", "眾": "众", "欄": "栏" };
+const T2S: Record<string, string> = { "規": "规", "則": "则", "組": "组", "揮": "挥", "個": "个", "資": "资", "顯": "显", "稱": "称", "這": "这", "裡": "里", "儲": "储", "紀": "纪", "國": "国", "運": "运", "籌": "筹", "決": "决", "勝": "胜", "開": "开", "與": "与", "圖": "图", "對": "对", "戰": "战", "瀏": "浏", "覽": "览", "訂": "订", "輪": "轮", "數": "数", "擊": "击", "驟": "骤", "計": "计", "時": "时", "暫": "暂", "賽": "赛", "觀": "观", "選": "选", "標": "标", "雙": "双", "約": "约", "負": "负", "兩": "两", "邊": "边", "點": "点", "誤": "误", "陣": "阵", "為": "为", "術": "术", "來": "来", "進": "进", "廳": "厅", "帳": "帐", "號": "号", "電": "电", "郵": "邮", "碼": "码", "請": "请", "註": "注", "冊": "册", "採": "采", "員": "员", "還": "还", "沒": "没", "經": "经", "錯": "错", "敗": "败", "後": "后", "編": "编", "輯": "辑", "複": "复", "製": "制", "換": "换", "尋": "寻", "頁": "页", "刪": "删", "範": "范", "內": "内", "無": "无", "愛": "爱", "間": "间", "連": "连", "結": "结", "線": "线", "當": "当", "隊": "队", "長": "长", "準": "准", "備": "备", "傳": "传", "給": "给", "會": "会", "強": "强", "繼": "继", "續": "续", "獲": "获", "場": "场", "隨": "随", "機": "机", "隱": "隐", "鎖": "锁", "擇": "择", "緒": "绪", "張": "张", "僅": "仅", "誰": "谁", "贏": "赢", "寫": "写", "確": "确", "認": "认", "舊": "旧", "從": "从", "餘": "余", "說": "说", "項": "项", "幾": "几", "總": "总", "預": "预", "設": "设", "許": "许", "產": "产", "執": "执", "統": "统", "動": "动", "調": "调", "順": "顺", "嗎": "吗", "單": "单", "錄": "录", "種": "种", "關": "关", "閉": "闭", "東": "东", "須": "须", "現": "现", "況": "况", "於": "于", "夠": "够", "參": "参", "過": "过", "純": "纯", "斷": "断", "曉": "晓", "眾": "众", "欄": "栏" };
 function toSimplified(s: string): string {
   let out = "";
   for (const ch of s) out += T2S[ch] ?? ch;
@@ -70,6 +70,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "presets.none": { en: "No presets yet. Forge your first one.", zh: "還沒有規則組，建立第一個吧。", ja: "プリセットがまだありません。最初の 1 つを作りましょう。" },
   "presets.noneSignin": { en: "No presets yet. Sign in to get started.", zh: "還沒有規則組，登入後開始。", ja: "プリセットがまだありません。ログインして始めましょう。" },
   "presets.start": { en: "Start match", zh: "開始對戰", ja: "対戦を開始" },
+  "presets.startFailed": { en: "Failed to start match", zh: "無法開始對戰", ja: "対戦を開始できませんでした" },
   "presets.edit": { en: "Edit", zh: "編輯", ja: "編集" },
   "presets.clone": { en: "Clone", zh: "複製", ja: "複製" },
   "presets.cloning": { en: "Cloning…", zh: "複製中…", ja: "複製中…" },
@@ -235,8 +236,11 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "step.CIV_PICK": { en: "Pick civ into pool", zh: "選文明進池", ja: "文明を PICK（プールへ）" },
   "step.MAP_SELECT": { en: "Select map", zh: "選圖開打", ja: "対戦マップを選択" },
   "step.SYNC_CONFIRM": { en: "Both players confirm", zh: "雙方確認", ja: "両プレイヤーが確認" },
-  "step.CIV_OFFER": { en: "Pick civ to field (simultaneous)", zh: "選文明出戰（同時）", ja: "出場文明を選択（同時）" },
-  "step.CIV_SNIPE_OPPONENT": { en: "Snipe opponent (simultaneous)", zh: "狙擊對手（同時）", ja: "相手をスナイプ（同時）" },
+  // No "(simultaneous)" suffix: the locked 同時進行 checkbox on the row says it,
+  // and having it in two places was the reason "simultaneous" looked like two
+  // different features depending on the step type.
+  "step.CIV_OFFER": { en: "Pick civ to field", zh: "選文明出戰", ja: "出場文明を選択" },
+  "step.CIV_SNIPE_OPPONENT": { en: "Snipe opponent", zh: "狙擊對手", ja: "相手をスナイプ" },
   "step.CIV_SNIPE_DRAFT": { en: "Snipe civ (legacy)", zh: "狙擊文明（舊版）", ja: "文明をスナイプ（旧仕様）" },
   "step.GAME_RESULT": { en: "Game result", zh: "對局結果", ja: "ゲーム結果" },
   // actors
@@ -292,6 +296,12 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "editor.showCurrentMap": { en: "show current map", zh: "顯示當前地圖", ja: "現在のマップを表示" },
   "editor.excludeUsedCivs": { en: "exclude used civs", zh: "排除已用文明", ja: "使用済みの文明を除外" },
   "editor.simultaneous": { en: "simultaneous", zh: "同時進行", ja: "同時進行" },
+  "editor.simultaneousAlwaysHint": { en: "This step type is always simultaneous — both players act at once and it cannot be switched off. One row covers BOTH players; do not add a second row for the other one. The count applies to EACH player.", zh: "這種步驟一定是同時進行，無法關閉。一列就代表雙方，不需要再為對手加第二列。數量是「每人」各幾個。", ja: "このステップは常に同時進行で、解除できません。1 行で両プレイヤー分を表すので、相手用にもう 1 行追加する必要はありません。数は「各プレイヤーあたり」です。" },
+  "editor.both": { en: "Both", zh: "雙方", ja: "両者" },
+  "editor.resultByVote": { en: "by player vote", zh: "由雙方投票", ja: "両プレイヤーの投票" },
+  "editor.resultByHost": { en: "by the host", zh: "由房主裁定", ja: "ホストが判定" },
+  "editor.resultByHint": { en: "Who records the winner is set once for the whole preset, in Options above — this step has nothing to choose.", zh: "由誰認定勝負是在上方「選項」統一設定的，這個步驟沒有東西要選。", ja: "勝者を誰が記録するかは上の「オプション」でプリセット全体に対して設定します。このステップで選ぶものはありません。" },
+  "editor.bothHint": { en: "Both players act at the same time, so this step has no single actor — one row covers both.", zh: "雙方同時進行，這個步驟沒有單一執行者 —— 一列就代表兩個人。", ja: "両プレイヤーが同時に行うため、このステップに単独の実行者はありません。1 行で両者を表します。" },
   "editor.simultaneousHint": { en: "Both players ban at the same time, each hidden until both submit. The step's actor is ignored, and the count applies to EACH player.", zh: "雙方同時 ban，互相隱藏到都送出才揭曉。此時執行者欄位無效，數量是「每人」各 ban 幾個。", ja: "両プレイヤーが同時に BAN し、両者が送信するまで互いに伏せられます。実行者欄は無視され、数は「各プレイヤーあたり」です。" },
   "editor.pausableShort": { en: "pausable", zh: "可暫停", ja: "一時停止可" },
   "editor.stepNo": { en: "Step order — the draft runs top to bottom", zh: "步驟順序——由上往下依序執行", ja: "ステップ順 — 上から順に実行されます" },
@@ -301,6 +311,20 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "editor.dragHint": { en: "drag ⠿ to reorder", zh: "拖曳 ⠿ 調整順序", ja: "⠿ をドラッグして並べ替え" },
   "editor.regenConfirm": { en: "Regenerate steps from the default flow? This replaces the current step list.", zh: "要依預設流程重新產生步驟嗎？這會取代目前的步驟清單。", ja: "既定のフローからステップを再生成しますか？現在のステップ一覧は置き換えられます。" },
   "editor.deleteConfirm": { en: "Delete this preset permanently?", zh: "確定永久刪除此規則組？", ja: "このプリセットを完全に削除しますか？" },
+  // Preset validation. Keys match the `code` values in lib/draft/validate.ts;
+  // {placeholders} are the numbers that made the rule fail, so the reader can see
+  // what to change without counting steps by hand.
+  "validate.noMaps": { en: "The map pool needs at least 1 map.", zh: "地圖池至少要有 1 張地圖。", ja: "マッププールにはマップが最低 1 つ必要です。" },
+  "validate.noCivs": { en: "The civ pool needs at least 2 civilizations to choose from.", zh: "文明池至少要有 2 個文明可選。", ja: "文明プールには選べる文明が最低 2 つ必要です。" },
+  "validate.noGames": { en: "Add at least one game (a “Game result” step).", zh: "至少要有一場比賽（一個「對局結果」步驟）。", ja: "最低 1 ゲーム（「ゲーム結果」ステップ）を追加してください。" },
+  "validate.tooFewGames": { en: "Best of {bestOf} needs at least {needed} games (“Game result” steps) so the series can always be decided — there are only {have}.", zh: "Bo{bestOf} 至少需要 {needed} 場比賽（「對局結果」步驟），系列賽才能確保分出勝負 —— 目前只有 {have} 場。", ja: "Bo{bestOf} では必ず決着がつくように「ゲーム結果」ステップが最低 {needed} 個必要ですが、現在は {have} 個しかありません。" },
+  "validate.mapOverdraw": { en: "Map bans + picks ({used}) exceed the map pool ({pool}).", zh: "地圖 ban + pick 的數量（{used}）超過地圖池上限（{pool}）。", ja: "マップの BAN + PICK の合計（{used}）がマッププール（{pool}）を超えています。" },
+  "validate.mapPoolEmpty": { en: "After bans/picks the map pool would be empty — no map to play.", zh: "ban/pick 之後地圖池會空掉 —— 沒有地圖可以打。", ja: "BAN/PICK の後にマッププールが空になり、プレイするマップがありません。" },
+  "validate.civOverdraw": { en: "Civ pool bans + drafts ({used}) exceed the civ pool ({pool}).", zh: "文明 ban + draft 的數量（{used}）超過文明池上限（{pool}）。", ja: "文明の BAN + ドラフトの合計（{used}）が文明プール（{pool}）を超えています。" },
+  "validate.gameNoMap": { en: "Game {game}: add a “Select map” step — the game has no map.", zh: "第 {game} 場：需要一個「選擇地圖」步驟 —— 這場沒有地圖。", ja: "ゲーム {game}：「マップを選択」ステップを追加してください。マップがありません。" },
+  "validate.gameNoCiv": { en: "Game {game}: add a civ step (offer/snipe) — players have no civ.", zh: "第 {game} 場：需要一個文明步驟（選文明出戰／狙擊）—— 選手沒有文明可用。", ja: "ゲーム {game}：文明ステップ（出場文明の選択／スナイプ）を追加してください。使う文明がありません。" },
+  "validate.offerMinusSnipe": { en: "Game {game}: offer ({offer}) minus snipe ({snipe}) must be at least 1, or a player can be left with no civ.", zh: "第 {game} 場：選文明出戰（{offer}）扣掉狙擊（{snipe}）後必須至少剩 1，否則可能出現選手沒有文明可選的情況。", ja: "ゲーム {game}：出場文明の数（{offer}）からスナイプ（{snipe}）を引いた値は 1 以上必要です。さもないと使える文明が無くなる可能性があります。" },
+  "validate.handTooSmall": { en: "Each player's hand ({hand}) is smaller than the number of games ({games}); with “exclude used civs” they will run out.", zh: "每位選手的文明池（{hand}）少於比賽場數（{games}），開了「排除已用文明」會不夠用。", ja: "各プレイヤーの手持ち文明（{hand}）がゲーム数（{games}）より少ないため、「使用済み文明を除外」を有効にすると足りなくなります。" },
 };
 
 // BCP-47 tag written to <html lang> for each locale.

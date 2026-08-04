@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
+import type { PresetIssue } from "@/lib/draft/validate";
 
 export function StartMatchButton({ presetId }: { presetId: string }) {
   const router = useRouter();
@@ -20,7 +21,12 @@ export function StartMatchButton({ presetId }: { presetId: string }) {
       if (res.status === 401) { router.push("/login"); return; }
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        const msg = Array.isArray(j.issues) && j.issues.length ? j.issues.join("\n") : j.error ?? "Failed to start match";
+        // The API ships validation issues as { code, params } so they can be read
+        // in the viewer's own language rather than always in English.
+        const issues: PresetIssue[] = Array.isArray(j.issues) ? j.issues : [];
+        const msg = issues.length
+          ? issues.map((p) => t(`validate.${p.code}`, p.params)).join("\n")
+          : j.error ?? t("presets.startFailed");
         alert(msg);
         setBusy(false);
         return;
