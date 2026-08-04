@@ -641,7 +641,15 @@ function StepBar({ steps, currentIndex, finished }: {
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    ref.current?.querySelector('[data-current="1"]')?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    const bar = ref.current;
+    const el = bar?.querySelector<HTMLElement>('[data-current="1"]');
+    if (!bar || !el) return;
+    // Scroll the strip itself instead of scrollIntoView(): that also scrolls
+    // every scrollable ancestor, and on a sticky bar it can yank the whole page
+    // back up mid-draft while the player is looking at the pool below.
+    // Re-centres on every step change, so a manual scroll is corrected at the
+    // next step rather than being remembered.
+    bar.scrollTo({ left: Math.max(0, el.offsetLeft - (bar.clientWidth - el.offsetWidth) / 2), behavior: "smooth" });
   }, [currentIndex]);
 
   if (steps.length === 0) return null;
