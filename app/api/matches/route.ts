@@ -65,15 +65,24 @@ export async function POST(req: Request) {
  * The signed-in user's draft history. "Participated" means they held a seat or
  * hosted the room — merely spectating a draft never puts it in your list.
  */
-export async function GET() {
+export async function GET(req: Request) {
+  const global = new URL(req.url).searchParams.get("scope") === "global";
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json([]);
+  if (!global && !user) return NextResponse.json([]);
   await dbConnect();
-  const docs = await Match.find({
-    $or: [{ hostId: user.id }, { player1Id: user.id }, { player2Id: user.id }],
-  })
+
+  // The global feed deliberately excludes anonymous drafts outright rather than
+  // just masking the names. Someone who ticked "anonymous" is practising a format
+  // they don't want scouted, and a public row saying WHEN and WHICH PRESET is
+  // usually enough to work out who, names or no names. It also skips lobbies —
+  // a room nobody has played in yet isn't a match.
+  const filter = global
+    ? { "config.options.anonymous": { $ne: true }, status: { $in: ["running", "paused", "finished"] }, player1Id: { $ne: null }, player2Id: { $ne: null } }
+    : { $or: [{ hostId: user!.id }, { player1Id: user!.id }, { player2Id: user!.id }] };
+
+  const docs = await Match.find(filter)
     .sort({ updatedAt: -1 })
-    .limit(50)
+    .limit(global ? 20 : 50)
     .lean();
 
   // Scores come from the per-game records in one batched query rather than
@@ -94,8 +103,9 @@ export async function GET() {
     docs.map((d) => {
       const id = String(d._id);
       const anonymous = Boolean((d.config as { options?: { anonymous?: boolean } })?.options?.anonymous);
-      const asP1 = String(d.player1Id ?? "") === user.id;
-      const asP2 = String(d.player2Id ?? "") === user.id;
+      const asP1 = !!user && String(d.player1Id ?? "") === user.id;
+      const asP2 = !!user && String(d.player2Id ?? "") === user.id;
+      const asHost = !!user && String(d.hostId ?? "") === user.id;
       return {
         id,
         name: d.name || "",
@@ -103,8 +113,9 @@ export async function GET() {
         shareCode: d.shareCode,
         bestOf: (d.config as { options?: { bestOf?: number } })?.options?.bestOf,
         anonymous,
-        // Your seat in that match — "host" only when you never took a seat.
-        role: asP1 ? "player1" : asP2 ? "player2" : "host",
+        // Your seat in that match — "host" only when you never took a seat, and
+        // null in the global feed, where most rows have nothing to do with you.
+        role: asP1 ? "player1" : asP2 ? "player2" : asHost ? "host" : null,
         player1Name: d.player1Name ?? null,
         player2Name: d.player2Name ?? null,
         score: scores.get(id) ?? { player1: 0, player2: 0 },
