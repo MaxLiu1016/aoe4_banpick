@@ -71,6 +71,11 @@ h1, h2, h3, .font-display {
 .aoe-btn:hover { filter: brightness(1.2); }
 .aoe-btn:active { transform: translateY(1px); }
 
+/* Scrollable strips that scroll themselves (e.g. the draft step bar) — the
+   scrollbar adds visual noise to what is really a status indicator. */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
 /* Hand cursor on all interactive buttons (disabled ones excluded). */
 button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
 button:disabled { cursor: not-allowed; }

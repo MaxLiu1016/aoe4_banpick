@@ -19,10 +19,10 @@ const MAP_IMG = new Map(DEFAULT_MAPS.map((m) => [m.id, m.imageUrl]));
 // is attributed to a player. Bans are deliberately colourless (greyscale + ✕) so
 // red always reads as "player 2" — players were misreading the old green "pick"
 // tint as "it's my turn". Gold is reserved for "you are the one acting now".
-type OwnerTone = { text: string; border: string; ring: string; bg: string };
+type OwnerTone = { text: string; border: string; borderL: string; ring: string; bg: string };
 const OWNER: Record<"player1" | "player2", OwnerTone> = {
-  player1: { text: "text-sky-400", border: "border-sky-400", ring: "ring-sky-400", bg: "bg-sky-400/10" },
-  player2: { text: "text-rose-400", border: "border-rose-400", ring: "ring-rose-400", bg: "bg-rose-400/10" },
+  player1: { text: "text-sky-400", border: "border-sky-400", borderL: "border-l-sky-400", ring: "ring-sky-400", bg: "bg-sky-400/10" },
+  player2: { text: "text-rose-400", border: "border-rose-400", borderL: "border-l-rose-400", ring: "ring-rose-400", bg: "bg-rose-400/10" },
 };
 function ownerOf(by?: string) {
   return by === "player1" ? OWNER.player1 : by === "player2" ? OWNER.player2 : null;
@@ -644,39 +644,52 @@ function StepBar({ steps, currentIndex, finished }: {
     const bar = ref.current;
     const el = bar?.querySelector<HTMLElement>('[data-current="1"]');
     if (!bar || !el) return;
-    // Scroll the strip itself instead of scrollIntoView(): that also scrolls
-    // every scrollable ancestor, and on a sticky bar it can yank the whole page
-    // back up mid-draft while the player is looking at the pool below.
-    // Re-centres on every step change, so a manual scroll is corrected at the
-    // next step rather than being remembered.
-    bar.scrollTo({ left: Math.max(0, el.offsetLeft - (bar.clientWidth - el.offsetWidth) / 2), behavior: "smooth" });
+    // Measured against the strip's own visible box, so this doesn't depend on
+    // which ancestor happens to be the offsetParent.
+    const barBox = bar.getBoundingClientRect();
+    const elBox = el.getBoundingClientRect();
+    const offsetInView = elBox.left - barBox.left;
+    // Leave the strip alone while the current step is already fully in view —
+    // early on the highlight should just walk to the right without the whole bar
+    // sliding under it. Only once the step falls off an edge do we centre it.
+    if (offsetInView >= 0 && offsetInView + elBox.width <= bar.clientWidth) return;
+    // Scroll the strip itself rather than scrollIntoView(), which also scrolls
+    // every scrollable ancestor and can drag the sticky bar's page along with it.
+    const target = bar.scrollLeft + offsetInView - (bar.clientWidth - elBox.width) / 2;
+    bar.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
   }, [currentIndex]);
 
   if (steps.length === 0) return null;
   return (
-    <div ref={ref} className="sticky top-0 z-20 -mx-4 flex gap-1 overflow-x-auto border-b border-border bg-background/95 px-4 py-2 backdrop-blur">
+    <div ref={ref} className="no-scrollbar sticky top-0 z-20 -mx-4 flex gap-2 overflow-x-auto border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
       {steps.map((s, i) => {
         const done = finished || i < currentIndex;
         const current = !finished && i === currentIndex;
         const own = ownerOf(s.actor ?? undefined);
         const newGame = i > 0 && s.gameIndex !== steps[i - 1].gameIndex;
         return (
-          <div key={i} className="flex shrink-0 items-center gap-1">
-            {newGame && <span className="mx-1 h-4 w-px bg-border" aria-hidden />}
-            <span
+          <div key={i} className="flex shrink-0 items-center gap-2">
+            {newGame && <span className="mx-1 h-8 w-px bg-border" aria-hidden />}
+            <div
               data-current={current ? "1" : undefined}
               title={s.label}
               className={[
-                "flex shrink-0 items-center gap-1 rounded border px-2 py-1 text-[11px] leading-none whitespace-nowrap transition",
-                current ? "border-gold bg-gold/15 text-gold-bright ring-1 ring-gold font-semibold"
-                  : done ? "border-border/60 bg-surface-2/40 text-muted opacity-60"
-                  : "border-border text-muted",
+                // Same shape as a step row in the preset editor: rounded card with
+                // a thick left edge in the acting player's colour.
+                "flex shrink-0 items-center gap-2 rounded-lg border border-l-4 px-3 py-2 whitespace-nowrap transition",
+                own ? own.borderL : "border-l-bronze",
+                current ? "border-gold bg-gold/15 ring-1 ring-gold"
+                  : done ? "border-border/60 bg-surface-2/40 opacity-50"
+                  : "border-border bg-surface-2/30",
               ].join(" ")}
             >
-              {own && <span className={`${own.text} font-bold`}>●</span>}
-              {done && !current && <span aria-hidden>✓</span>}
-              {s.label}
-            </span>
+              <span className={`font-display text-sm ${current ? "text-gold-bright" : "text-muted"}`}>
+                {done && !current ? "✓" : i + 1}
+              </span>
+              <span className={`text-sm leading-tight ${current ? "font-semibold text-gold-bright" : done ? "text-muted" : "text-foreground"}`}>
+                {s.label}
+              </span>
+            </div>
           </div>
         );
       })}
