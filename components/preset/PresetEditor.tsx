@@ -238,6 +238,8 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
             onChange={(v) => patchOptions({ publicHover: v })} hint={t("editor.publicHoverHint")} />
           <ToggleField label={t("editor.pausable")} checked={config.options.pausable}
             onChange={(v) => patchOptions({ pausable: v })} hint={t("editor.pausableHint")} />
+          <ToggleField label={t("editor.anonymous")} checked={Boolean(config.options.anonymous)}
+            onChange={(v) => patchOptions({ anonymous: v })} hint={t("editor.anonymousHint")} />
           <label className="block">
             <span className="mb-1 block text-xs uppercase tracking-wide text-muted">{t("editor.resultMode")}</span>
             <select value={config.options.resultMode ?? "vote"}

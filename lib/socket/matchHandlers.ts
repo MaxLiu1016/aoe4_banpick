@@ -67,6 +67,7 @@ async function buildPayload(matchId: string) {
     publicHover: Boolean(match.config?.options?.publicHover),
     resultMode: match.config?.options?.resultMode ?? "vote",
     pausable: match.config?.options?.pausable ?? true,
+    anonymous: Boolean(match.config?.options?.anonymous),
     deadlineTs: live && t ? t.deadlineTs : null,
     // Client clocks are often skewed by seconds; send our wall-clock so the
     // client can correct the offset and display a countdown that matches when
@@ -285,14 +286,31 @@ type FullPayload = NonNullable<Awaited<ReturnType<typeof buildPayload>>>;
 // Hide not-yet-revealed simultaneous info from each recipient. Note that
 // `awaiting` is NOT redacted — the UI needs "opponent has submitted" without
 // learning WHAT they submitted.
-function redactFor(payload: FullPayload, role: Role): FullPayload {
+function redactFor(payload: FullPayload, role: Role, isHost: boolean): FullPayload {
   const hideOther = (obj: { player1: string[]; player2: string[] }) => {
     if (role === "player1") obj.player2 = [];
     else if (role === "player2") obj.player1 = [];
     else { obj.player1 = []; obj.player2 = []; }
   };
 
-  let state = payload.state;
+  let out = payload;
+
+  // Anonymous mode: strip the seat names for anyone who is neither a player nor
+  // the host. Clearing the name (rather than substituting text) lets the client
+  // fall back to its own localised "Player 1" / "Player 2" labels.
+  const isParticipant = role === "player1" || role === "player2" || isHost;
+  if (payload.anonymous && !isParticipant) {
+    out = {
+      ...out,
+      seats: {
+        ...out.seats,
+        player1: out.seats.player1 ? { ...out.seats.player1, name: undefined } : null,
+        player2: out.seats.player2 ? { ...out.seats.player2, name: undefined } : null,
+      },
+    };
+  }
+
+  let state = out.state;
   let touched = false;
 
   // Simultaneous ban in progress: you may see your own held bans, nobody else's.
@@ -319,7 +337,7 @@ function redactFor(payload: FullPayload, role: Role): FullPayload {
     touched = true;
   }
 
-  return touched ? { ...payload, state } : payload;
+  return touched ? { ...out, state } : out;
 }
 
 async function broadcast(io: Server, matchId: string) {
@@ -330,7 +348,8 @@ async function broadcast(io: Server, matchId: string) {
   const sockets = await io.in(ROOM(matchId)).fetchSockets();
   for (const s of sockets) {
     const role = (s.data.role as Role) ?? "spectator";
-    s.emit(S2C.STATE, { ...redactFor(full, role), you: role, youAreHost: Boolean(s.data.isHost) });
+    const isHost = Boolean(s.data.isHost);
+    s.emit(S2C.STATE, { ...redactFor(full, role, isHost), you: role, youAreHost: isHost });
   }
 }
 

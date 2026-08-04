@@ -41,6 +41,7 @@ interface Payload {
   publicHover: boolean;
   resultMode?: "vote" | "host";
   pausable?: boolean;
+  anonymous?: boolean;
   deadlineTs: number | null;
   serverNow?: number;
   seats: { host: string; player1: Seat; player2: Seat };
@@ -245,7 +246,10 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
       {/* Scoreboard — collapsible to a compact status bar so the area below stays roomy */}
       <div className="aoe-panel rounded-xl p-4">
         <div className="mb-3 flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-wide text-muted">{t("match.scoreboard")}</span>
+          <span className="text-[10px] uppercase tracking-wide text-muted">
+            {t("match.scoreboard")}
+            {payload!.anonymous && <span className="ml-2 rounded border border-bronze px-1.5 py-0.5 text-gold-bright" title={t("match.anonymousHint")}>🕶 {t("match.anonymous")}</span>}
+          </span>
           <button onClick={() => setMinimized((m) => !m)}
             className="inline-flex items-center gap-1.5 rounded-md border border-bronze bg-surface-2 px-3 py-1 text-xs font-display text-gold-bright shadow hover:brightness-110">
             {minimized ? <>⤢ {t("match.expand")}</> : <>▭ {t("match.minimize")}</>}

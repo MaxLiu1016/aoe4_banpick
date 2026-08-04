@@ -85,6 +85,9 @@ export const PresetOptionsSchema = z.object({
   // How a game's winner is decided: "vote" = both players pick and must agree
   // (host can still override); "host" = only the host/referee calls it.
   resultMode: z.enum(["vote", "host"]).default("vote"),
+  // Hide both players' names from SPECTATORS (the two players and the host still
+  // see each other) — for practising a tournament format without being scouted.
+  anonymous: z.boolean().default(false),
 });
 export type PresetOptions = z.infer<typeof PresetOptionsSchema>;
 

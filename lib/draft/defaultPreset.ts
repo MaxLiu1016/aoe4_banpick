@@ -51,6 +51,6 @@ export function buildDefaultConfig(bestOf = 5): PresetConfig {
     civs: BASE_CIVS,
     maps: DEFAULT_MAPS,
     steps,
-    options: { bestOf, publicHover: false, defaultTimeLimitSec: 30, pausable: false, resultMode: "vote" },
+    options: { bestOf, publicHover: false, defaultTimeLimitSec: 30, pausable: false, resultMode: "vote", anonymous: false },
   };
 }
