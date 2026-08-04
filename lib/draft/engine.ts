@@ -78,6 +78,8 @@ export interface DerivedState {
   finished: boolean;
   bestOf: number;
   target: number;
+  /** Series runs to the last game rather than stopping once it's decided. */
+  playAll: boolean;
   score: { player1: number; player2: number };
   maps: PoolView[];
   civs: PoolView[];
@@ -407,7 +409,11 @@ export function deriveState(
       : resolveActor(s, gameOf[i], games),
   }));
 
-  const finished = !currentStep || p1 >= target || p2 >= target;
+  // Normally the series ends the moment one side is mathematically safe. With
+  // playAll the only thing that ends it is running out of steps, so a 3-0 Bo5
+  // still plays games 4 and 5.
+  const playAll = Boolean(config.options.playAll);
+  const finished = !currentStep || (!playAll && (p1 >= target || p2 >= target));
 
   return {
     status: finished ? "finished" : status,
@@ -423,6 +429,7 @@ export function deriveState(
     finished,
     bestOf: config.options.bestOf,
     target,
+    playAll,
     score: { player1: p1, player2: p2 },
     maps,
     civs,

@@ -533,13 +533,15 @@ export function registerMatchHandlers(io: Server) {
       } catch { /* ignore */ }
     });
 
-    // Privacy is per-session, not per-format: a tournament preset is shared and
-    // public, but "let me quietly practise it with you" has to be settable
-    // without cloning the whole preset. The preset's values are the defaults;
-    // the host can override them here, and only while still in the lobby —
-    // flipping anonymity mid-draft would retroactively expose names spectators
-    // had already been shown (or hide names they had already seen).
-    socket.on(C2S.SET_PRIVACY, async ({ matchId, anonymous, publicHover }: { matchId: string; anonymous?: boolean; publicHover?: boolean }) => {
+    // These are per-session, not per-format: a tournament preset is shared and
+    // public, but "let me quietly practise it with you" — and "let's play the
+    // dead rubbers anyway" — have to be settable without cloning the whole
+    // preset. The preset's values are the defaults; the host can override them
+    // here, and only while still in the lobby. Mid-draft would be worse than
+    // useless: flipping anonymity would retroactively expose names spectators
+    // had been shown, and flipping playAll would move the finish line under a
+    // player who is already one game from taking the series.
+    socket.on(C2S.SET_OPTIONS, async ({ matchId, anonymous, publicHover, playAll }: { matchId: string; anonymous?: boolean; publicHover?: boolean; playAll?: boolean }) => {
       try {
         if (!socket.data.isHost || socket.data.matchId !== matchId) return;
         await dbConnect();
@@ -548,6 +550,7 @@ export function registerMatchHandlers(io: Server) {
         const set: Record<string, boolean> = {};
         if (typeof anonymous === "boolean") set["config.options.anonymous"] = anonymous;
         if (typeof publicHover === "boolean") set["config.options.publicHover"] = publicHover;
+        if (typeof playAll === "boolean") set["config.options.playAll"] = playAll;
         if (!Object.keys(set).length) return;
         // config is a Mixed field, so a dotted $set is the way to touch one key
         // without rewriting (and racing on) the whole snapshot.

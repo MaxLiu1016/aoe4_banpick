@@ -88,6 +88,11 @@ export const PresetOptionsSchema = z.object({
   // Hide both players' names from SPECTATORS (the two players and the host still
   // see each other) — for practising a tournament format without being scouted.
   anonymous: z.boolean().default(false),
+  // Play every game of the series instead of stopping the moment one side can no
+  // longer be caught — practice sessions usually want all the games. Optional
+  // rather than defaulted because it is set per match in the lobby, not authored
+  // into a preset, and a default would make it required on every stored config.
+  playAll: z.boolean().optional(),
 });
 export type PresetOptions = z.infer<typeof PresetOptionsSchema>;
 

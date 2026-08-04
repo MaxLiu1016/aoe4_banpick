@@ -135,7 +135,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   function voteResult(gameIndex: number, winner: "player1" | "player2") { emit(C2S.RESULT_CLICK, { matchId, gameIndex, winner }); }
   function rename(name: string) { emit(C2S.RENAME, { matchId, name }); }
   function forceStart() { emit(C2S.START, { matchId }); }
-  function setPrivacy(p: { anonymous?: boolean; publicHover?: boolean }) { emit(C2S.SET_PRIVACY, { matchId, ...p }); }
+  function setOptions(p: { anonymous?: boolean; publicHover?: boolean; playAll?: boolean }) { emit(C2S.SET_OPTIONS, { matchId, ...p }); }
   function copyInvite() {
     navigator.clipboard?.writeText(inviteUrl).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); });
   }
@@ -162,12 +162,13 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         copied={copied}
         anonymous={Boolean(payload!.anonymous)}
         publicHover={Boolean(payload!.publicHover)}
+        playAll={Boolean(state.playAll)}
         onCopy={copyInvite}
         onTake={takeSeat}
         onReady={setReady}
         onRename={rename}
         onStart={forceStart}
-        onPrivacy={setPrivacy}
+        onOptions={setOptions}
         error={error}
       />
     );
@@ -240,6 +241,12 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   // Display names (fall back to "Player 1/2" when a seat is unnamed).
   const p1Name = payload!.seats.player1?.name || t("match.p1");
   const p2Name = payload!.seats.player2?.name || t("match.p2");
+  // Playing every game makes a level series reachable (an even best-of ending all
+  // square), so "whoever isn't player 1" stops being a safe read of the winner.
+  const seriesWinner = state.score.player1 === state.score.player2
+    ? null
+    : state.score.player1 > state.score.player2 ? p1Name : p2Name;
+  const outcomeLabel = seriesWinner ? t("match.winner", { name: seriesWinner }) : t("match.drawn");
 
   return (
     <div className="space-y-5">
@@ -264,7 +271,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           <MiniScoreboard
             state={state} p1Name={p1Name} p2Name={p2Name} civById={civById}
             p1Hand={p1Hand} p2Hand={p2Hand} p1Banned={p1Banned} p2Banned={p2Banned}
-            status={state.finished ? t("match.winner", { name: state.score.player1 > state.score.player2 ? p1Name : p2Name }) : payload!.status === "paused" ? t("match.paused") : turnLabel(state, t)}
+            status={state.finished ? outcomeLabel : payload!.status === "paused" ? t("match.paused") : turnLabel(state, t)}
             statusTone={payload!.status === "paused" && !state.finished ? "text-danger" : "aoe-gold-text"}
           />
         )}
@@ -277,11 +284,13 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
             onTake={() => takeSeat("player1")} crowned={state.finished && state.score.player1 > state.score.player2} />
           <div className="text-center">
             <div className="font-display text-3xl aoe-gold-text">{state.score.player1} — {state.score.player2}</div>
-            <div className="text-xs text-muted">{t("match.bestOf", { n: state.bestOf, t: state.target })}</div>
+            <div className="text-xs text-muted">
+              {state.playAll ? t("match.bestOfAll", { n: state.bestOf }) : t("match.bestOf", { n: state.bestOf, t: state.target })}
+            </div>
             <div className="mt-1">
               {state.finished ? (
                 <span className="font-display text-xl aoe-gold-text">
-                  {t("match.winner", { name: state.score.player1 > state.score.player2 ? p1Name : p2Name })}
+                  {outcomeLabel}
                 </span>
               ) : payload!.status === "paused" ? (
                 <span className="text-xs text-danger">{t("match.paused")}</span>
@@ -788,7 +797,7 @@ function RenameControl({ current, onRename }: { current: string; onRename: (name
   );
 }
 
-function Lobby({ seats, you, amHost, loggedIn, bestOf, inviteUrl, copied, anonymous, publicHover, onCopy, onTake, onReady, onRename, onStart, onPrivacy, error }: {
+function Lobby({ seats, you, amHost, loggedIn, bestOf, inviteUrl, copied, anonymous, publicHover, playAll, onCopy, onTake, onReady, onRename, onStart, onOptions, error }: {
   seats: { host: string; player1: Seat; player2: Seat };
   you: SeatRole | "spectator";
   amHost: boolean;
@@ -798,12 +807,13 @@ function Lobby({ seats, you, amHost, loggedIn, bestOf, inviteUrl, copied, anonym
   copied: boolean;
   anonymous: boolean;
   publicHover: boolean;
+  playAll: boolean;
   onCopy: () => void;
   onTake: (seat: "player1" | "player2") => void;
   onReady: (ready: boolean) => void;
   onRename: (name: string) => void;
   onStart: () => void;
-  onPrivacy: (p: { anonymous?: boolean; publicHover?: boolean }) => void;
+  onOptions: (p: { anonymous?: boolean; publicHover?: boolean; playAll?: boolean }) => void;
   error: string | null;
 }) {
   const { t } = useI18n();
@@ -872,22 +882,27 @@ function Lobby({ seats, you, amHost, loggedIn, bestOf, inviteUrl, copied, anonym
         <p className="mt-2 text-xs text-muted">{t("match.shareHint")}</p>
       </div>
 
-      {/* Privacy for THIS draft. The preset seeded these; the host can change
+      {/* Settings for THIS draft. The preset seeded these; the host can change
           them until the draft starts, so practising a shared tournament format
           quietly doesn't mean cloning the format. Everyone sees the current
           state — a player deserves to know whether they're being watched. */}
       <div className="aoe-panel rounded-xl p-5">
-        <h3 className="font-display text-sm uppercase tracking-wide text-muted">{t("match.privacy")}</h3>
+        <h3 className="font-display text-sm uppercase tracking-wide text-muted">{t("match.settings")}</h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <PrivacyToggle
+          <OptionToggle
             label={t("editor.anonymous")} hint={t("editor.anonymousHint")}
             checked={anonymous} disabled={!amHost}
-            onChange={(v) => onPrivacy({ anonymous: v })}
+            onChange={(v) => onOptions({ anonymous: v })}
           />
-          <PrivacyToggle
+          <OptionToggle
             label={t("editor.publicHover")} hint={t("editor.publicHoverHint")}
             checked={publicHover} disabled={!amHost}
-            onChange={(v) => onPrivacy({ publicHover: v })}
+            onChange={(v) => onOptions({ publicHover: v })}
+          />
+          <OptionToggle
+            label={t("match.playAll", { n: bestOf })} hint={t("match.playAllHint", { n: bestOf })}
+            checked={playAll} disabled={!amHost}
+            onChange={(v) => onOptions({ playAll: v })}
           />
         </div>
         {/* The host needs no explanation — the toggles say what they do, and they
@@ -910,7 +925,7 @@ function Lobby({ seats, you, amHost, loggedIn, bestOf, inviteUrl, copied, anonym
   );
 }
 
-function PrivacyToggle({ label, hint, checked, disabled, onChange }: {
+function OptionToggle({ label, hint, checked, disabled, onChange }: {
   label: string; hint: string; checked: boolean; disabled: boolean; onChange: (v: boolean) => void;
 }) {
   return (

@@ -15,10 +15,10 @@ export const C2S = {
   READY: "match:ready", // { matchId, ready } — a seated player toggles ready
   RENAME: "match:rename", // { matchId, name } — a seated player renames themselves
   START: "match:start", // { matchId } — host force-starts once both seated
-  // Host-only, lobby-only: override this draft's privacy settings. The preset
-  // supplies the defaults; whether a given session is scouted is a property of
-  // the session, not of the format it plays.
-  SET_PRIVACY: "match:setPrivacy", // { matchId, anonymous?, publicHover? }
+  // Host-only, lobby-only: override this draft's own settings. The preset supplies
+  // the defaults; whether a given session is scouted, or plays out its dead
+  // rubbers, is a property of the session rather than of the format.
+  SET_OPTIONS: "match:setOptions", // { matchId, anonymous?, publicHover?, playAll? }
   RESULT_CLICK: "match:resultClick", // { matchId, gameIndex, winner }
   RESULT_OVERRIDE: "match:resultOverride", // host only { matchId, gameIndex, winner }
   RESULT_ACK: "match:resultAck", // { matchId, gameIndex } — a player acknowledges a decided game so the next clock may start
