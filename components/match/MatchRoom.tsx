@@ -32,7 +32,10 @@ function ownerOf(by?: string) {
 // 1200px while making each icon far bigger than the old fixed 48px — the pool is
 // scanned at a glance during a draft, so "see them all" beats "see them huge".
 const GRID_CIV = { gridTemplateColumns: "repeat(auto-fit, minmax(112px, 1fr))" };
-const GRID_MAP = { gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" };
+// Maps sit smaller in the choosing grid than they do once picked or banned: the
+// grid is a menu you scan, the strips below the score are the record you keep
+// coming back to.
+const GRID_MAP = { gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" };
 
 type Seat = { id: string; name?: string; ready?: boolean } | null;
 interface Payload {
@@ -237,6 +240,11 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const playedMaps = new Set(state.games.map((g) => g.map).filter(Boolean) as string[]);
   const p1Maps = state.mapsByP1.map((id) => ({ key: id, civ: mapById(id), used: playedMaps.has(id) }));
   const p2Maps = state.mapsByP2.map((id) => ({ key: id, civ: mapById(id), used: playedMaps.has(id) }));
+  // Maps each player banned. These were only ever visible in the big pool grid,
+  // which disappears as soon as the map phase is over — so "who banned what" was
+  // unanswerable for the rest of the draft.
+  const p1MapBans = mapsView.filter((m) => m.state === "banned" && m.by === "player1").map((m) => ({ key: m.id, civ: m, banned: true }));
+  const p2MapBans = mapsView.filter((m) => m.state === "banned" && m.by === "player2").map((m) => ({ key: m.id, civ: m, banned: true }));
 
   // Display names (fall back to "Player 1/2" when a seat is unnamed).
   const p1Name = payload!.seats.player1?.name || t("match.p1");
@@ -318,12 +326,25 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           </CollapsibleSection>
         )}
 
-        {/* Each player's map pool (collapsible) */}
-        {(p1Maps.length > 0 || p2Maps.length > 0) && (
+        {/* Everything about maps in one place: what each side picked, what they
+            banned directly underneath, and the map actually being played. That
+            last one can be a neutral draw belonging to neither side, so it used
+            to appear nowhere but the step header — which read as the map pool
+            being one short. */}
+        {(p1Maps.length > 0 || p2Maps.length > 0 || p1MapBans.length > 0 || p2MapBans.length > 0 || currentMap) && (
           <CollapsibleSection title={t("match.mapPoolTitle")}>
+            {currentMap && (
+              <div className="mb-3 flex flex-col items-center">
+                <span className="text-[10px] uppercase tracking-wide text-muted">{t("match.currentMap")}</span>
+                <div className="mt-1 w-36 overflow-hidden rounded-md border-2 border-gold bg-surface-2 text-center">
+                  <Thumb src={mapById(currentMap)?.imageUrl} alt={currentMapName ?? ""} className="aspect-[16/10] w-full object-cover" />
+                  <span className="block w-full truncate px-1 py-0.5 text-[11px] leading-tight text-gold-bright">{currentMapName}</span>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
-              <CivStrip items={p1Maps} align="left" />
-              <div className="text-right"><CivStrip items={p2Maps} align="right" /></div>
+              <MapSide picked={p1Maps} banned={p1MapBans} align="left" />
+              <MapSide picked={p2Maps} banned={p2MapBans} align="right" />
             </div>
           </CollapsibleSection>
         )}
@@ -380,7 +401,10 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           <h2 className="font-display text-2xl aoe-gold-text">
             {step.type === "GAME_RESULT" ? t("match.gameN", { n: state.currentGameIndex + 1 }) : (step.label || `${step.type}`)}
           </h2>
-          {currentMap && (
+          {/* Only while the scoreboard is collapsed: otherwise the map board above
+              already shows this game's map, and two copies a screen apart was what
+              made the map area look like it was missing one. */}
+          {currentMap && minimized && (
             <div className="mt-1 flex items-center gap-2 text-sm text-muted">
               {mapById(currentMap)?.imageUrl && (
                 <Thumb src={mapById(currentMap)?.imageUrl} alt={currentMapName ?? ""} className="h-8 w-8 rounded object-cover ring-1 ring-bronze" />
@@ -831,7 +855,7 @@ function CivStrip({ items, align, wide = false }: { items: { key: string; civ?: 
         it.civ ? (
           <div
             key={it.key}
-            className={`civ-pop relative flex flex-col items-center rounded-md border-2 text-center ${wide ? "w-20 overflow-hidden" : "w-16 px-1 py-1"} ${
+            className={`civ-pop relative flex flex-col items-center rounded-md border-2 text-center ${wide ? "w-28 overflow-hidden" : "w-16 px-1 py-1"} ${
               it.banned ? "border-border bg-surface-2/40 opacity-50 saturate-0" : it.used ? "border-border bg-surface-2/40 opacity-45" : `${own.border} bg-surface-2`
             }`}
             title={it.banned ? `${it.civ.name} (banned)` : it.used ? `${it.civ.name} (used)` : it.civ.name}
@@ -841,6 +865,34 @@ function CivStrip({ items, align, wide = false }: { items: { key: string; civ?: 
             {it.banned ? <span className="absolute inset-0 flex items-center justify-center text-2xl text-muted/70">✕</span> : it.used ? <span className="absolute right-0.5 top-0.5 text-[8px] text-muted">used</span> : null}
           </div>
         ) : null
+      )}
+    </div>
+  );
+}
+
+// One player's maps: what they picked, with what they banned right below it —
+// the two sit on the same side of the room so a glance answers "what did this
+// player do to the map pool?" without cross-referencing anything.
+function MapSide({ picked, banned, align }: {
+  picked: MiniItem[];
+  banned: MiniItem[];
+  align: "left" | "right";
+}) {
+  const { t } = useI18n();
+  const side = align === "right" ? "text-right" : "";
+  return (
+    <div className={`space-y-2 ${side}`}>
+      {picked.length > 0 && (
+        <div>
+          <div className="mb-1 text-[10px] uppercase tracking-wide text-muted">{t("match.mapPickedTitle")}</div>
+          <CivStrip items={picked} align={align} wide />
+        </div>
+      )}
+      {banned.length > 0 && (
+        <div>
+          <div className="mb-1 text-[10px] uppercase tracking-wide text-danger/80">{t("match.mapBannedTitle")}</div>
+          <CivStrip items={banned} align={align} wide />
+        </div>
       )}
     </div>
   );

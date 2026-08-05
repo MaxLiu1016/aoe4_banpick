@@ -183,6 +183,8 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "match.civPoolTitle": { en: "Civ pools (P1 · P2)", zh: "文明池（P1 · P2）", ja: "文明プール（P1 · P2）" },
   "match.mapPoolTitle": { en: "Map pools (P1 · P2)", zh: "地圖池（P1 · P2）", ja: "マッププール（P1 · P2）" },
   "match.bannedTitle": { en: "Banned civs (P1 · P2)", zh: "已 ban 文明（P1 · P2）", ja: "BAN された文明（P1 · P2）" },
+  "match.mapPickedTitle": { en: "Picked", zh: "選的圖", ja: "選んだマップ" },
+  "match.mapBannedTitle": { en: "Banned", zh: "Ban 掉的圖", ja: "BAN したマップ" },
   "match.used": { en: "used", zh: "已用", ja: "使用済み" },
   "match.games": { en: "Games", zh: "對局", ja: "ゲーム" },
   "match.colMap": { en: "Map", zh: "地圖", ja: "マップ" },
