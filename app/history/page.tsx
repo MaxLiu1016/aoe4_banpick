@@ -9,7 +9,11 @@ export const metadata: Metadata = {
   description: "Every draft you played in or hosted.",
 };
 
-export default async function HistoryPage() {
+export default async function HistoryPage({ searchParams }: {
+  searchParams: Promise<{ preset?: string | string[] }>;
+}) {
+  const { preset } = await searchParams;
+  const presetId = Array.isArray(preset) ? preset[0] : preset;
   const user = await getCurrentUser();
   return (
     <>
@@ -19,7 +23,7 @@ export default async function HistoryPage() {
         {/* Rendered signed-out too: the worldwide feed needs no account, and a
             visitor who lands here should see that the site is being used rather
             than a login wall. */}
-        <HistoryList loggedIn={!!user} />
+        <HistoryList loggedIn={!!user} presetId={presetId} />
       </main>
     </>
   );

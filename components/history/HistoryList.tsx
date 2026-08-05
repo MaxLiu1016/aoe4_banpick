@@ -25,35 +25,50 @@ interface Row {
 
 type Scope = "mine" | "global";
 
-export function HistoryList({ loggedIn }: { loggedIn: boolean }) {
+export function HistoryList({ loggedIn, presetId }: { loggedIn: boolean; presetId?: string }) {
   const { t, locale } = useI18n();
   // Signed out there is no "mine" to show, so open on the feed that has content.
   const [scope, setScope] = useState<Scope>(loggedIn ? "mine" : "global");
-  // Results are stamped with the tab they belong to, so switching tabs shows the
-  // skeleton again by simply not matching — no clearing the state from inside the
-  // effect, which would be a synchronous setState during render.
-  const [data, setData] = useState<{ scope: Scope; rows: Row[] } | null>(null);
+  // What's in the box vs. what's been asked for. Typing shouldn't fire a request
+  // per keystroke, so the query trails the input by a beat.
+  const [input, setInput] = useState("");
+  const [q, setQ] = useState("");
+  // Results are stamped with the request they answer, so changing tab or query
+  // shows the skeleton again by simply not matching — no clearing the state from
+  // inside the effect, which would be a synchronous setState during render.
+  const [data, setData] = useState<{ key: string; rows: Row[] } | null>(null);
   // Signed out, "my drafts" has nothing to fetch: the answer is a sign-in prompt.
   const needsFetch = loggedIn || scope === "global";
+  const key = `${scope}|${q}|${presetId ?? ""}`;
+
+  useEffect(() => {
+    const id = setTimeout(() => setQ(input.trim()), 300);
+    return () => clearTimeout(id);
+  }, [input]);
 
   useEffect(() => {
     if (!needsFetch) return;
     let cancelled = false;
-    fetch(scope === "global" ? "/api/matches?scope=global" : "/api/matches")
+    const params = new URLSearchParams();
+    if (scope === "global") params.set("scope", "global");
+    if (q) params.set("q", q);
+    if (presetId) params.set("preset", presetId);
+    fetch(`/api/matches?${params}`)
       .then((r) => (r.ok ? r.json() : []))
-      .then((d) => { if (!cancelled) setData({ scope, rows: d as Row[] }); })
-      .catch(() => { if (!cancelled) setData({ scope, rows: [] }); });
+      .then((d) => { if (!cancelled) setData({ key, rows: d as Row[] }); })
+      .catch(() => { if (!cancelled) setData({ key, rows: [] }); });
     return () => { cancelled = true; };
-  }, [scope, needsFetch]);
+  }, [key, scope, q, presetId, needsFetch]);
 
-  const rows: Row[] | null = !needsFetch ? [] : data?.scope === scope ? data.rows : null;
+  const rows: Row[] | null = !needsFetch ? [] : data?.key === key ? data.rows : null;
+  const filtering = Boolean(q || presetId);
 
   const fmt = new Intl.DateTimeFormat(locale === "ja" ? "ja-JP" : locale === "en" ? "en-GB" : "zh-TW",
     { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
 
   const Tabs = (
     <>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {(["mine", "global"] as Scope[]).map((s) => (
           <button key={s} onClick={() => setScope(s)}
             className={`rounded border px-3 py-1.5 text-sm transition ${
@@ -62,7 +77,21 @@ export function HistoryList({ loggedIn }: { loggedIn: boolean }) {
             {t(`history.tab.${s}`)}
           </button>
         ))}
+        <input value={input} onChange={(e) => setInput(e.target.value)}
+          placeholder={t("history.search")}
+          className="ml-auto min-w-40 flex-1 rounded border border-border bg-surface-2 px-3 py-1.5 text-sm text-foreground outline-none focus:border-gold sm:max-w-64 sm:flex-none" />
       </div>
+      {presetId && (
+        <div className="mt-2">
+          <Link href="/history"
+            className="inline-flex items-center gap-1.5 rounded-full border border-gold px-3 py-1 text-xs text-gold-bright hover:brightness-110">
+            {/* Named from the results rather than looked up: a preset can be
+                private, and its title is not this page's to hand out. */}
+            {t("history.filteredBy", { name: rows?.[0]?.name || t("history.filteredPreset") })}
+            <span className="text-muted">✕</span>
+          </Link>
+        </div>
+      )}
       <p className="mt-2 mb-3 text-xs text-muted">
         {t(scope === "global" ? "history.subtitleGlobal" : "history.subtitle")}
       </p>
@@ -79,6 +108,8 @@ export function HistoryList({ loggedIn }: { loggedIn: boolean }) {
         <p className="aoe-panel rounded-xl p-6 text-center text-sm text-muted">
           {scope === "mine" && !loggedIn
             ? <Link href="/login" className="text-gold-bright hover:underline">{t("nav.signin")}</Link>
+            : filtering
+            ? t("history.noneFiltered")
             : t(scope === "global" ? "history.noneGlobal" : "history.none")}
         </p>
       </div>

@@ -66,7 +66,12 @@ export async function POST(req: Request) {
  * hosted the room — merely spectating a draft never puts it in your list.
  */
 export async function GET(req: Request) {
-  const global = new URL(req.url).searchParams.get("scope") === "global";
+  const params = new URL(req.url).searchParams;
+  const global = params.get("scope") === "global";
+  const presetId = params.get("preset");
+  // Capped because it goes into a regex: a long pattern against a large
+  // collection is a cheap way to make the database work hard for nothing.
+  const q = (params.get("q") ?? "").trim().slice(0, 60);
   const user = await getCurrentUser();
   if (!global && !user) return NextResponse.json([]);
   await dbConnect();
@@ -76,9 +81,20 @@ export async function GET(req: Request) {
   // they don't want scouted, and a public row saying WHEN and WHICH PRESET is
   // usually enough to work out who, names or no names. It also skips lobbies —
   // a room nobody has played in yet isn't a match.
-  const filter = global
+  const filter: Record<string, unknown> = global
     ? { "config.options.anonymous": { $ne: true }, status: { $in: ["running", "paused", "finished"] }, player1Id: { $ne: null }, player2Id: { $ne: null } }
     : { $or: [{ hostId: user!.id }, { player1Id: user!.id }, { player2Id: user!.id }] };
+
+  // Narrowing happens here rather than in the browser: the list is capped at the
+  // most recent N, so filtering the page after it arrives would search only
+  // whatever happened to be in that page — the older draft you were looking for
+  // is exactly the one that never got sent.
+  if (presetId && isValidObjectId(presetId)) filter.presetId = presetId;
+  if (q) {
+    const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+    // $and, not $or: the signed-in list already spends $or on "my seat or my room".
+    filter.$and = [{ $or: [{ name: rx }, { player1Name: rx }, { player2Name: rx }] }];
+  }
 
   const docs = await Match.find(filter)
     .sort({ updatedAt: -1 })

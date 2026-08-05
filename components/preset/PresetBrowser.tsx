@@ -100,6 +100,12 @@ export function PresetBrowser() {
               </div>
               <div className="mt-4 flex flex-wrap gap-2 border-t border-border/60 pt-4">
                 <StartMatchButton presetId={p.id} />
+                {/* Straight to every draft ever run on this format — the question
+                    people ask about a preset is "how has it actually played?" */}
+                <Link href={`/history?preset=${p.id}`}
+                  className="rounded border border-border px-3 py-1.5 text-sm text-muted hover:text-gold-bright">
+                  {t("presets.history")}
+                </Link>
                 {loggedIn && <ClonePresetButton presetId={p.id} />}
                 {loggedIn && !p.isOwner && p.isPublic && (
                   <FavoriteButton presetId={p.id} initial={p.isFavorite} />
