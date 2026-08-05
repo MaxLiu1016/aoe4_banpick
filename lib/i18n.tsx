@@ -199,6 +199,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "turn.toSelect": { en: "{p} to select", zh: "{p} 選圖", ja: "{p} がマップ選択" },
   // offer phase
   "offer.title": { en: "Pick {n} civs to field — hidden until both reveal", zh: "選 {n} 個文明出戰——雙方亮牌前隱藏", ja: "出場する文明を {n} つ選択——両者が公開するまで非表示" },
+  "offer.titleOpen": { en: "Pick {n} civs to field — in the open, taking turns", zh: "選 {n} 個文明出戰——公開輪流選", ja: "出場する文明を {n} つ選択——公開・交互に選択" },
   "offer.yourOffer": { en: "Your picks", zh: "你的出戰文明", ja: "あなたの出場文明" },
   "offer.locked": { en: "· locked ✓", zh: "· 已鎖定 ✓", ja: "· ロック済み ✓" },
   "offer.oppChoosing": { en: "Opponent · choosing…", zh: "對手 · 選擇中…", ja: "相手 · 選択中…" },
@@ -313,7 +314,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "editor.resultByHost": { en: "by the host", zh: "由房主裁定", ja: "ホストが判定" },
   "editor.resultByHint": { en: "Set in Options above, for the whole preset.", zh: "在上方「選項」統一設定，這個步驟沒有東西要選。", ja: "上の「オプション」でプリセット全体に設定します。" },
   "editor.bothHint": { en: "Both players act at once — one row covers both.", zh: "雙方同時進行，一列就代表兩個人。", ja: "両プレイヤーが同時に行い、1 行で両者を表します。" },
-  "editor.simultaneousHint": { en: "Both players ban at the same time, each hidden until both submit. The step's actor is ignored, and the count applies to EACH player.", zh: "雙方同時 ban，互相隱藏到都送出才揭曉。此時執行者欄位無效，數量是「每人」各 ban 幾個。", ja: "両プレイヤーが同時に BAN し、両者が送信するまで互いに伏せられます。実行者欄は無視され、数は「各プレイヤーあたり」です。" },
+  "editor.simultaneousHint": { en: "On: both act at once, hidden until both submit — no actor, and the count is per player. Off: one seat acts on its turn, in the open.", zh: "勾起來：雙方同時做，互相隱藏到都送出才揭曉，沒有執行者，數量是每人各幾個。不勾：由指定的一方輪流做，公開進行。", ja: "オン：両者が同時に行い、両者が送信するまで伏せられます（実行者なし・数は各プレイヤーあたり）。オフ：指定した側が自分の番に公開で行います。" },
   "editor.pausableShort": { en: "pausable", zh: "可暫停", ja: "一時停止可" },
   "editor.stepNo": { en: "Step order — the draft runs top to bottom", zh: "步驟順序——由上往下依序執行", ja: "ステップ順 — 上から順に実行されます" },
   "editor.countHint": { en: "How many to ban / pick in this step", zh: "這個步驟要 ban / pick 幾個", ja: "このステップで BAN / PICK する数" },

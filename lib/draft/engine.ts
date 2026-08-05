@@ -1,3 +1,4 @@
+import { isSimultaneousStep } from "./schema";
 import type { PresetConfig, Step, PoolEntry } from "./schema";
 
 export type SeatRole = "player1" | "player2" | "host";
@@ -40,7 +41,12 @@ export interface PoolView extends PoolEntry {
 
 export interface CivDuel {
   phase: "offer" | "snipe" | "resolved" | null;
+  /** Civs the CURRENT offer step asks of whoever it is addressed to. */
   offerCount: number;
+  /** Total civs each player offers this game, across every offer step in it. */
+  offerTarget: { player1: number; player2: number };
+  /** False while a turn-based offer step is running: those are made in the open. */
+  offerHidden: boolean;
   snipeCount: number;
   /** Civs each player offered for this game (socket layer redacts before reveal). */
   offered: { player1: string[]; player2: string[] };
@@ -135,15 +141,6 @@ export function deriveState(
   const steps = config.steps;
   const gameOf = gameIndexOfSteps(steps);
   const totalGames = steps.filter((s) => s.type === "GAME_RESULT").length;
-
-  // Per-game duel step counts.
-  const offerCountByGame: number[] = [];
-  const snipeCountByGame: number[] = [];
-  steps.forEach((s, i) => {
-    const g = gameOf[i];
-    if (s.type === "CIV_OFFER") offerCountByGame[g] = s.count;
-    if (s.type === "CIV_SNIPE_OPPONENT") snipeCountByGame[g] = s.count;
-  });
 
   const actions = [...rawActions].sort((a, b) => a.seq - b.seq);
 
@@ -241,12 +238,41 @@ export function deriveState(
   }
   for (const [g, w] of resultByGame) if (games[g]) games[g].winner = w;
 
+  // --- Offer / snipe targets ----------------------------------------------
+  // A game may contain several offer steps: a simultaneous one asks `count` of
+  // BOTH seats, a turn-based one asks it of a single seat, which is what lets a
+  // format read "P1 picks 1, P2 picks 2, P1 picks 1". So the target is per player
+  // and cumulative per step — step N is complete once the seats it addressed have
+  // delivered, without waiting on offers a later step will ask for.
+  const offerCumByStep = new Map<number, { player1: number; player2: number }>();
+  const offerTotal = Array.from({ length: totalGames }, () => ({ player1: 0, player2: 0 }));
+  const hasOffer = Array.from({ length: totalGames }, () => false);
+  const snipeCumByStep = new Map<number, number>();
+  const snipeTotal = Array.from({ length: totalGames }, () => 0);
+  steps.forEach((s, i) => {
+    const g = gameOf[i];
+    if (s.type === "CIV_OFFER") {
+      const tot = offerTotal[g];
+      if (!tot) return;
+      hasOffer[g] = true;
+      const who = isSimultaneousStep(s) ? null : resolveActor(s, g, games);
+      // An unresolved LOSER/WINNER actor can only happen for a step whose game
+      // hasn't been played yet, which the step cursor never reaches — asking both
+      // seats keeps it safely incomplete until the previous game decides it.
+      if (who === "player1" || who === "player2") tot[who] += s.count;
+      else { tot.player1 += s.count; tot.player2 += s.count; }
+      offerCumByStep.set(i, { player1: tot.player1, player2: tot.player2 });
+    } else if (s.type === "CIV_SNIPE_OPPONENT" && snipeTotal[g] != null) {
+      snipeTotal[g] += s.count;
+      snipeCumByStep.set(i, snipeTotal[g]);
+    }
+  });
+
   // Resolve duel civs: survivor of each player's offer after the opponent's snipe.
   for (let g = 0; g < totalGames; g++) {
-    const oc = offerCountByGame[g];
-    const sc = snipeCountByGame[g] ?? 0;
-    if (oc == null) continue;
-    const offerDone = offerP1[g].length >= oc && offerP2[g].length >= oc;
+    const sc = snipeTotal[g] ?? 0;
+    if (!hasOffer[g]) continue;
+    const offerDone = offerP1[g].length >= offerTotal[g].player1 && offerP2[g].length >= offerTotal[g].player2;
     const snipeDone = snipeByP1[g].length >= sc && snipeByP2[g].length >= sc;
     if (offerDone && snipeDone) {
       const survP1 = offerP1[g].filter((id) => !snipeByP2[g].includes(id)); // P2 snipes P1
@@ -265,10 +291,14 @@ export function deriveState(
     switch (s.type) {
       case "GAME_RESULT":
         return games[g]?.winner != null;
-      case "CIV_OFFER":
-        return offerP1[g].length >= s.count && offerP2[g].length >= s.count;
-      case "CIV_SNIPE_OPPONENT":
-        return snipeByP1[g].length >= s.count && snipeByP2[g].length >= s.count;
+      case "CIV_OFFER": {
+        const need = offerCumByStep.get(i) ?? { player1: s.count, player2: s.count };
+        return offerP1[g].length >= need.player1 && offerP2[g].length >= need.player2;
+      }
+      case "CIV_SNIPE_OPPONENT": {
+        const need = snipeCumByStep.get(i) ?? s.count;
+        return snipeByP1[g].length >= need && snipeByP2[g].length >= need;
+      }
       case "SYNC_CONFIRM": {
         const c = confirmedByStep.get(i);
         return !!c?.player1 && !!c?.player2;
@@ -305,8 +335,18 @@ export function deriveState(
   // when no hand was drafted (the "easy" flow) the whole available civ pool is
   // open, so both players simultaneously pick any civ each game.
   const availableCivIds = civs.filter((c) => c.state === "available").map((c) => c.id);
-  const offerableP1 = draftedByP1.length ? draftedByP1 : availableCivIds;
-  const offerableP2 = draftedByP2.length ? draftedByP2 : availableCivIds;
+  let offerableP1 = draftedByP1.length ? draftedByP1 : availableCivIds;
+  let offerableP2 = draftedByP2.length ? draftedByP2 : availableCivIds;
+  // A turn-based offer is made in the open and off the same table, so whatever
+  // one side has already taken this game is gone for the other. The simultaneous
+  // offer is the opposite case: neither can see the other, so both naming the
+  // same civ is legitimate and is exactly what the snipe phase plays with.
+  if (currentStep?.type === "CIV_OFFER" && !isSimultaneousStep(currentStep)) {
+    const takenP1 = new Set(offerP1[cg] ?? []);
+    const takenP2 = new Set(offerP2[cg] ?? []);
+    offerableP1 = offerableP1.filter((id) => !takenP2.has(id));
+    offerableP2 = offerableP2.filter((id) => !takenP1.has(id));
+  }
 
   // Per-player civ blocks: a "pool" ban blocks both; an "opponent" ban by X blocks X's opponent.
   const blockedFor = (p: "player1" | "player2") =>
@@ -327,13 +367,21 @@ export function deriveState(
   const awaiting = { player1: false, player2: false };
   if (currentStep) {
     if (currentStep.type === "CIV_OFFER") {
-      simultaneous = true;
-      awaiting.player1 = offerP1[cg].length < currentStep.count;
-      awaiting.player2 = offerP2[cg].length < currentStep.count;
+      const need = offerCumByStep.get(currentStepIndex) ?? { player1: currentStep.count, player2: currentStep.count };
+      if (isSimultaneousStep(currentStep)) {
+        simultaneous = true;
+        awaiting.player1 = offerP1[cg].length < need.player1;
+        awaiting.player2 = offerP2[cg].length < need.player2;
+      } else {
+        turn = resolveActor(currentStep, cg, games);
+        awaiting.player1 = turn === "player1" && offerP1[cg].length < need.player1;
+        awaiting.player2 = turn === "player2" && offerP2[cg].length < need.player2;
+      }
     } else if (currentStep.type === "CIV_SNIPE_OPPONENT") {
       simultaneous = true;
-      awaiting.player1 = snipeByP1[cg].length < currentStep.count;
-      awaiting.player2 = snipeByP2[cg].length < currentStep.count;
+      const need = snipeCumByStep.get(currentStepIndex) ?? currentStep.count;
+      awaiting.player1 = snipeByP1[cg].length < need;
+      awaiting.player2 = snipeByP2[cg].length < need;
     } else if (currentStep.type === "SYNC_CONFIRM") {
       simultaneous = true;
       const c = confirmedByStep.get(currentStepIndex);
@@ -378,24 +426,30 @@ export function deriveState(
 
   // Duel view for the current game.
   let civDuel: CivDuel | null = null;
-  if (offerCountByGame[cg] != null && cg < totalGames) {
+  if (hasOffer[cg] && cg < totalGames) {
     const phase: CivDuel["phase"] =
       currentStep?.type === "CIV_OFFER" ? "offer" :
       currentStep?.type === "CIV_SNIPE_OPPONENT" ? "snipe" :
       (games[cg].civP1 || games[cg].civP2) ? "resolved" : null;
-    const oc = offerCountByGame[cg];
-    const sc = snipeCountByGame[cg] ?? 0;
+    const tot = offerTotal[cg];
+    const sc = snipeTotal[cg] ?? 0;
+    // What THIS step still owes, which is what "has each side submitted?" means
+    // mid-game; the game total is what the whole offer phase adds up to.
+    const cum = (currentStep?.type === "CIV_OFFER" ? offerCumByStep.get(currentStepIndex) : null) ?? tot;
+    const snipeCum = (currentStep?.type === "CIV_SNIPE_OPPONENT" ? snipeCumByStep.get(currentStepIndex) : null) ?? sc;
     civDuel = {
       phase,
-      offerCount: oc,
+      offerCount: currentStep?.type === "CIV_OFFER" ? currentStep.count : Math.max(tot.player1, tot.player2),
+      offerTarget: { player1: tot.player1, player2: tot.player2 },
+      offerHidden: currentStep?.type !== "CIV_OFFER" || isSimultaneousStep(currentStep),
       snipeCount: sc,
       offered: { player1: offerP1[cg].slice(), player2: offerP2[cg].slice() },
       snipedBy: { player1: snipeByP1[cg].slice(), player2: snipeByP2[cg].slice() },
       submitted:
         phase === "offer"
-          ? { player1: offerP1[cg].length >= oc, player2: offerP2[cg].length >= oc }
+          ? { player1: offerP1[cg].length >= cum.player1, player2: offerP2[cg].length >= cum.player2 }
           : phase === "snipe"
-          ? { player1: snipeByP1[cg].length >= sc, player2: snipeByP2[cg].length >= sc }
+          ? { player1: snipeByP1[cg].length >= snipeCum, player2: snipeByP2[cg].length >= snipeCum }
           : { player1: true, player2: true },
     };
   }
@@ -404,9 +458,7 @@ export function deriveState(
     type: s.type as string,
     label: s.label || (s.type as string),
     gameIndex: gameOf[i],
-    actor: isSimulBan(i) || s.type === "CIV_OFFER" || s.type === "CIV_SNIPE_OPPONENT" || s.type === "SYNC_CONFIRM"
-      ? null
-      : resolveActor(s, gameOf[i], games),
+    actor: isSimultaneousStep(s) ? null : resolveActor(s, gameOf[i], games),
   }));
 
   // Normally the series ends the moment one side is mathematically safe. With
@@ -519,7 +571,11 @@ export function validateAction(state: DerivedState, role: SeatRole, target: stri
     }
     case "CIV_OFFER": {
       if (role !== "player1" && role !== "player2") return { ok: false, error: "Only players may offer." };
-      if (!state.awaiting[role]) return { ok: false, error: "You have already offered." };
+      if (!state.awaiting[role]) {
+        // A turn-based offer step has a turn, so "not yet" and "already done" are
+        // different refusals and saying the wrong one is just confusing.
+        return { ok: false, error: state.turn && state.turn !== role ? "It is not your turn." : "You have already offered." };
+      }
       const ownPool = role === "player1" ? state.offerableP1 : state.offerableP2;
       if (!ownPool.includes(target)) return { ok: false, error: "That civ is not available to offer." };
       const alreadyOffered = (role === "player1" ? duel?.offered.player1 : duel?.offered.player2) ?? [];

@@ -1,3 +1,4 @@
+import { isSimultaneousStep } from "@/lib/draft/schema";
 import type { PresetConfig, Step } from "@/lib/draft/schema";
 
 // Canonical ENGLISH names for step types and actors. Auto-generated step labels
@@ -11,8 +12,8 @@ const STEP_EN: Record<string, string> = {
   CIV_PICK: "Pick civ into pool",
   MAP_SELECT: "Select map",
   SYNC_CONFIRM: "Both players confirm to continue",
-  CIV_OFFER: "Pick civ to field (simultaneous)",
-  CIV_SNIPE_OPPONENT: "Snipe opponent (simultaneous)",
+  CIV_OFFER: "Pick civ to field",
+  CIV_SNIPE_OPPONENT: "Snipe opponent",
   GAME_RESULT: "Game result",
 };
 
@@ -25,10 +26,13 @@ const ACTOR_SHORT_EN: Record<string, string> = {
 };
 
 // The default label for a step. Simultaneous/result steps have no meaningful
-// single actor, so they omit the actor prefix.
-export function defaultStepLabel(s: Pick<Step, "type" | "actor">): string {
+// single actor, so they omit the actor prefix and say so instead — "(simultaneous)"
+// has to be computed rather than baked into the name now that the same type can
+// run either way.
+export function defaultStepLabel(s: Pick<Step, "type" | "actor" | "simultaneous">): string {
   const step = STEP_EN[s.type] ?? s.type;
-  if (s.type === "CIV_OFFER" || s.type === "CIV_SNIPE_OPPONENT" || s.type === "GAME_RESULT" || s.type === "SYNC_CONFIRM") return step;
+  if (s.type === "GAME_RESULT" || s.type === "SYNC_CONFIRM") return step;
+  if (isSimultaneousStep(s)) return `${step} (simultaneous)`;
   return `${ACTOR_SHORT_EN[s.actor] ?? s.actor} · ${step}`;
 }
 

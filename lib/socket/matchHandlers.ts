@@ -327,7 +327,10 @@ function redactFor(payload: FullPayload, role: Role, isHost: boolean): FullPaylo
   if (duel && (cs === "CIV_OFFER" || cs === "CIV_SNIPE_OPPONENT")) {
     const d = { ...duel, offered: { ...duel.offered }, snipedBy: { ...duel.snipedBy } };
     if (cs === "CIV_OFFER") {
-      hideOther(d.offered); // offers hidden until both submit (then step advances)
+      // Only the simultaneous offer is secret. A turn-based one is a draft off a
+      // shared table: hiding it would make the next player pick blind against
+      // something they are supposed to be responding to.
+      if (d.offerHidden) hideOther(d.offered); // hidden until both submit (then the step advances)
       d.snipedBy = { player1: [], player2: [] };
     } else {
       // CIV_SNIPE_OPPONENT: offers revealed; each player's snipe hidden until both done

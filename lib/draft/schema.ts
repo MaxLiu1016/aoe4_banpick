@@ -56,15 +56,41 @@ export const StepSchema = z.object({
   // For MAP_SELECT: "own" = choose from your OWN picked map pool; "shared" =
   // choose from the maps BOTH players picked (the combined pool). Default "own".
   mapScope: z.enum(["own", "shared"]).optional(),
-  // For MAP_BAN / CIV_BAN: both players ban at the same time and each other's
-  // picks stay hidden until BOTH have submitted, then reveal together. The step's
-  // `actor` is ignored for these (like the other simultaneous step types).
+  // Both players act at the same time and each other's choices stay hidden until
+  // BOTH have submitted, then reveal together; the step's `actor` is ignored.
+  // MAP_BAN / CIV_BAN default to OFF (turn-based) and CIV_OFFER defaults to ON —
+  // see `isSimultaneousStep`, which is what everything should ask.
   simultaneous: z.boolean().optional(),
   // Whether this step may be paused.
   pausable: z.boolean().default(true),
   label: z.string().max(120).optional(),
 });
 export type Step = z.infer<typeof StepSchema>;
+
+/**
+ * Does this step happen simultaneously (both seats at once, hidden until both
+ * submit) rather than on one seat's turn?
+ *
+ * The default differs by type and that is deliberate: snipe and the confirm gate
+ * are only meaningful simultaneously, bans start turn-based, and CIV_OFFER is
+ * simultaneous UNLESS switched off — presets written before turn-based offers
+ * existed have no flag at all and must keep the hidden double-blind offer they
+ * were built around. Ask this rather than reading `simultaneous` directly.
+ */
+export function isSimultaneousStep(s: Pick<Step, "type" | "simultaneous">): boolean {
+  switch (s.type) {
+    case "CIV_SNIPE_OPPONENT":
+    case "SYNC_CONFIRM":
+      return true;
+    case "CIV_OFFER":
+      return s.simultaneous !== false;
+    case "MAP_BAN":
+    case "CIV_BAN":
+      return Boolean(s.simultaneous);
+    default:
+      return false;
+  }
+}
 
 // A selectable civ or map entry.
 export const PoolEntrySchema = z.object({

@@ -1,3 +1,4 @@
+import { isSimultaneousStep } from "./schema";
 import type { PresetConfig } from "./schema";
 import { gameIndexOfSteps } from "./engine";
 
@@ -68,10 +69,23 @@ export function validatePreset(config: PresetConfig): PresetIssue[] {
     if (!gSteps.some((s) => CIV_STEPS.includes(s.type))) push("gameNoCiv", { game: g + 1 });
     // The civ a player fields is what survives the opponent's snipe, so each game
     // must offer at least one more civ than can be sniped (offer − snipe ≥ 1).
-    const offer = gSteps.find((s) => s.type === "CIV_OFFER");
-    const snipe = gSteps.find((s) => s.type === "CIV_SNIPE_OPPONENT");
-    if (offer && offer.count - (snipe?.count ?? 0) < 1) {
-      push("offerMinusSnipe", { game: g + 1, offer: offer.count, snipe: snipe?.count ?? 0 });
+    // Counted across ALL the game's offer steps, per player: a format may split
+    // the offer into several turn-based steps ("P1 picks 1, P2 picks 2, P1 picks
+    // 1"), and reading only the first step called that a 1-civ offer and rejected
+    // a perfectly good preset.
+    const offerSteps = gSteps.filter((s) => s.type === "CIV_OFFER");
+    const snipeTotal = gSteps.filter((s) => s.type === "CIV_SNIPE_OPPONENT").reduce((n, s) => n + s.count, 0);
+    if (offerSteps.length) {
+      let p1 = 0, p2 = 0;
+      for (const s of offerSteps) {
+        // LOSER/WINNER isn't knowable until the series is played, so it counts for
+        // whichever seat it lands on — the one reading that keeps a valid preset valid.
+        if (!isSimultaneousStep(s) && s.actor === "PLAYER1") p1 += s.count;
+        else if (!isSimultaneousStep(s) && s.actor === "PLAYER2") p2 += s.count;
+        else { p1 += s.count; p2 += s.count; }
+      }
+      const offer = Math.min(p1, p2);
+      if (offer - snipeTotal < 1) push("offerMinusSnipe", { game: g + 1, offer, snipe: snipeTotal });
     }
   }
 

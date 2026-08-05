@@ -434,6 +434,8 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           excludeUsed={Boolean(step?.excludeUsedCivs)}
           onOffer={act}
           civById={civById}
+          p1Name={p1Name}
+          p2Name={p2Name}
         />
       )}
       {/* Two-pool duel: simultaneous hidden counter-snipe of opponent's offer */}
@@ -505,11 +507,35 @@ function CivChip({ civ, dim, mark, animate }: { civ?: PoolView; dim?: boolean; m
   );
 }
 
+// One side of a turn-based offer draft: face-up, under that player's own name,
+// with empty slots for what they still owe this phase.
+function OpenOfferSide({ name, ids, target, tone, civById }: {
+  name: string;
+  ids: string[];
+  target: number;
+  tone: "sky" | "rose";
+  civById: (id?: string) => PoolView | undefined;
+}) {
+  return (
+    <div className={tone === "rose" ? "text-right" : ""}>
+      <div className={`text-xs uppercase tracking-wide ${tone === "sky" ? "text-sky-400" : "text-rose-400"}`}>
+        {name} ({ids.length}/{target})
+      </div>
+      <div className={`mt-1 flex gap-1.5 ${tone === "rose" ? "justify-end" : ""}`}>
+        {ids.map((id) => <CivChip key={id} civ={civById(id)} animate />)}
+        {Array.from({ length: Math.max(0, target - ids.length) }).map((_, i) => (
+          <div key={i} className="h-[84px] w-16 rounded-md border-2 border-dashed border-border bg-surface-2/30" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function HiddenSlot() {
   return <div className="flex h-[84px] w-16 items-center justify-center rounded-md border-2 border-dashed border-border bg-surface-2/40 text-muted">?</div>;
 }
 
-function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed, onOffer, civById }: {
+function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed, onOffer, civById, p1Name, p2Name }: {
   duel: CivDuel;
   youPlayer: "player1" | "player2" | null;
   opp: "player1" | "player2" | null;
@@ -520,6 +546,8 @@ function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed
   excludeUsed: boolean;
   onOffer: (id: string) => void;
   civById: (id?: string) => PoolView | undefined;
+  p1Name: string;
+  p2Name: string;
 }) {
   const { t } = useI18n();
   const myOffered = youPlayer ? duel.offered[youPlayer] : [];
@@ -527,6 +555,46 @@ function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed
   const oppSubmitted = opp ? duel.submitted[opp] : false;
   const offeredSet = new Set(myOffered);
   const usedSet = new Set(usedByYou);
+  // Target for the whole offer phase, not just this step: with an alternating
+  // draft the two sides can be several picks apart mid-phase and the slots should
+  // show where each is heading.
+  const targetOf = (p: "player1" | "player2" | null) =>
+    p ? duel.offerTarget[p] : Math.max(duel.offerTarget.player1, duel.offerTarget.player2);
+
+  // Turn-based: the draft is public, so both sides are shown face-up under their
+  // own name — hiding the opponent's would leave you drafting against nothing.
+  if (!duel.offerHidden) {
+    return (
+      <section className="aoe-panel rounded-xl p-5">
+        <h3 className="font-display text-lg aoe-gold-text text-center">{t("offer.titleOpen", { n: duel.offerCount })}</h3>
+        <div className="aoe-rule my-3" />
+        <div className="grid grid-cols-2 gap-4">
+          <OpenOfferSide name={p1Name} ids={duel.offered.player1} target={duel.offerTarget.player1} tone="sky" civById={civById} />
+          <OpenOfferSide name={p2Name} ids={duel.offered.player2} target={duel.offerTarget.player2} tone="rose" civById={civById} />
+        </div>
+        {canAct && (
+          <div className="mt-4">
+            <div className="mb-2 text-xs text-muted">{t("offer.chooseHand", { n: duel.offerCount })}</div>
+            <div className="grid gap-2" style={GRID_CIV}>
+              {hand.map((c) => {
+                const used = excludeUsed && usedSet.has(c.id);
+                return (
+                  <button key={c.id} disabled={used} onClick={() => onOffer(c.id)}
+                    className={`relative flex flex-col items-center rounded-lg border-2 p-2 transition ${
+                      used ? "border-border opacity-30 saturate-0" : "border-bronze hover:border-gold hover:bg-surface-2 cursor-pointer"}`}
+                    title={c.name}>
+                    <Thumb src={c.imageUrl} alt={c.name} className="aspect-square w-full object-contain" />
+                    <span className="mt-1.5 w-full truncate text-xs leading-tight text-foreground">{c.name}</span>
+                    {used && <span className="absolute right-1 top-1 text-[9px] text-muted">{t("match.used")}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </section>
+    );
+  }
 
   return (
     <section className="aoe-panel rounded-xl p-5">
@@ -534,16 +602,16 @@ function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed
       <div className="aoe-rule my-3" />
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <div className="text-xs uppercase tracking-wide text-muted">{t("offer.yourOffer")} {youSubmitted ? t("offer.locked") : `(${myOffered.length}/${duel.offerCount})`}</div>
+          <div className="text-xs uppercase tracking-wide text-muted">{t("offer.yourOffer")} {youSubmitted ? t("offer.locked") : `(${myOffered.length}/${targetOf(youPlayer)})`}</div>
           <div className="mt-1 flex gap-1.5">
             {myOffered.map((id) => <CivChip key={id} civ={civById(id)} animate />)}
-            {Array.from({ length: Math.max(0, duel.offerCount - myOffered.length) }).map((_, i) => <HiddenSlot key={i} />)}
+            {Array.from({ length: Math.max(0, targetOf(youPlayer) - myOffered.length) }).map((_, i) => <HiddenSlot key={i} />)}
           </div>
         </div>
         <div className="text-right">
           <div className="text-xs uppercase tracking-wide text-muted">{oppSubmitted ? t("offer.oppReady") : t("offer.oppChoosing")}</div>
           <div className="mt-1 flex justify-end gap-1.5">
-            {Array.from({ length: duel.offerCount }).map((_, i) => <HiddenSlot key={i} />)}
+            {Array.from({ length: targetOf(opp) }).map((_, i) => <HiddenSlot key={i} />)}
           </div>
         </div>
       </div>

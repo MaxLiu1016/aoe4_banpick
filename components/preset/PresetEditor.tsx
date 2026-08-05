@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Thumb } from "@/components/Thumb";
 import type { ClientPreset } from "@/lib/presets";
+import { isSimultaneousStep } from "@/lib/draft/schema";
 import type { PresetConfig, Step, StepType, Actor, Pool, PoolEntry } from "@/lib/draft/schema";
 import { buildDefaultConfig } from "@/lib/draft/defaultPreset";
 import { gameIndexOfSteps } from "@/lib/draft/engine";
@@ -62,6 +63,10 @@ function fieldsFor(s: Step): StepFields {
       // Selects the single map played this game, so a count would mean nothing.
       return { actor: true, count: false, timer: true, excludeUsedCivs: false, simultaneous: false };
     case "CIV_OFFER":
+      // Classically both sides choose blind at once, but a format may instead
+      // draft the fielded civs in the open, one seat at a time — so this one is
+      // the reverse of a ban: simultaneous unless you switch it off.
+      return { actor: !isSimultaneousStep(s), count: true, timer: true, excludeUsedCivs: true, simultaneous: "editable" };
     case "CIV_SNIPE_OPPONENT":
       return { actor: false, count: true, timer: true, excludeUsedCivs: true, simultaneous: "always" };
     case "SYNC_CONFIRM":
@@ -166,7 +171,14 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
       const steps = c.steps.slice();
       const old = steps[idx];
       const merged = { ...old, ...patch };
-      if (patch.type) merged.pool = poolForType(patch.type);
+      if (patch.type) {
+        merged.pool = poolForType(patch.type);
+        // Drop the old type's simultaneity so the new type falls back to its own
+        // default — otherwise a ban switched to "pick civ to field" would silently
+        // arrive turn-based, carrying a flag the previous type meant something
+        // else by.
+        delete merged.simultaneous;
+      }
       const wasAuto = !old.label || old.label === defaultStepLabel(old);
       if (wasAuto) merged.label = defaultStepLabel(merged);
       steps[idx] = merged;
@@ -458,7 +470,7 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
                 )}
                 {f.simultaneous === "editable" && (
                   <label className="flex items-center gap-1" title={t("editor.simultaneousHint")}>
-                    <input type="checkbox" checked={Boolean(s.simultaneous)} onChange={(e) => updateStep(i, { simultaneous: e.target.checked })} />
+                    <input type="checkbox" checked={isSimultaneousStep(s)} onChange={(e) => updateStep(i, { simultaneous: e.target.checked })} />
                     {t("editor.simultaneous")}
                   </label>
                 )}
@@ -515,9 +527,8 @@ const ACTOR_SHORT: Record<string, string> = {
 // Timeline tag for who acts. "⇄" means both players at once; a step that simply
 // has no actor at all (the game result) gets nothing rather than a wrong symbol.
 function actorShortOf(s: Step): string {
-  const f = fieldsFor(s);
-  if (f.actor) return ACTOR_SHORT[s.actor] ?? "";
-  return f.simultaneous === false ? "" : "⇄";
+  if (fieldsFor(s).actor) return ACTOR_SHORT[s.actor] ?? "";
+  return isSimultaneousStep(s) ? "⇄" : "";
 }
 
 // A horizontal node timeline of the steps: each node briefly shows what it does
