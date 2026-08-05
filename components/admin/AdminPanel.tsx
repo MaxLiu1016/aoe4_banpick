@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { NumberInput } from "@/components/NumberInput";
 
-type Code = { code: string; used: boolean; note: string };
+type Code ={ code: string; used: boolean; note: string };
 
 export function AdminPanel() {
   const [codes, setCodes] = useState<Code[]>([]);
@@ -45,7 +46,7 @@ export function AdminPanel() {
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <label className="text-sm text-muted">
             數量 / Count
-            <input type="number" min={1} max={50} value={count} onChange={(e) => setCount(Math.max(1, Math.min(50, +e.target.value)))}
+            <NumberInput value={count} min={1} max={50} onChange={setCount}
               className="ml-2 w-20 rounded border border-border bg-surface-2 px-2 py-1 text-foreground" />
           </label>
           <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="備註 / note (optional)"

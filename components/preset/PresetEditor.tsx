@@ -11,6 +11,7 @@ import { gameIndexOfSteps } from "@/lib/draft/engine";
 import { validatePreset } from "@/lib/draft/validate";
 import { defaultStepLabel } from "@/lib/draft/stepLabel";
 import { ClonePresetButton } from "@/components/preset/ClonePresetButton";
+import { NumberInput } from "@/components/NumberInput";
 import { useI18n } from "@/lib/i18n";
 import { CIVS } from "@/data/civs";
 import { DEFAULT_MAPS } from "@/data/maps";
@@ -436,15 +437,15 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
                 ) : null}
                 {f.count && (
                   <label className="flex items-center gap-1 text-xs text-muted" title={t("editor.countHint")}>
-                    ×<input type="number" min={1} max={50} value={s.count}
-                      onChange={(e) => updateStepMeta(i, { count: clamp(+e.target.value, 1, 50) })}
+                    ×<NumberInput value={s.count} min={1} max={50}
+                      onChange={(v) => updateStepMeta(i, { count: v })}
                       className="w-14 rounded border border-border bg-surface px-2 py-1 text-foreground" />
                   </label>
                 )}
                 {f.timer && (
                   <label className="flex items-center gap-1 text-xs text-muted" title={t("editor.timerHint")}>
-                    ⏱<input type="number" min={0} max={3600} value={s.timeLimitSec}
-                      onChange={(e) => updateStep(i, { timeLimitSec: clamp(+e.target.value, 0, 3600) })}
+                    ⏱<NumberInput value={s.timeLimitSec} min={0} max={3600}
+                      onChange={(v) => updateStep(i, { timeLimitSec: v })}
                       className="w-16 rounded border border-border bg-surface px-2 py-1 text-foreground" />
                   </label>
                 )}
@@ -565,11 +566,6 @@ function StepTimeline({ steps }: { steps: Step[] }) {
   );
 }
 
-function clamp(n: number, lo: number, hi: number) {
-  if (Number.isNaN(n)) return lo;
-  return Math.min(hi, Math.max(lo, n));
-}
-
 function Section({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
     <section className="aoe-panel rounded-xl p-5">
@@ -587,8 +583,7 @@ function NumberField({ label, value, min, max, onChange }: { label: string; valu
   return (
     <label className="block">
       <span className="mb-1 block text-xs uppercase tracking-wide text-muted">{label}</span>
-      <input type="number" min={min} max={max} value={value}
-        onChange={(e) => onChange(clamp(+e.target.value, min, max))}
+      <NumberInput value={value} min={min} max={max} onChange={onChange}
         className="w-full rounded border border-border bg-surface-2 px-3 py-2 text-foreground outline-none focus:border-gold" />
     </label>
   );
