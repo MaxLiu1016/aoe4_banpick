@@ -222,10 +222,13 @@ function build(stage: EgcStage): PresetConfig {
 /** Bump a preset's version to make the seed overwrite the copy in the database. */
 export const EGC_PRESET_VERSION = 1;
 
-export const EGC_PRESETS = STAGES.map((s) => ({
+export const EGC_PRESETS = STAGES.map((s, i) => ({
   key: s.key,
   name: s.name,
   description: s.description,
+  // Front of the preset list, in the order a tournament is actually played:
+  // qualifier first, grand final last. STAGES is already in that order.
+  order: 10 + i,
   version: EGC_PRESET_VERSION,
   config: build(s),
 }));

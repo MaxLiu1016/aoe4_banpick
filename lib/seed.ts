@@ -65,6 +65,7 @@ export async function seedInitialData(): Promise<void> {
       if (legacy) {
         legacy.demoKey = d.key;
         legacy.demoVersion = d.version;
+        legacy.demoOrder = d.order;
         await legacy.save();
         continue;
       }
@@ -77,6 +78,7 @@ export async function seedInitialData(): Promise<void> {
         isDemo: true,
         demoKey: d.key,
         demoVersion: d.version,
+        demoOrder: d.order,
       });
       console.log(`[seed] created demo preset "${d.name}" (${d.key} v${d.version})`);
       continue;
@@ -90,6 +92,13 @@ export async function seedInitialData(): Promise<void> {
       doc.markModified("config"); // Mixed field — mongoose can't see into it
       await doc.save();
       console.log(`[seed] updated demo preset "${d.name}" (${d.key} v${stored} -> v${d.version})`);
+    }
+    // Order is synced every boot, outside the version gate. It says where a demo
+    // sits in the list, not what it is — nobody can change it from the UI, so
+    // there is no edit to protect, and reshuffling the shop window shouldn't
+    // require pretending the rules changed.
+    if (doc.demoOrder !== d.order) {
+      await Preset.updateOne({ _id: doc._id }, { $set: { demoOrder: d.order } });
     }
   }
 }

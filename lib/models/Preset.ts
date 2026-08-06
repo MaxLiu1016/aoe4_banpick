@@ -14,6 +14,9 @@ const PresetSchema = new Schema(
     // orphaning its row, and re-writes the row when the code's version is higher.
     demoKey: { type: String, index: true, sparse: true },
     demoVersion: { type: Number, default: 0 },
+    // Where a demo sits in the list, low first. Defaulted high so anything the
+    // seed hasn't given an explicit place to lands after the ones that have.
+    demoOrder: { type: Number, default: 100 },
   },
   { timestamps: true }
 );

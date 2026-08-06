@@ -19,11 +19,12 @@ export const BOT_NAME = "Bot";
  * How long the bot sits on its hands before acting.
  *
  * On a timed step it waits, so the countdown means something and a human can
- * follow what just happened instead of the board jumping. On a step with no
- * clock there is nothing to watch tick, and a pause would just look like it had
- * hung — so it answers straight away.
+ * follow what just happened instead of the board jumping. Long enough to read,
+ * short enough that a 40-step draft doesn't become an afternoon. On a step with
+ * no clock there is nothing to watch tick, and a pause would just look like it
+ * had hung — so it answers straight away.
  */
-export const BOT_THINK_MS = 5000;
+export const BOT_THINK_MS = 3000;
 export const botDelay = (timeLimitSec: number): number => (timeLimitSec > 0 ? BOT_THINK_MS : 0);
 
 /**

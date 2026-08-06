@@ -6,6 +6,16 @@ export interface DemoPreset {
   key: string;
   name: string;
   description: string;
+  /**
+   * Where this sits in the preset list, low first. Demos are the shop window, so
+   * which one a newcomer sees at the top is an editorial decision rather than
+   * whichever happened to be touched last.
+   *
+   * Not versioned: it is metadata about presentation, not the rule set, and no
+   * admin can reorder demos from the UI — so the seed keeps it in step on every
+   * boot without a version bump.
+   */
+  order: number;
   /** Raise this to hand the demo back to the code: the seed overwrites any copy in
    *  the database whose stored version is lower. Leave it alone and edits made in
    *  the admin UI survive every restart. */
@@ -18,6 +28,7 @@ export interface DemoPreset {
 export const DEMO_PRESETS: DemoPreset[] = [
   {
     "key": "bcc-bo3",
+    "order": 20,
     "version": 1,
     "name": "Bo3 Draft(BCC)",
     "description": "For Border Conquest Cup, Standard Bo3 — map BP, hand draft, simultaneous offer & snipe.",
@@ -769,6 +780,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
   },
   {
     "key": "bcc-bo5",
+    "order": 21,
     "version": 2,
     "name": "Bo5 Draft(BCC)",
     "description": "For Border Conquest Cup, Standard Bo5 — map BP, hand draft, simultaneous offer & snipe.",
@@ -1544,6 +1556,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
   },
   {
     "key": "standard-bo3",
+    "order": 30,
     "version": 1,
     "name": "Bo3 Draft",
     "description": "Standard Bo3 — map BP, hand draft, simultaneous offer & snipe.",
@@ -2179,6 +2192,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
   },
   {
     "key": "easy-bo3",
+    "order": 31,
     "version": 1,
     "name": "easy Bo3 Draft",
     "description": "Simplified Bo3 demo.",

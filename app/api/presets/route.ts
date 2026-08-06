@@ -38,7 +38,10 @@ export async function GET(req: Request) {
 
   const total = await Preset.countDocuments(cond);
   const docs = await Preset.find(cond)
-    .sort({ isDemo: -1, updatedAt: -1 })
+    // Demos first, in the order the data file gives them (EGC ahead of the rest),
+    // then everything else newest-first. Without demoOrder the built-ins shuffled
+    // themselves every time one was edited.
+    .sort({ isDemo: -1, demoOrder: 1, updatedAt: -1 })
     .skip((page - 1) * limit)
     .limit(limit)
     .lean();
