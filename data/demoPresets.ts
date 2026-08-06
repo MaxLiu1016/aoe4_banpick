@@ -1,4 +1,5 @@
 import type { PresetConfig } from "@/lib/draft/schema";
+import { EGC_PRESETS } from "./egcPresets";
 
 export interface DemoPreset {
   /** Identity across renames — the seed matches on this, never on the name. */
@@ -2684,4 +2685,6 @@ export const DEMO_PRESETS: DemoPreset[] = [
       }
     }
   },
+  // Generated rather than pasted — see data/egcPresets.ts.
+  ...EGC_PRESETS,
 ];

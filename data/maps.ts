@@ -43,4 +43,24 @@ export const DEFAULT_MAPS: PoolEntry[] = [
   { id: "mountain-clearing", name: "Mountain Clearing", imageUrl: "/maps/mountain-clearing.png" },
   // Reported missing from the default pool by a player building a tournament preset.
   { id: "himeyama", name: "Himeyama", imageUrl: img("himeyama") },
+
+  // --- EGC Masters map pool ---
+  // EGC ship their own tuned versions of these maps, so they are separate entries
+  // rather than aliases of the ladder maps that share a name — "EGC-Dry Arabia" is
+  // not the map the ladder calls Dry Arabia. Names are spelled exactly as the EGC
+  // handbook spells them (Silk Road and Danube Divide carry no prefix there).
+  // Previews are the handbook's own minimap icons; the fandom wiki has no art for
+  // custom tournament maps. First eight = Open Qualifier pool.
+  { id: "egc-dry-arabia", name: "EGC-Dry Arabia", imageUrl: "/maps/egc-dry-arabia.png" },
+  { id: "egc-dry-river", name: "EGC-Dry River", imageUrl: "/maps/egc-dry-river.png" },
+  { id: "egc-gorge", name: "EGC-Gorge", imageUrl: "/maps/egc-gorge.png" },
+  { id: "egc-holy-island", name: "EGC-Holy Island", imageUrl: "/maps/egc-holy-island.png" },
+  { id: "egc-kerlaugar", name: "EGC-Kerlaugar", imageUrl: "/maps/egc-kerlaugar.png" },
+  { id: "egc-king-of-the-hill", name: "EGC-King of the Hill", imageUrl: "/maps/egc-king-of-the-hill.png" },
+  { id: "egc-mountain-clearing", name: "EGC-Mountain Clearing", imageUrl: "/maps/egc-mountain-clearing.png" },
+  { id: "egc-silk-road", name: "Silk Road", imageUrl: "/maps/egc-silk-road.png" },
+  // …plus these three in the Main Event.
+  { id: "egc-archipelago", name: "EGC-Archipelago", imageUrl: "/maps/egc-archipelago.png" },
+  { id: "egc-danube-divide", name: "Danube Divide", imageUrl: "/maps/egc-danube-divide.png" },
+  { id: "egc-golden-stream", name: "EGC-Golden Stream", imageUrl: "/maps/egc-golden-stream.png" },
 ];
