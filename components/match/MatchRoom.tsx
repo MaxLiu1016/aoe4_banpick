@@ -69,6 +69,9 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const [copied, setCopied] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const ticketRef = useRef<string | undefined>(undefined);
+  // The current-step prompt, and the step it was last scrolled for.
+  const promptRef = useRef<HTMLDivElement>(null);
+  const lastStepRef = useRef<number | null>(null);
   // Estimated server-minus-client clock offset (ms). Set from each payload's
   // serverNow so the countdown tracks the server's real deadline, not the local
   // (possibly skewed) clock. Slightly conservative by the one-way network delay,
@@ -84,6 +87,32 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   useEffect(() => {
     setInviteUrl(`${window.location.origin}/match/${matchId}`);
   }, [matchId]);
+
+  // Bring the turn to the player. A draft grows downward — scoreboard, map board,
+  // both hands — so by the time the maps are done the thing you actually click is
+  // off the bottom of the screen, and the page doesn't move on its own when the
+  // step changes. You end up hunting for your own turn.
+  //
+  // Only on a step change, only when the step is YOURS, and only when the prompt
+  // isn't already sitting near the top — a page that jumps while you're reading
+  // is worse than one that doesn't move.
+  useEffect(() => {
+    const st = payload?.state;
+    const seat = payload?.you === "player1" || payload?.you === "player2" ? payload.you : null;
+    if (!st || payload?.status !== "running") return;
+    const idx = st.currentStepIndex;
+    if (lastStepRef.current === idx) return;
+    const firstSight = lastStepRef.current === null;
+    lastStepRef.current = idx;
+    // Never on arrival: landing mid-draft shouldn't yank you somewhere you didn't ask for.
+    if (firstSight || spectator || !seat || !st.awaiting[seat] || payload.awaitingAck) return;
+    const el = promptRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.top >= 0 && rect.top < window.innerHeight * 0.4) return; // already in view, leave it
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  }, [payload, spectator]);
 
   useEffect(() => {
     const socket = getSocket();
@@ -404,7 +433,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
       {/* Current step prompt — leans to the acting player's side (P1 left, P2 right);
           neutral prompts (simultaneous / random draw) stay centered. */}
       {step && !state.finished && (
-        <div className={`flex flex-col ${
+        <div ref={promptRef} className={`scroll-mt-6 flex flex-col ${
           state.turn === "player1" ? "items-start text-left" :
           state.turn === "player2" ? "items-end text-right" :
           "items-center text-center"
@@ -419,10 +448,11 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           <h2 className="font-display text-2xl aoe-gold-text">
             {step.type === "GAME_RESULT" ? t("match.gameN", { n: state.currentGameIndex + 1 }) : (step.label || `${step.type}`)}
           </h2>
-          {/* Only while the scoreboard is collapsed: otherwise the map board above
-              already shows this game's map, and two copies a screen apart was what
-              made the map area look like it was missing one. */}
-          {currentMap && minimized && (
+          {/* The map you are picking a civ FOR, right next to the prompt telling you
+              to pick one. The map board higher up carries the same thing, and that
+              repetition is the point: by the time you are choosing, the board is
+              usually scrolled off, and the one fact you need is which map this is. */}
+          {currentMap && (
             <div className="mt-1 flex items-center gap-2 text-sm text-muted">
               {mapById(currentMap)?.imageUrl && (
                 <Thumb src={mapById(currentMap)?.imageUrl} alt={currentMapName ?? ""} className="h-8 w-8 rounded object-cover ring-1 ring-bronze" />
