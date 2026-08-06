@@ -12,7 +12,7 @@ import { FavoriteButton } from "@/components/preset/FavoriteButton";
 
 const LIMIT = 9;
 
-export function PresetBrowser() {
+export function PresetBrowser({ initial }: { initial?: { items: ClientPreset[]; total: number } }) {
   const { t } = useI18n();
   const { data: session } = useSession();
   const loggedIn = !!session?.user;
@@ -22,8 +22,8 @@ export function PresetBrowser() {
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
   const [page, setPage] = useState(1);
-  const [items, setItems] = useState<ClientPreset[]>([]);
-  const [total, setTotal] = useState(0);
+  const [items, setItems] = useState<ClientPreset[]>(initial?.items ?? []);
+  const [total, setTotal] = useState(initial?.total ?? 0);
   const [loading, setLoading] = useState(false);
 
   // Default to "mine" once we know the user is logged in.
@@ -83,7 +83,7 @@ export function PresetBrowser() {
             <li key={p.id} className="aoe-panel flex flex-col rounded-lg p-5">
               <div className="min-w-0 flex-1">
                 <h2 className="font-display text-lg aoe-gold-text">
-                  {p.name}
+                  <Link href={`/presets/${p.id}`} className="hover:underline">{p.name}</Link>
                   {p.isDemo && (
                     <span className="ml-2 rounded-full border border-bronze px-2 py-0.5 align-middle text-[10px] text-bronze">{t("presets.demo")}</span>
                   )}

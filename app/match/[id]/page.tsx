@@ -19,6 +19,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     description,
     openGraph: { title, description, type: "website" },
     twitter: { card: "summary", title, description },
+    // A draft room is over in twenty minutes; indexing one only competes with
+    // the format pages that are meant to be found.
+    robots: { index: false, follow: false },
   };
 }
 

@@ -23,16 +23,35 @@ export default function Home() {
           <p className="mx-auto mt-5 max-w-xl text-muted">
             {t("home.subtitle")}
           </p>
-          <div className="mt-9 flex justify-center">
+          <div className="mt-9 flex flex-wrap justify-center gap-3">
             <Link href="/presets" className="aoe-btn rounded px-7 py-3 text-lg font-display">
               {t("home.createDraft")}
             </Link>
           </div>
         </section>
 
+        {/* What the site does. The copy was written and translated long ago and
+            then never put on a page — so the landing page said nothing about the
+            product, to a reader or to a crawler. */}
+        <section className="mt-20 grid gap-6 sm:grid-cols-3">
+          {[
+            { t: "home.f1t", d: "home.f1d" },
+            { t: "home.f2t", d: "home.f2d" },
+            { t: "home.f3t", d: "home.f3d" },
+          ].map((f) => (
+            <div key={f.t} className="aoe-panel rounded-xl p-6">
+              <h2 className="font-display text-lg aoe-gold-text">{t(f.t)}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-foreground/80">{t(f.d)}</p>
+            </div>
+          ))}
+        </section>
+
         {/* Civ roster — quiet, decorative band */}
         <section className="mt-24">
-          <div className="aoe-rule mb-6" />
+          <h2 className="text-center font-display text-sm uppercase tracking-[0.3em] text-muted">
+            {t("home.roster")} · {t("home.civs", { n: CIVS.length })}
+          </h2>
+          <div className="aoe-rule mb-6 mt-4" />
           <div className="grid grid-cols-6 gap-3 sm:grid-cols-12">
             {CIVS.map((c) => (
               <div key={c.id} className="group flex items-center justify-center" title={c.name}>

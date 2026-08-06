@@ -261,6 +261,10 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "ack.gotIt": { en: "Got it — I'm ready", zh: "收到，我準備好了", ja: "了解——準備できました" },
   "ack.youReady": { en: "You're ready — waiting for the other player…", zh: "你已就緒——等待另一位玩家…", ja: "準備完了——もう一方のプレイヤーを待っています…" },
   "ack.waiting": { en: "Waiting for both players to confirm…", zh: "等待雙方確認…", ja: "両プレイヤーの確認を待っています…" },
+  // a public format's own page
+  "preset.stepsTitle": { en: "Draft steps", zh: "抽選步驟", ja: "ドラフトの手順" },
+  "preset.civsTitle": { en: "Civilization pool ({n})", zh: "文明池（{n}）", ja: "文明プール（{n}）" },
+  "preset.mapsTitle": { en: "Map pool ({n})", zh: "地圖池（{n}）", ja: "マッププール（{n}）" },
   // spectator broadcast view. Labels are short and upper-case in English because
   // they are read at a glance from a stream, not studied.
   "spec.live": { en: "LIVE", zh: "直播中", ja: "配信中" },
