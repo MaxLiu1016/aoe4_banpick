@@ -183,19 +183,30 @@ button:disabled { cursor: not-allowed; }
 }
 .ovl-glow { animation: ovl-glow 1.6s ease-in-out infinite; }
 
-/* A hidden offer turning face up. Cards are staggered by inline delay. */
+/* A hidden offer turning face up: the card back rotates away and the civ arrives
+   in its place. Cards are released one at a time by the view, 150ms apart, so the
+   stagger is a real sequence rather than a set of delayed copies. */
 @keyframes ovl-flip {
   0% { transform: rotateY(180deg); }
   70% { transform: rotateY(0deg); }
   100% { transform: rotateY(0deg); }
 }
-.ovl-flip { backface-visibility: hidden; animation: ovl-flip 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ovl-flip { transform-style: preserve-3d; animation: ovl-flip 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* "Revealing" — a light travelling along a rail while a hidden phase resolves.
+   A progress bar would be a lie (nobody knows how long), a shimmer just says
+   "something is happening". */
+@keyframes ovl-sweep {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(320%); }
+}
+.ovl-sweep { animation: ovl-sweep 1.4s linear infinite; }
 
 /* Respect users who prefer reduced motion. */
 @media (prefers-reduced-motion: reduce) {
   .route-enter, .fade-in, .skeleton, .spinner, .civ-pop, .civ-pop-glow,
   .ovl-pop, .ovl-slash, .ovl-slash-lg, .ovl-pulse, .ovl-glow, .ovl-flip,
-  .animate-pulse {
+  .ovl-sweep, .animate-pulse {
     animation: none !important;
   }
 }

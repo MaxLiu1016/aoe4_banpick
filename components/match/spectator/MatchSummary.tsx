@@ -41,7 +41,9 @@ export function MatchSummary({ payload, roomName }: { payload: SpectatorPayload;
     >
       {/* Title + final score */}
       <div className="absolute left-0 right-0 top-[46px] text-center">
-        <span className="font-sans text-[19px] font-semibold tracking-[.34em] text-muted">{roomName}</span>
+        {/* Upper-case here and nowhere else: this is the poster line of a page
+            built to be screenshotted, and the wide tracking needs the caps. */}
+        <span className="font-sans text-[19px] font-semibold uppercase tracking-[.34em] text-muted">{roomName}</span>
         <div className="mt-5 flex items-center justify-center gap-[34px]">
           <span className="font-display text-[60px] font-bold leading-none" style={{ color: OWNER.player1 }}>
             {names.player1}
@@ -81,9 +83,9 @@ export function MatchSummary({ payload, roomName }: { payload: SpectatorPayload;
                 />
                 <div className="min-w-0">
                   <div
-                    className={`truncate font-display leading-tight ${compact ? "text-[17px]" : "text-[21px]"} ${
-                      won ? "font-bold text-gold-bright" : "font-semibold text-muted"
-                    }`}
+                    className={`truncate font-display leading-tight ${
+                      compact ? (won ? "text-[17px]" : "text-[16px]") : won ? "text-[21px]" : "text-[20px]"
+                    } ${won ? "font-bold text-gold-bright" : "font-semibold text-muted"}`}
                   >
                     {entry?.name ?? "—"}
                     {won && " 👑"}
@@ -102,7 +104,12 @@ export function MatchSummary({ payload, roomName }: { payload: SpectatorPayload;
             <div
               key={g.gameIndex}
               className="overflow-hidden rounded-[14px]"
-              style={{ border: `2px solid ${OWNER[winner]}`, background: "rgba(24,27,34,.85)" }}
+              style={{
+                // The winner's colour, held back a little: on a page of eight of
+                // them a full-strength border competes with the art inside it.
+                border: `2px solid color-mix(in srgb, ${OWNER[winner]} 85%, transparent)`,
+                background: "rgba(24,27,34,.85)",
+              }}
             >
               {m && (
                 <Thumb
@@ -138,7 +145,7 @@ export function MatchSummary({ payload, roomName }: { payload: SpectatorPayload;
               <div className="font-sans text-[16px] font-semibold tracking-[.18em]" style={{ color: OWNER[seat] }}>
                 {t("spec.draftOf", { name: names[seat] })}
               </div>
-              <div className={`mt-3.5 flex items-start gap-[26px] ${right ? "flex-row-reverse" : ""}`}>
+              <div className={`mt-3.5 flex items-center gap-[26px] ${right ? "flex-row-reverse" : ""}`}>
                 <div>
                   <div className="mb-2 font-sans text-[14px] font-semibold tracking-[.14em] text-danger">{t("spec.banned")}</div>
                   <div className={`flex gap-2.5 ${right ? "flex-row-reverse" : ""}`}>

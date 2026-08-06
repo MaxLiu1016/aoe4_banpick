@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Thumb } from "@/components/Thumb";
 import { useI18n } from "@/lib/i18n";
 import type { DerivedState, PoolView } from "@/lib/draft/engine";
+import { CivDuelPanel, LockRow } from "./CivDuel";
 import { OWNER, OWNER_RGB, seatNames, type Seat, type SpectatorPayload } from "./types";
 
 /** Steps either side of the current one to keep on screen. */
@@ -56,6 +57,13 @@ export function DraftBoard({
   // Six across reads best, but a full 23-civ pool at that width runs off the
   // bottom of the canvas. Widen the grid instead of shrinking the whole board.
   const poolCols = state.civs.length <= 12 ? 6 : state.civs.length <= 24 ? 8 : 10;
+
+  // The offer and snipe phases are about what is face-down, which the pool cannot
+  // say — so for those steps the middle of the board becomes the duel itself.
+  const duel = step?.type === "CIV_OFFER" || step?.type === "CIV_SNIPE_OPPONENT" ? state.civDuel : null;
+  // Any other step where both sides act blind: the pool is still the right picture,
+  // but it has to be said who is already in. (`pendingBans` is never read.)
+  const showLocks = !duel && state.simultaneous;
 
   const from = Math.max(0, Math.min(state.currentStepIndex - STEP_WINDOW, state.stepBar.length - STEP_WINDOW * 2 - 1));
   const steps = state.stepBar.slice(from, from + STEP_WINDOW * 2 + 1);
@@ -168,6 +176,11 @@ export function DraftBoard({
             })}
           </div>
         </div>
+        {showLocks && <LockRow state={state} names={names} t={t} />}
+        {duel ? (
+          <CivDuelPanel state={state} duel={duel} names={names} civById={civById} t={t} />
+        ) : (
+        <>
         <div className="mt-6 grid gap-3.5" style={{ gridTemplateColumns: `repeat(${poolCols}, minmax(0, 1fr))` }}>
           {state.civs.map((c) => {
             const owner: Seat | null = c.state === "drafted" && (c.by === "player1" || c.by === "player2") ? c.by : null;
@@ -197,12 +210,14 @@ export function DraftBoard({
             );
           })}
         </div>
-        <div className="mt-[22px] flex items-center justify-center gap-[26px] font-sans text-[15px] font-semibold text-muted">
+        <div className="mt-[22px] flex items-center justify-center gap-[26px] font-sans text-[15px] font-semibold tracking-[.06em] text-muted">
           <Legend swatch={{ border: "2px solid var(--bronze)" }} label={t("spec.legendPool")} />
           <Legend swatch={{ background: "var(--danger)" }} label={t("spec.legendBanned")} />
           <Legend swatch={{ border: `2px solid ${OWNER.player1}` }} label={t("spec.legendHeld", { name: names.player1 })} />
           <Legend swatch={{ border: `2px solid ${OWNER.player2}` }} label={t("spec.legendHeld", { name: names.player2 })} />
         </div>
+        </>
+        )}
       </div>
 
       {/* ---- Games so far ---- */}
@@ -231,7 +246,7 @@ export function DraftBoard({
               <span className="font-sans text-[15px] font-semibold tracking-[.14em] text-muted">{tag}</span>
               <GameCiv id={g.civP1} civById={civById} won={g.winner === "player1"} />
               <span className="font-sans text-[14px] text-muted">vs</span>
-              <GameCiv id={g.civP2} civById={civById} won={g.winner === "player2"} flip />
+              <GameCiv id={g.civP2} civById={civById} won={g.winner === "player2"} />
             </div>
           );
         })}
@@ -249,13 +264,16 @@ function Legend({ swatch, label }: { swatch: React.CSSProperties; label: string 
   );
 }
 
-function GameCiv({ id, civById, won, flip }: { id?: string; civById: Map<string, PoolView>; won: boolean; flip?: boolean }) {
+/** One side of a finished game in the bottom strip. The crown follows the winner's
+ *  civ on both sides, so the eye finds it in the same place either way. */
+function GameCiv({ id, civById, won }: { id?: string; civById: Map<string, PoolView>; won: boolean }) {
   const c = id ? civById.get(id) : undefined;
-  const img = (
-    <Thumb src={c?.imageUrl} alt={c?.name ?? ""} className={`h-11 w-11 object-contain ${won ? "" : "opacity-50 grayscale"}`} />
+  return (
+    <span className="flex items-center gap-2">
+      <Thumb src={c?.imageUrl} alt={c?.name ?? ""} className={`h-11 w-11 object-contain ${won ? "" : "opacity-50 grayscale"}`} />
+      {won && <span className="font-display text-[17px] font-bold leading-none text-gold-bright">👑</span>}
+    </span>
   );
-  const crown = won ? <span className="font-display text-[17px] font-bold leading-none text-gold-bright">👑</span> : null;
-  return <span className="flex items-center gap-2">{flip ? <>{img}{crown}</> : <>{img}{crown}</>}</span>;
 }
 
 /** A player's own side of the draft: what they hold, and what they struck out. */
@@ -298,7 +316,7 @@ function PlayerColumn({
               return (
                 <div key={c.id} className="relative">
                   <Thumb src={c.imageUrl} alt={c.name}
-                    className={`aspect-square w-full rounded-lg object-contain ${spent ? "grayscale opacity-35" : ""}`}
+                    className={`aspect-square w-full rounded-lg bg-surface-2 object-contain ${spent ? "grayscale opacity-35" : ""}`}
                     // Border colour carries ownership, so it has to stay inline.
                   />
                   <span
