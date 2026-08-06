@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useSession } from "next-auth/react";
 import { GUEST_ACCESS } from "@/lib/features";
 import { getGuestToken, guestName, setGuestName } from "@/lib/guest";
@@ -72,6 +73,25 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   // The current-step prompt, and the step it was last scrolled for.
   const promptRef = useRef<HTMLDivElement>(null);
   const lastStepRef = useRef<number | null>(null);
+  // Whether the scoreboard and map board have scrolled off the top, which is
+  // exactly when the floating rails have something to stand in for.
+  const [scrolledPast, setScrolledPast] = useState(false);
+  const railObserver = useRef<IntersectionObserver | null>(null);
+  // A ref callback rather than an effect: the sentinel doesn't exist until the
+  // draft is running, and an effect that ran once in the lobby would never see it.
+  const watchSentinel = useCallback((el: HTMLDivElement | null) => {
+    railObserver.current?.disconnect();
+    railObserver.current = null;
+    if (!el) { setScrolledPast(false); return; }
+    const io = new IntersectionObserver(
+      // Only when it went off the TOP. Off the bottom means the page is short
+      // enough that everything is still up there in plain sight.
+      ([e]) => setScrolledPast(!e.isIntersecting && e.boundingClientRect.top < 0),
+      { threshold: 0 }
+    );
+    io.observe(el);
+    railObserver.current = io;
+  }, []);
   // Estimated server-minus-client clock offset (ms). Set from each payload's
   // serverNow so the countdown tracks the server's real deadline, not the local
   // (possibly skewed) clock. Slightly conservative by the one-way network delay,
@@ -429,6 +449,28 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           onAck={() => ackResult(payload!.awaitingAck!.gameIndex)}
         />
       )}
+
+      {/* Marks the end of the scoreboard/map/ban boards. Once this passes the top
+          of the window the floating rails take over carrying that context. */}
+      <div ref={watchSentinel} aria-hidden className="h-px" />
+
+      {/* Portalled to <body> on purpose. The page wrapper animates on every route
+          change with fill-mode both, so it keeps a transform after the animation
+          ends — and a transformed ancestor becomes the containing block for
+          position:fixed, which pinned these to the middle of the whole document
+          instead of the middle of the window.
+          Mounting only once scrolled also keeps the server render empty, so there
+          is no hydration mismatch from touching `document` here. */}
+      {scrolledPast &&
+        createPortal(
+          <>
+            <ContextRail side="player1" name={p1Name} mapId={currentMap} mapName={currentMapName}
+              bans={p1Banned} mapBans={p1MapBans} mapById={mapById} t={t} />
+            <ContextRail side="player2" name={p2Name} mapId={currentMap} mapName={currentMapName}
+              bans={p2Banned} mapBans={p2MapBans} mapById={mapById} t={t} />
+          </>,
+          document.body
+        )}
 
       {/* Current step prompt — leans to the acting player's side (P1 left, P2 right);
           neutral prompts (simultaneous / random draw) stay centered. */}
@@ -892,6 +934,76 @@ function SimulBanStatus({ count, mine, youAwaited, oppAwaited, isPlayer, entryBy
       )}
       {isPlayer && !youAwaited && <p className="mt-4 text-center text-sm text-gold-bright">{t("simulban.lockedWait")}</p>}
     </section>
+  );
+}
+
+/**
+ * The context you lose by scrolling: this game's map, and what each side has
+ * struck out. Floats clear of the page in the margin either side, appears once
+ * the real thing has scrolled off the top, and gets out of the way again the
+ * moment you scroll back up to it — it is a stand-in, not a second copy.
+ *
+ * Desktop only, and deliberately so: it lives in the empty space beside the
+ * 1200px column, and below 2xl there is no empty space to live in. On a phone it
+ * would be covering the very thing it is describing.
+ */
+function ContextRail({
+  side, name, mapId, mapName, bans, mapBans, mapById, t,
+}: {
+  side: "player1" | "player2";
+  name: string;
+  mapId?: string;
+  mapName?: string;
+  bans: { key: string; civ?: PoolView }[];
+  mapBans: { key: string; civ?: PoolView }[];
+  mapById: (id?: string) => PoolView | undefined;
+  t: TFn;
+}) {
+  const own = OWNER[side];
+  const left = side === "player1";
+  if (!mapId && bans.length === 0 && mapBans.length === 0) return null;
+  return (
+    <aside
+      aria-hidden
+      className={`fade-in pointer-events-none fixed top-1/2 z-20 hidden max-h-[80vh] w-[148px] -translate-y-1/2 overflow-y-auto rounded-xl border border-border bg-surface/85 p-2.5 backdrop-blur-sm 2xl:block ${
+        left ? "left-4" : "right-4"
+      }`}
+    >
+      {mapId && (
+        <div className="mb-2.5">
+          <div className="text-[9px] uppercase tracking-wide text-muted">{t("match.currentMap")}</div>
+          <Thumb src={mapById(mapId)?.imageUrl} alt={mapName ?? ""} className="mt-1 aspect-[16/10] w-full rounded object-cover ring-1 ring-bronze" />
+          <div className="truncate text-[11px] leading-tight text-gold-bright">{mapName}</div>
+        </div>
+      )}
+      <div className={`truncate border-b pb-1 font-display text-sm ${own.text} ${own.border}`}>{name}</div>
+      {bans.length > 0 && (
+        <>
+          <div className="mt-2 text-[9px] uppercase tracking-wide text-danger">{t("spec.civsBanned")}</div>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {bans.map((b) => (
+              <span key={b.key} className="relative block h-8 w-8" title={b.civ?.name}>
+                <Thumb src={b.civ?.imageUrl} alt={b.civ?.name ?? ""} className="h-8 w-8 rounded object-contain grayscale brightness-[.55]" />
+                <span className="absolute left-0 right-0 top-1/2 h-0.5 bg-danger" />
+              </span>
+            ))}
+          </div>
+        </>
+      )}
+      {mapBans.length > 0 && (
+        <>
+          <div className="mt-2 text-[9px] uppercase tracking-wide text-muted">{t("spec.mapsBanned")}</div>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {mapBans.map((b) => (
+              <span key={b.key} className="relative block w-full" title={b.civ?.name}>
+                <Thumb src={b.civ?.imageUrl} alt={b.civ?.name ?? ""} className="aspect-[16/10] w-full rounded object-cover grayscale brightness-50" />
+                <span className="absolute left-0 right-0 top-[44%] h-0.5 bg-danger" />
+              </span>
+            ))}
+          </div>
+        </>
+      )}
+    </aside>
   );
 }
 
