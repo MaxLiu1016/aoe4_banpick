@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import { SiteHeader } from "@/components/SiteHeader";
-import { MatchRoom } from "@/components/match/MatchRoom";
 import { ConnectionBanner } from "@/components/match/ConnectionBanner";
-import { T } from "@/lib/i18n";
+import { SpectatorStage } from "@/components/match/spectator/SpectatorStage";
 import { getRoomMeta } from "@/lib/match/roomMeta";
 
 export const dynamic = "force-dynamic";
@@ -22,28 +20,21 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
+/**
+ * The spectator page. Deliberately has no site chrome: it is a picture to point a
+ * stream or a projector at, and a nav bar in the corner of a broadcast is someone
+ * else's UI on your screen. Everything a viewer needs is inside the board.
+ *
+ * The connection banner does stay — an operator has to be able to tell a frozen
+ * board from a quiet one.
+ */
 export default async function WatchPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const room = await getRoomMeta(id);
   return (
     <>
       <ConnectionBanner />
-      <SiteHeader />
-      <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-6">
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div>
-              <h1 className="font-display text-2xl aoe-gold-text">{room?.name ?? "Ban/Pick Match"}</h1>
-              <p className="text-xs text-muted">
-                <T k="match.spectating" />
-                {room?.bestOf ? ` · Bo${room.bestOf}` : ""}
-              </p>
-            </div>
-            <span className="rounded-full border border-bronze px-2 py-0.5 text-xs text-gold-bright">LIVE</span>
-          </div>
-        </div>
-        <MatchRoom matchId={id} spectator />
-      </main>
+      <SpectatorStage matchId={id} roomName={room?.name ?? "Ban/Pick Match"} />
     </>
   );
 }
