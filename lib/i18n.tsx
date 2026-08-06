@@ -8,7 +8,7 @@ export type Locale = "en" | "zh" | "cn" | "ja";
 
 // Traditional → Simplified character map (covers the chars used in the dictionary).
 // Lets the "cn" locale reuse the "zh" strings without a second hand-translation.
-const T2S: Record<string, string> = { "規": "规", "則": "则", "組": "组", "揮": "挥", "個": "个", "資": "资", "顯": "显", "稱": "称", "這": "这", "裡": "里", "儲": "储", "紀": "纪", "國": "国", "運": "运", "籌": "筹", "決": "决", "勝": "胜", "開": "开", "與": "与", "圖": "图", "對": "对", "戰": "战", "瀏": "浏", "覽": "览", "訂": "订", "輪": "轮", "數": "数", "擊": "击", "驟": "骤", "計": "计", "時": "时", "暫": "暂", "賽": "赛", "觀": "观", "選": "选", "標": "标", "雙": "双", "約": "约", "負": "负", "兩": "两", "邊": "边", "點": "点", "誤": "误", "陣": "阵", "為": "为", "術": "术", "來": "来", "進": "进", "廳": "厅", "帳": "帐", "號": "号", "電": "电", "郵": "邮", "碼": "码", "請": "请", "註": "注", "冊": "册", "採": "采", "員": "员", "還": "还", "沒": "没", "經": "经", "錯": "错", "敗": "败", "後": "后", "編": "编", "輯": "辑", "複": "复", "製": "制", "換": "换", "尋": "寻", "頁": "页", "刪": "删", "範": "范", "內": "内", "無": "无", "愛": "爱", "間": "间", "連": "连", "結": "结", "線": "线", "當": "当", "隊": "队", "長": "长", "準": "准", "備": "备", "傳": "传", "給": "给", "會": "会", "強": "强", "繼": "继", "續": "续", "獲": "获", "場": "场", "隨": "随", "機": "机", "隱": "隐", "鎖": "锁", "擇": "择", "緒": "绪", "張": "张", "僅": "仅", "誰": "谁", "贏": "赢", "寫": "写", "確": "确", "認": "认", "舊": "旧", "從": "从", "餘": "余", "說": "说", "項": "项", "幾": "几", "總": "总", "預": "预", "設": "设", "許": "许", "產": "产", "執": "执", "統": "统", "動": "动", "調": "调", "順": "顺", "嗎": "吗", "單": "单", "錄": "录", "種": "种", "關": "关", "閉": "闭", "東": "东", "須": "须", "現": "现", "況": "况", "於": "于", "夠": "够", "靜": "静", "練": "练", "習": "习", "滿": "满", "參": "参", "過": "过", "純": "纯", "斷": "断", "曉": "晓", "眾": "众", "欄": "栏", "訪": "访", "遊": "游", "記": "记" };
+const T2S: Record<string, string> = { "規": "规", "則": "则", "組": "组", "揮": "挥", "個": "个", "資": "资", "顯": "显", "稱": "称", "這": "这", "裡": "里", "儲": "储", "紀": "纪", "國": "国", "運": "运", "籌": "筹", "決": "决", "勝": "胜", "開": "开", "與": "与", "圖": "图", "對": "对", "戰": "战", "瀏": "浏", "覽": "览", "訂": "订", "輪": "轮", "數": "数", "擊": "击", "驟": "骤", "計": "计", "時": "时", "暫": "暂", "賽": "赛", "觀": "观", "選": "选", "標": "标", "雙": "双", "約": "约", "負": "负", "兩": "两", "邊": "边", "點": "点", "誤": "误", "陣": "阵", "為": "为", "術": "术", "來": "来", "進": "进", "廳": "厅", "帳": "帐", "號": "号", "電": "电", "郵": "邮", "碼": "码", "請": "请", "註": "注", "冊": "册", "採": "采", "員": "员", "還": "还", "沒": "没", "經": "经", "錯": "错", "敗": "败", "後": "后", "編": "编", "輯": "辑", "複": "复", "製": "制", "換": "换", "尋": "寻", "頁": "页", "刪": "删", "範": "范", "內": "内", "無": "无", "愛": "爱", "間": "间", "連": "连", "結": "结", "線": "线", "當": "当", "隊": "队", "長": "长", "準": "准", "備": "备", "傳": "传", "給": "给", "會": "会", "強": "强", "繼": "继", "續": "续", "獲": "获", "場": "场", "隨": "随", "機": "机", "隱": "隐", "鎖": "锁", "擇": "择", "緒": "绪", "張": "张", "僅": "仅", "誰": "谁", "贏": "赢", "寫": "写", "確": "确", "認": "认", "舊": "旧", "從": "从", "餘": "余", "說": "说", "項": "项", "幾": "几", "總": "总", "預": "预", "設": "设", "許": "许", "產": "产", "執": "执", "統": "统", "動": "动", "調": "调", "順": "顺", "嗎": "吗", "單": "单", "錄": "录", "種": "种", "關": "关", "閉": "闭", "東": "东", "須": "须", "現": "现", "況": "况", "於": "于", "夠": "够", "靜": "静", "練": "练", "習": "习", "滿": "满", "參": "参", "過": "过", "純": "纯", "斷": "断", "曉": "晓", "眾": "众", "欄": "栏", "訪": "访", "遊": "游", "記": "记", "條": "条", "麼": "么", "腦": "脑" };
 function toSimplified(s: string): string {
   let out = "";
   for (const ch of s) out += T2S[ch] ?? ch;
@@ -96,7 +96,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "presets.steps": { en: "{n} steps", zh: "{n} 步驟", ja: "{n} ステップ" },
   // draft history
   "history.title": { en: "Draft history", zh: "對戰紀錄", ja: "ドラフト履歴" },
-  "history.subtitle": { en: "Drafts you played in or hosted. Spectating doesn't count.", zh: "你參與過或開設的對戰。純觀戰不會列入。", ja: "対戦または主催したドラフト。観戦のみは含まれません。" },
+  "history.subtitle": { en: "Drafts you played in, or rooms you opened. Just watching doesn't count.", zh: "你打過的、或你開的房。只是在旁邊看不算。", ja: "あなたが対戦した、または開いた部屋。見ていただけのものは含まれません。" },
   "history.subtitleGlobal": { en: "The 20 most recent public drafts. Anonymous ones are never listed.", zh: "最近 20 場公開對戰。匿名對戰不會列入。", ja: "直近 20 件の公開ドラフト。匿名の対戦は表示されません。" },
   "history.none": { en: "No drafts yet. Start one from a preset.", zh: "還沒有紀錄，從規則組開一場吧。", ja: "まだ履歴がありません。プリセットから始めましょう。" },
   "history.tab.mine": { en: "My drafts", zh: "我的紀錄", ja: "自分の履歴" },
@@ -123,7 +123,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "match.spectatorLink": { en: "Spectator link ↗", zh: "觀戰連結 ↗", ja: "観戦リンク ↗" },
   "match.spectating": { en: "Spectating", zh: "觀戰中", ja: "観戦中" },
   "match.connecting": { en: "Connecting to the draft…", zh: "連線中…", ja: "接続中…" },
-  "match.reconnecting": { en: "Connection lost — reconnecting…", zh: "連線中斷,重新連線中…", ja: "接続が切れました——再接続中…" },
+  "match.reconnecting": { en: "Connection lost — reconnecting…", zh: "連線中斷，重新連線中…", ja: "接続が切れました——再接続中…" },
   "match.bestOf": { en: "Best of {n} · first to {t}", zh: "{n} 戰 {t} 勝制", ja: "{n} 本勝負 · 先取 {t} 勝" },
   "match.bestOfAll": { en: "Playing all {n} games", zh: "打滿 {n} 場", ja: "全 {n} 戦を消化" },
   "match.lobby": { en: "LOBBY", zh: "大廳", ja: "ロビー" },
@@ -131,7 +131,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "match.youAre": { en: "You are", zh: "你的身分", ja: "あなたの役割" },
   "match.host": { en: "host", zh: "房主", ja: "ホスト" },
   "match.referee": { en: "Host / Referee", zh: "房主 / 裁判", ja: "ホスト / 審判" },
-  "match.hostHint": { en: "You're the host. Take a seat to play, or stay as referee.", zh: "你是房主。可入座當隊長，或保持裁判身分。", ja: "あなたはホストです。席について対戦するか、審判のままでいることもできます。" },
+  "match.hostHint": { en: "You're the host. You can play as well, or just referee.", zh: "你是房主。可以自己下場打，也可以只當裁判。", ja: "あなたはホストです。自分で対戦してもいいですし、審判だけでもかまいません。" },
   "match.p1": { en: "Player 1", zh: "玩家 1", ja: "プレイヤー 1" },
   "match.p2": { en: "Player 2", zh: "玩家 2", ja: "プレイヤー 2" },
   "match.spectator": { en: "Spectator", zh: "觀戰者", ja: "観戦者" },
@@ -146,15 +146,15 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "match.takeSeat": { en: "Take this seat", zh: "坐這個位子", ja: "この席につく" },
   "match.guestName": { en: "Your name", zh: "你的名字", ja: "あなたの名前" },
   "match.guestMode": {
-    en: "Playing as a guest — your seat is held by this browser, so don't clear it mid-draft.",
-    zh: "你正在以訪客身分遊玩 —— 位子是靠這台瀏覽器記住的,抽選到一半不要清掉。",
-    ja: "ゲストとしてプレイ中 — 席はこのブラウザが保持しているので、ドラフト中に消さないでください。",
+    en: "No account needed. Just don't swap phone or computer partway through — only this one remembers your seat.",
+    zh: "不用帳號也能打完這場。只是中途不要換手機或電腦 —— 位子只記在這一台。",
+    ja: "アカウントは要りません。ただし途中でスマホやパソコンを変えないでください — 席を覚えているのはこの端末だけです。",
   },
   "match.waitingPlayer": { en: "Waiting for a player…", zh: "等待玩家…", ja: "プレイヤーを待っています…" },
   "match.invite": { en: "Invite your opponent", zh: "邀請對手", ja: "対戦相手を招待" },
   "match.copyLink": { en: "Copy link", zh: "複製連結", ja: "リンクをコピー" },
   "match.copied": { en: "Copied!", zh: "已複製！", ja: "コピーしました！" },
-  "match.shareHint": { en: "Share this link; they sign in and take the open seat.", zh: "把連結傳給對手；他登入後坐空位即可。", ja: "このリンクを相手に送ってください。ログインして空席につけば準備完了です。" },
+  "match.shareHint": { en: "Send this link to your opponent. They open it and take the empty seat — no account needed.", zh: "把這條連結傳給對手。他點開、坐上空位就能開始，不用註冊。", ja: "このリンクを相手に送ってください。開いて空席につけば始められます（アカウント不要）。" },
   "match.waitSeats": { en: "Waiting for both seats to be filled…", zh: "等待雙方就座…", ja: "両方の席が埋まるのを待っています…" },
   "match.starting": { en: "Starting…", zh: "開始中…", ja: "開始中…" },
   "match.readyToBegin": { en: "Both players must ready up to begin.", zh: "雙方都按準備才會開始。", ja: "両プレイヤーが準備完了にすると開始します。" },
@@ -222,13 +222,13 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "offer.secret": { en: "Both players are secretly offering civs…", zh: "雙方正在秘密出牌…", ja: "両プレイヤーが秘密裏に文明を提示中…" },
   // simultaneous ban phase
   "simulban.title": { en: "Ban {n} — both players at once", zh: "雙方同時各 ban {n} 個", ja: "両プレイヤーが同時に {n} つ BAN" },
-  "simulban.hint": { en: "Your bans stay hidden until both players have submitted, then reveal together.", zh: "你的 ban 在雙方都送出前不會曝光，之後一起揭曉。", ja: "あなたの BAN は両者が送信するまで伏せられ、その後まとめて公開されます。" },
+  "simulban.hint": { en: "Neither of you can see the other's ban until you have both chosen. Then they show at the same time.", zh: "兩邊都選完之前，誰都看不到對方 ban 了什麼，選完才一起公開。", ja: "両方が選び終わるまで、相手が何を BAN したかは見えません。選び終わると同時に公開されます。" },
   "simulban.yours": { en: "Your bans", zh: "你的 ban", ja: "あなたの BAN" },
   "simulban.lockedWait": { en: "Locked in. Waiting for your opponent…", zh: "已鎖定，等待對手…", ja: "確定しました。相手を待っています…" },
   "simulban.secret": { en: "Both players are secretly banning…", zh: "雙方正在秘密 ban…", ja: "両プレイヤーが秘密裏に BAN 中…" },
   // snipe phase
   "snipe.title": { en: "Snipe {n} of the opponent's offer (this game only)", zh: "狙擊對手出牌中的 {n} 張（僅限本局）", ja: "相手の提示から {n} つスナイプ（このゲームのみ）" },
-  "snipe.hint": { en: "Sniped civs return to the hand for later games — this is not a permanent ban.", zh: "被狙的文明會回到手牌、之後可再用——這不是永久 ban。", ja: "スナイプされた文明は手札に戻り、以降のゲームで再び使えます——永久 BAN ではありません。" },
+  "snipe.hint": { en: "A sniped civ only misses this game. It comes back and can be used in a later one.", zh: "被狙掉的文明只是這一局不能用，下一局還可以再拿出來。", ja: "スナイプされた文明はこのゲームで使えないだけです。次のゲームではまた出せます。" },
   "snipe.oppOffered": { en: "Opponent offered — snipe {n}", zh: "對手出牌——狙擊 {n} 張", ja: "相手の提示——{n} つスナイプ" },
   "snipe.yourOfferSurvivor": { en: "Your offer (the un-sniped one becomes your civ)", zh: "你的出牌（沒被狙的成為本局文明）", ja: "あなたの提示（スナイプされなかった方が今ゲームの文明になります）" },
   "snipe.lockedWait": { en: "Snipe locked. Waiting for opponent…", zh: "狙擊已鎖定，等待對手…", ja: "スナイプをロックしました。相手を待っています…" },
@@ -250,7 +250,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "result.hostResolve": { en: "Host override (referee)", zh: "房主裁定（覆寫）", ja: "ホスト判定（上書き）" },
   // between-games acknowledgement gate
   "ack.title": { en: "{name} won game {n}", zh: "{name} 拿下第 {n} 局", ja: "{name} が第 {n} ゲームを制しました" },
-  "ack.prompt": { en: "Next game starts once both players click Got it — the clock is paused until then.", zh: "雙方都按「收到」後下一局才開始計時——在那之前計時暫停。", ja: "両プレイヤーが「了解」を押すと次のゲームが始まります——それまで時計は止まっています。" },
+  "ack.prompt": { en: "The next game starts once both players have pressed Got it. Nothing is timed until then.", zh: "兩邊都按過「收到」才會進下一局，在那之前不會開始計時。", ja: "両方が「了解」を押すと次のゲームが始まります。それまで時間は進みません。" },
   "ack.gotIt": { en: "Got it — I'm ready", zh: "收到，我準備好了", ja: "了解——準備できました" },
   "ack.youReady": { en: "You're ready — waiting for the other player…", zh: "你已就緒——等待另一位玩家…", ja: "準備完了——もう一方のプレイヤーを待っています…" },
   "ack.waiting": { en: "Waiting for both players to confirm…", zh: "等待雙方確認…", ja: "両プレイヤーの確認を待っています…" },
@@ -331,7 +331,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "editor.pausableShort": { en: "pausable", zh: "可暫停", ja: "一時停止可" },
   "editor.stepNo": { en: "Step order — the draft runs top to bottom", zh: "步驟順序——由上往下依序執行", ja: "ステップ順 — 上から順に実行されます" },
   "editor.countHint": { en: "How many to ban / pick in this step", zh: "這個步驟要 ban / pick 幾個", ja: "このステップで BAN / PICK する数" },
-  "editor.timerHint": { en: "Time limit for this step (seconds, 0 = no limit)", zh: "這個步驟的計時（秒,0 = 無限）", ja: "このステップの制限時間（秒、0 = 無制限）" },
+  "editor.timerHint": { en: "Time limit for this step (seconds, 0 = no limit)", zh: "這個步驟的計時（秒，0 = 無限）", ja: "このステップの制限時間（秒、0 = 無制限）" },
   "editor.insert": { en: "Insert step below", zh: "在下方插入步驟", ja: "下にステップを挿入" },
   "editor.dragHint": { en: "drag ⠿ to reorder", zh: "拖曳 ⠿ 調整順序", ja: "⠿ をドラッグして並べ替え" },
   "editor.regenConfirm": { en: "Regenerate steps from the default flow? This replaces the current step list.", zh: "要依預設流程重新產生步驟嗎？這會取代目前的步驟清單。", ja: "既定のフローからステップを再生成しますか？現在のステップ一覧は置き換えられます。" },
