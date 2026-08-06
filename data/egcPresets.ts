@@ -200,6 +200,12 @@ function build(stage: EgcStage): PresetConfig {
   const steps = [
     // 5.1.1 "Players must draft maps before the civilizations".
     ...mapDraft(rounds),
+    // A gate between the two halves. The map draft ends with a draw the server
+    // resolves instantly, so without this the civ bans' clock starts before either
+    // player has had a chance to see which map came out — and the first civ step is
+    // a blind ban, the one you least want to rush. Generous but not open-ended: if
+    // somebody walks away the timer confirms for them rather than hanging the draft.
+    mk({ type: "SYNC_CONFIRM", actor: "PLAYER1", pool: "civ", timeLimitSec: 60, pausable: true }),
     ...civDraft(stage.snake, stage.tail ?? false),
     ...series(stage.bestOf),
   ].map((s, i) => ({ ...s, id: `${stage.key}-${String(i + 1).padStart(2, "0")}` }));
@@ -220,7 +226,7 @@ function build(stage: EgcStage): PresetConfig {
 }
 
 /** Bump a preset's version to make the seed overwrite the copy in the database. */
-export const EGC_PRESET_VERSION = 1;
+export const EGC_PRESET_VERSION = 2;
 
 export const EGC_PRESETS = STAGES.map((s, i) => ({
   key: s.key,
