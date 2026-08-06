@@ -1413,23 +1413,31 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
               className={[
                 "relative flex flex-col items-center overflow-hidden rounded-lg border-2 transition",
                 isMap ? "" : "p-2",
+                // Layered rather than one chain: whose an entry is has to survive
+                // every other state, or a map somebody picked reads as dead stock.
                 // Banned entries are colourless on purpose — grey, faded, ✕.
-                banned ? "border-border opacity-30 saturate-0" :
-                  isSelectStep
-                    ? (selectable
-                        // Bright gold for the player actually selecting; dimmer for
-                        // a watcher (e.g. the winner while the loser picks the map).
-                        ? (can
-                            ? "border-gold bg-surface-2 ring-2 ring-gold cursor-pointer hover:brightness-110"
-                            : "border-gold/40 bg-surface-2/50 ring-1 ring-gold/30")
-                        : "border-border opacity-25")
-                    : (taken ? `${own ? `${own.border} ${own.bg}` : "border-bronze"} bg-surface-2` :
-                       can ? (tone === "ban"
+                banned ? "border-border bg-surface-2 opacity-30 saturate-0"
+                  // Owned by someone: their border and their tint, always. A select
+                  // step used to overwrite this, so during "loser picks the map" the
+                  // maps each player had picked looked unavailable rather than theirs.
+                  : taken ? (own ? `${own.border} ${own.bg}` : "border-bronze bg-surface-2")
+                  : "border-bronze bg-surface-2",
+                // Select step: light up what may actually be chosen, dim the rest.
+                // Runs after the ownership colours so it adds to them, not over them.
+                isSelectStep
+                  ? (selectable
+                      // Bright gold for the player actually selecting; dimmer for
+                      // a watcher (e.g. the winner while the loser picks the map).
+                      ? (can ? "ring-2 ring-gold cursor-pointer hover:brightness-110" : "ring-1 ring-gold/30")
+                      : "opacity-30")
+                  : !banned && !taken
+                    ? (can ? (tone === "ban"
                               // Ban hover stays red: it is transient, follows your own
                               // cursor, and can't be mistaken for "this is P2's".
-                              ? "border-bronze cursor-pointer hover:border-danger hover:bg-danger/10"
-                              : "border-bronze cursor-pointer hover:border-gold hover:bg-surface-2") :
-                       "border-border opacity-50"),
+                              ? "cursor-pointer hover:border-danger hover:bg-danger/10"
+                              : "cursor-pointer hover:border-gold hover:bg-surface-2")
+                           : "opacity-50")
+                    : "",
                 // Your own pending simultaneous ban — locked in, not yet revealed.
                 isPending ? "border-gold ring-2 ring-gold bg-gold/10 saturate-50" : "",
                 oppHover === e.id
