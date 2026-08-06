@@ -8,6 +8,8 @@ export interface SpectatorPayload {
   anonymous?: boolean;
   deadlineTs: number | null;
   serverNow?: number;
+  /** A decided game waiting on both players to acknowledge — the between-games beat. */
+  awaitingAck?: { gameIndex: number; winner: Seat; by: { player1: boolean; player2: boolean } } | null;
   seats: {
     host: string;
     player1: { id: string; name?: string; ready?: boolean } | null;

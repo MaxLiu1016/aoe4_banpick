@@ -6,6 +6,7 @@ import { C2S, S2C } from "@/lib/socket/events";
 import { useI18n } from "@/lib/i18n";
 import { DraftBoard } from "./DraftBoard";
 import { MatchSummary } from "./MatchSummary";
+import { GameResultCard } from "./GameResultCard";
 import type { SpectatorPayload } from "./types";
 
 /**
@@ -70,6 +71,10 @@ export function SpectatorStage({ matchId, roomName }: { matchId: string; roomNam
           </div>
         ) : payload.state.finished ? (
           <MatchSummary payload={payload} roomName={roomName} />
+        ) : payload.awaitingAck || payload.state.currentStep?.type === "GAME_RESULT" ? (
+          // The beat between games gets the whole screen. A pool grid is the wrong
+          // thing to be looking at while a game is being called.
+          <GameResultCard payload={payload} />
         ) : (
           <DraftBoard payload={payload} roomName={roomName} clockOffset={clockOffset} />
         )}

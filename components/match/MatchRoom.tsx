@@ -84,10 +84,14 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
     railObserver.current = null;
     if (!el) { setScrolledPast(false); return; }
     const io = new IntersectionObserver(
-      // Only when it went off the TOP. Off the bottom means the page is short
-      // enough that everything is still up there in plain sight.
-      ([e]) => setScrolledPast(!e.isIntersecting && e.boundingClientRect.top < 0),
-      { threshold: 0 }
+      // Fires once the sentinel is anywhere above the bottom fifth of the window —
+      // that is, as soon as the boards start leaving rather than after they are
+      // completely gone. Erring early is free: the rails sit in the margin and
+      // cost nothing when the boards happen to still be visible, whereas a sliver
+      // of board left on screen used to suppress them at exactly the wrong moment.
+      // Still only upward: a sentinel below the fold means the whole page fits.
+      ([e]) => setScrolledPast(!e.isIntersecting && e.boundingClientRect.top < window.innerHeight * 0.8),
+      { threshold: 0, rootMargin: "-80% 0px 0px 0px" }
     );
     io.observe(el);
     railObserver.current = io;
