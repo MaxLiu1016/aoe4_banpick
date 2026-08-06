@@ -152,7 +152,7 @@ export function MatchSummary({ payload, roomName }: { payload: SpectatorPayload;
                     {b.civs.length === 0 && <span className="font-sans text-[16px] text-muted">—</span>}
                     {b.civs.map((c) => (
                       <Thumb key={c.id} src={c.imageUrl} alt={c.name}
-                        className="h-[52px] w-[52px] object-contain grayscale brightness-[.55]" />
+                        className="h-[52px] w-[52px] rounded border border-[rgba(154,145,125,.45)] bg-surface-2 object-contain grayscale brightness-[.55]" />
                     ))}
                   </div>
                 </div>

@@ -195,7 +195,7 @@ export function DraftBoard({
                 key={c.id}
                 className="relative rounded-[10px] p-2"
                 style={{
-                  border: owner ? `2px solid ${OWNER[owner]}` : out ? "2px solid rgba(58,51,38,.9)" : "2px solid rgba(138,106,50,.85)",
+                  border: owner ? `2px solid ${OWNER[owner]}` : out ? "2px solid rgba(154,145,125,.45)" : "2px solid rgba(138,106,50,.85)",
                   background: owner ? `rgba(${OWNER_RGB[owner]},.12)` : "var(--surface-2)",
                   opacity: out ? 0.32 : 1,
                 }}
@@ -345,7 +345,7 @@ function PlayerColumn({
           <div className={`mt-3 flex flex-wrap gap-3 ${right ? "justify-end" : ""}`}>
             {civBans.map((c) => (
               <div key={c.id} className="relative h-[70px] w-[70px]">
-                <Thumb src={c.imageUrl} alt={c.name} className="h-[70px] w-[70px] object-contain grayscale brightness-[.55]" />
+                <Thumb src={c.imageUrl} alt={c.name} className="h-[70px] w-[70px] rounded border border-[rgba(154,145,125,.45)] bg-surface-2 object-contain grayscale brightness-[.55]" />
                 <span className="ovl-slash absolute left-0 right-0 top-1/2 h-1" style={{ background: "var(--danger)" }} />
               </div>
             ))}
@@ -379,7 +379,7 @@ function PlayerColumn({
           <div className={`mt-3 flex flex-wrap gap-3 ${right ? "justify-end" : ""}`}>
             {mapBans.map((m) => (
               <div key={m.id} className="relative w-[112px]">
-                <Thumb src={m.imageUrl} alt={m.name} className="h-[70px] w-[112px] rounded-md object-cover grayscale brightness-50" />
+                <Thumb src={m.imageUrl} alt={m.name} className="h-[70px] w-[112px] rounded-md border border-[rgba(154,145,125,.45)] bg-surface-2 object-cover grayscale brightness-50" />
                 <span className="ovl-slash-lg absolute left-0 right-0 top-[44%] h-1" style={{ background: "var(--danger)" }} />
               </div>
             ))}

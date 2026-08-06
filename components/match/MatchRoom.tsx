@@ -996,7 +996,7 @@ function RailTile({ entry, kind, dim, struck }: {
         alt={entry?.name ?? ""}
         // Flags are letterboxed into the box, maps fill it. Same box either way.
         className={`aspect-[16/10] w-full rounded bg-surface-2/60 ${kind === "civ" ? "object-contain" : "object-cover"} ${
-          struck ? "grayscale brightness-50" : dim ? "opacity-40 grayscale" : ""
+          struck ? "border border-[rgba(154,145,125,.45)] grayscale brightness-50" : dim ? "opacity-40 grayscale" : ""
         }`}
       />
       {struck && <span className="absolute left-0 right-0 top-1/2 h-0.5 -translate-y-1/2 bg-danger" />}
@@ -1078,7 +1078,7 @@ function CivStrip({ items, align, wide = false }: { items: { key: string; civ?: 
           <div
             key={it.key}
             className={`civ-pop relative flex flex-col items-center rounded-md border-2 text-center ${wide ? "w-28 overflow-hidden" : "w-16 px-1 py-1"} ${
-              it.banned ? "border-border bg-surface-2/40 opacity-50 saturate-0" : it.used ? "border-border bg-surface-2/40 opacity-45" : `${own.border} bg-surface-2`
+              it.banned ? "border-[rgba(154,145,125,.45)] bg-surface-2/40 opacity-50 saturate-0" : it.used ? "border-border bg-surface-2/40 opacity-45" : `${own.border} bg-surface-2`
             }`}
             title={it.banned ? `${it.civ.name} (banned)` : it.used ? `${it.civ.name} (used)` : it.civ.name}
           >
