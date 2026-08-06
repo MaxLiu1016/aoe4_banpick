@@ -146,7 +146,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "match.takeSeat": { en: "Take this seat", zh: "坐這個位子", ja: "この席につく" },
   "match.guestName": { en: "Your name", zh: "你的名字", ja: "あなたの名前" },
   "match.addBot": { en: "🤖 Practise against a bot", zh: "🤖 找機器人對打", ja: "🤖 ボットと練習する" },
-  "match.autoPickSoon": { en: "About to pick for you at random", zh: "再不選就幫你隨機選", ja: "まもなくランダムに自動選択します" },
+  "match.autoPickSoon": { en: "Random pick incoming", zh: "即將隨機選擇", ja: "まもなくランダム選択" },
   "match.botHint": {
     en: "The bot picks at random — it's here so you can walk a whole format through on your own. You call each game's winner and it agrees.",
     zh: "機器人是隨機選的，用途是讓你一個人把整套賽制走一遍。每局誰贏由你點，它照單全收。",

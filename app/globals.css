@@ -202,10 +202,27 @@ button:disabled { cursor: not-allowed; }
 }
 .ovl-sweep { animation: ovl-sweep 1.4s linear infinite; }
 
+/* Whose turn it is, said at the edge of the screen rather than in a caption.
+   A player watching the pool in the middle sees their own colour breathing in
+   their peripheral vision — the one cue that works when you are not reading. */
+@keyframes turn-glow {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.turn-glow {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 220px;
+  pointer-events: none;
+  z-index: 10;
+  animation: turn-glow 2.2s ease-in-out infinite;
+}
+
 /* Respect users who prefer reduced motion. */
 @media (prefers-reduced-motion: reduce) {
   .route-enter, .fade-in, .skeleton, .spinner, .civ-pop, .civ-pop-glow,
-  .ovl-pop, .ovl-slash, .ovl-slash-lg, .ovl-pulse, .ovl-glow, .ovl-flip,
+  .ovl-pop, .ovl-slash, .ovl-slash-lg, .ovl-pulse, .ovl-glow, .ovl-flip, .turn-glow,
   .ovl-sweep, .animate-pulse {
     animation: none !important;
   }

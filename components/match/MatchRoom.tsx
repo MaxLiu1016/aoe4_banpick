@@ -454,6 +454,29 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         />
       )}
 
+      {/* Whose turn it is, at the edge of the window. Portalled for the same reason
+          as the rails: the page wrapper keeps a transform after its route animation,
+          and a transformed ancestor is what position:fixed resolves against.
+          Both sides light up on a simultaneous step, and each goes out as that
+          player locks in — so the glow answers "who are we waiting for", not just
+          "whose step is this". */}
+      {payload!.status === "running" && !state.finished && !ackPending &&
+        createPortal(
+          <>
+            {(["player1", "player2"] as const)
+              .filter((seat) => (state.simultaneous ? state.awaiting[seat] : state.turn === seat))
+              .map((seat) => (
+                <div key={seat} aria-hidden className={`turn-glow ${seat === "player1" ? "left-0" : "right-0"}`}
+                  style={{
+                    background: `linear-gradient(to ${seat === "player1" ? "right" : "left"}, rgba(${
+                      seat === "player1" ? "56,189,248" : "251,113,133"
+                    },.4), transparent)`,
+                  }} />
+              ))}
+          </>,
+          document.body
+        )}
+
       {/* Marks the end of the scoreboard/map/ban boards. Once this passes the top
           of the window the floating rails take over carrying that context. */}
       <div ref={watchSentinel} aria-hidden className="h-px" />
@@ -509,7 +532,9 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
             </div>
           )}
           <div className="mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm">
-            {myTurn && <span className="text-gold-bright">{t("match.yourMove")}</span>}
+            {/* Bigger than the line it sits on: this is the one word that decides
+                whether you look away from the screen. */}
+            {myTurn && <span className="font-display text-lg text-gold-bright">{t("match.yourMove")}</span>}
             {payload!.status !== "paused" && (
               <Countdown deadlineTs={payload!.deadlineTs} clockOffsetRef={clockOffsetRef}
                 warn={!spectator && !!youPlayer && state.awaiting[youPlayer] && !ackPending} />
