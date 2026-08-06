@@ -9,9 +9,10 @@ import { OWNER, other, seatNames, type Seat, type SpectatorPayload } from "./typ
  * The beat between games: what each side fielded, on what map, and who took it.
  *
  * Covers both halves of that beat. While the result is still being called there is
- * no winner yet, so both civs stand level and the card asks the question instead of
- * answering it; once it is in, the winner is crowned and the loser desaturates.
- * Same layout either way — the picture doesn't jump when the answer arrives.
+ * no winner yet, so both civs simply stand level; once it is in, the winner is
+ * crowned and the loser desaturates. Same layout either way — the picture doesn't
+ * jump when the answer arrives, and it carries no caption telling you what you can
+ * already see.
  */
 export function GameResultCard({ payload }: { payload: SpectatorPayload }) {
   const { t } = useI18n();
@@ -68,7 +69,7 @@ export function GameResultCard({ payload }: { payload: SpectatorPayload }) {
       </div>
 
       <div className="absolute left-0 right-0 top-[250px] grid grid-cols-[1fr_340px_1fr] items-center gap-6 px-[90px]">
-        <Fighter seat="player1" name={names.player1} civ={civOf("player1")} winner={winner} t={t} />
+        <Fighter seat="player1" name={names.player1} civ={civOf("player1")} winner={winner} />
 
         <div className="text-center">
           <div className="font-display text-[96px] font-bold leading-none text-gold" style={{ textShadow: "0 3px 14px rgba(0,0,0,.8)" }}>VS</div>
@@ -84,7 +85,7 @@ export function GameResultCard({ payload }: { payload: SpectatorPayload }) {
           </div>
         </div>
 
-        <Fighter seat="player2" name={names.player2} civ={civOf("player2")} winner={winner} t={t} />
+        <Fighter seat="player2" name={names.player2} civ={civOf("player2")} winner={winner} />
       </div>
 
       <div className="absolute bottom-[52px] left-0 right-0 text-center font-sans text-[22px] font-semibold tracking-[.14em] text-muted">
@@ -105,12 +106,11 @@ export function GameResultCard({ payload }: { payload: SpectatorPayload }) {
 }
 
 /** One side's civ for this game: crowned, beaten, or still waiting to find out. */
-function Fighter({ seat, name, civ, winner, t }: {
+function Fighter({ seat, name, civ, winner }: {
   seat: Seat;
   name: string;
   civ?: PoolView;
   winner: Seat | null;
-  t: (k: string, p?: Record<string, string | number>) => string;
 }) {
   const won = winner === seat;
   const lost = winner !== null && !won;
@@ -129,14 +129,12 @@ function Fighter({ seat, name, civ, winner, t }: {
         </div>
         {won && <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[66px] leading-none">👑</span>}
       </div>
+      {/* No WINNER / DEFEATED caption. The crown, the gold, and the drained colour
+          on the other side have already said it three times — a label underneath is
+          a fourth, in the smallest type on the screen. */}
       <div className={`mt-[22px] font-display text-[40px] font-bold leading-tight ${won ? "text-gold-bright" : "text-foreground"}`}>
         {civ?.name ?? "—"}
       </div>
-      {winner && (
-        <div className="mt-2 font-sans text-[19px] font-semibold tracking-[.16em] text-muted">
-          {t(won ? "spec.winner" : "spec.defeated")}
-        </div>
-      )}
     </div>
   );
 }

@@ -285,11 +285,19 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "spec.tookLead": { en: "{name} takes the lead", zh: "{name} 取得領先", ja: "{name} がリード" },
   "spec.levelled": { en: "{name} levels the series", zh: "{name} 追平", ja: "{name} が追いつく" },
   "spec.wonGame": { en: "{name} wins game {n}", zh: "{name} 拿下第 {n} 局", ja: "{name} が第 {n} ゲームを制する" },
-  "spec.winner": { en: "WINNER", zh: "勝", ja: "勝" },
-  "spec.defeated": { en: "DEFEATED", zh: "負", ja: "敗" },
   "spec.nextGame": { en: "NEXT: GAME {n}", zh: "接下來：第 {n} 局", ja: "次：第 {n} ゲーム" },
   "spec.picksFirst": { en: "{name} PICKS FIRST", zh: "{name} 先手", ja: "{name} が先手" },
   "spec.choosing": { en: "CHOOSING", zh: "選擇中", ja: "選択中" },
+  // The hidden phases. Nothing here ever names a civ — these strings exist so the
+  // broadcast can say what is happening without saying what was chosen.
+  "spec.offering": { en: "OFFERING {n}", zh: "出戰 {n} 張", ja: "{n} つ提示" },
+  "spec.offered": { en: "OFFERED", zh: "已出牌", ja: "提示済み" },
+  "spec.revealing": { en: "REVEALING…", zh: "揭曉中…", ja: "公開中…" },
+  "spec.snipeChoosing": { en: "{name} IS SNIPING…", zh: "{name} 狙擊中…", ja: "{name} がスナイプ中…" },
+  "spec.snipeLocked": { en: "{name} HAS SNIPED", zh: "{name} 已狙擊", ja: "{name} スナイプ済み" },
+  "spec.hiddenOffer": { en: "Neither offer is shown until both are in", zh: "雙方都交出來之前，兩邊的出牌都不公開", ja: "両者が提示するまで、どちらの内容も公開されません" },
+  "spec.snipeHidden": { en: "Each snipe stays hidden until both are in", zh: "雙方都狙完之前，狙擊內容不公開", ja: "両者が狙い終えるまで、スナイプ内容は公開されません" },
+  "spec.banHidden": { en: "Neither ban is shown until both are in", zh: "雙方都 ban 完之前，兩邊的 ban 都不公開", ja: "両者が BAN し終えるまで、内容は公開されません" },
   // preset editor — step types
   "step.MAP_BAN": { en: "Ban map", zh: "禁地圖", ja: "マップを BAN" },
   "step.MAP_PICK": { en: "Pick map (into pool)", zh: "選地圖進池", ja: "マップを PICK（プールへ）" },
