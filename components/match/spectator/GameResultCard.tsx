@@ -32,8 +32,13 @@ export function GameResultCard({ payload }: { payload: SpectatorPayload }) {
 
   // The headline. "Won game 3" is a fact; "took the lead" is the story, and the
   // score already knows which one this was.
+  //
+  // Nothing at all until there is a winner: the headline slot is for the result,
+  // and filling it with "who took it?" is a caption asking the audience a question
+  // they are already watching the answer to. It sits above everything else, so
+  // appearing late moves nothing.
   const headline = !winner
-    ? t("spec.whoWon")
+    ? null
     : state.score[winner] > state.score[other(winner)]
     ? t("spec.tookLead", { name: names[winner] })
     : state.score[winner] === state.score[other(winner)]
@@ -59,7 +64,7 @@ export function GameResultCard({ payload }: { payload: SpectatorPayload }) {
         <div className="font-sans text-[19px] font-semibold tracking-[.4em] text-muted">
           {t("spec.gameOf", { n: idx + 1, total: state.bestOf, map: (map?.name ?? "—").toUpperCase() })}
         </div>
-        <div className="mt-3.5 font-display text-[62px] font-bold leading-none text-gold-bright">{headline}</div>
+        {headline && <div className="mt-3.5 font-display text-[62px] font-bold leading-none text-gold-bright">{headline}</div>}
       </div>
 
       <div className="absolute left-0 right-0 top-[250px] grid grid-cols-[1fr_340px_1fr] items-center gap-6 px-[90px]">
@@ -84,9 +89,9 @@ export function GameResultCard({ payload }: { payload: SpectatorPayload }) {
 
       <div className="absolute bottom-[52px] left-0 right-0 text-center font-sans text-[22px] font-semibold tracking-[.14em] text-muted">
         {!winner ? (
-          // No clock here on purpose: a result step is never timed — the server
-          // will not call a game for you — so there is nothing to count down.
-          t("turn.awaitResult")
+          // Says what is happening, not what happened — and no clock, because a
+          // result step is never timed: the server will not call a game for you.
+          t("result.voteWatch")
         ) : showNext ? (
           <>
             {t("spec.nextGame", { n: nextIdx + 1 })}

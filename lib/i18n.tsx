@@ -282,7 +282,6 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "spec.banned": { en: "BANNED", zh: "已 ban", ja: "BAN" },
   "spec.locked": { en: "LOCKED IN", zh: "已鎖定", ja: "確定済み" },
   "spec.gameOf": { en: "GAME {n} OF {total} · {map}", zh: "第 {n} 局 / 共 {total} · {map}", ja: "第 {n} / {total} ゲーム · {map}" },
-  "spec.whoWon": { en: "Who took it?", zh: "這一局誰拿下？", ja: "どちらが取った？" },
   "spec.tookLead": { en: "{name} takes the lead", zh: "{name} 取得領先", ja: "{name} がリード" },
   "spec.levelled": { en: "{name} levels the series", zh: "{name} 追平", ja: "{name} が追いつく" },
   "spec.wonGame": { en: "{name} wins game {n}", zh: "{name} 拿下第 {n} 局", ja: "{name} が第 {n} ゲームを制する" },
