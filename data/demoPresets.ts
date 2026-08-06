@@ -29,7 +29,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
   {
     "key": "bcc-bo3",
     "order": 20,
-    "version": 2,
+    "version": 3,
     "name": "Bo3 Draft(BCC)",
     "description": "For Border Conquest Cup, Standard Bo3 — map BP, hand draft, simultaneous offer & snipe.",
     "config": {
@@ -153,11 +153,13 @@ export const DEMO_PRESETS: DemoPreset[] = [
       "maps": [
         {
           "id": "dry-arabia",
-          "name": "Dry Arabia"
+          "name": "Dry Arabia",
+          "imageUrl": "/maps/dry-arabia.webp"
         },
         {
           "id": "lipany",
-          "name": "Lipany"
+          "name": "Lipany",
+          "imageUrl": "/maps/lipany.webp"
         },
         {
           "id": "hill-and-dale",
@@ -793,7 +795,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
   {
     "key": "bcc-bo5",
     "order": 21,
-    "version": 3,
+    "version": 4,
     "name": "Bo5 Draft(BCC)",
     "description": "For Border Conquest Cup, Standard Bo5 — map BP, hand draft, simultaneous offer & snipe.",
     "config": {
@@ -917,11 +919,13 @@ export const DEMO_PRESETS: DemoPreset[] = [
       "maps": [
         {
           "id": "dry-arabia",
-          "name": "Dry Arabia"
+          "name": "Dry Arabia",
+          "imageUrl": "/maps/dry-arabia.webp"
         },
         {
           "id": "lipany",
-          "name": "Lipany"
+          "name": "Lipany",
+          "imageUrl": "/maps/lipany.webp"
         },
         {
           "id": "hill-and-dale",
@@ -1581,7 +1585,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
   {
     "key": "standard-bo3",
     "order": 30,
-    "version": 1,
+    "version": 2,
     "name": "Bo3 Draft",
     "description": "Standard Bo3 — map BP, hand draft, simultaneous offer & snipe.",
     "config": {
@@ -1705,11 +1709,13 @@ export const DEMO_PRESETS: DemoPreset[] = [
       "maps": [
         {
           "id": "dry-arabia",
-          "name": "Dry Arabia"
+          "name": "Dry Arabia",
+          "imageUrl": "/maps/dry-arabia.webp"
         },
         {
           "id": "lipany",
-          "name": "Lipany"
+          "name": "Lipany",
+          "imageUrl": "/maps/lipany.webp"
         },
         {
           "id": "cliffside",
@@ -2217,7 +2223,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
   {
     "key": "easy-bo3",
     "order": 31,
-    "version": 1,
+    "version": 2,
     "name": "easy Bo3 Draft",
     "description": "Simplified Bo3 demo.",
     "config": {
@@ -2341,15 +2347,18 @@ export const DEMO_PRESETS: DemoPreset[] = [
       "maps": [
         {
           "id": "dry-arabia",
-          "name": "Dry Arabia"
+          "name": "Dry Arabia",
+          "imageUrl": "/maps/dry-arabia.webp"
         },
         {
           "id": "lipany",
-          "name": "Lipany"
+          "name": "Lipany",
+          "imageUrl": "/maps/lipany.webp"
         },
         {
           "id": "high-view",
-          "name": "High View"
+          "name": "High View",
+          "imageUrl": "/maps/high-view.webp"
         },
         {
           "id": "hill-and-dale",

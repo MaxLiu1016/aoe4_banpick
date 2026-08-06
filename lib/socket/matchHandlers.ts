@@ -8,6 +8,8 @@ import { deriveState, validateAction, type EngineAction, type SeatRole, type Der
 import type { PresetConfig } from "../draft/schema";
 import { verifyTicket } from "./ticket";
 import { BOT_ID, BOT_NAME, BOT_THINK_MS, botDelay, botTargetFor } from "../bot";
+import { DEFAULT_MAPS } from "../../data/maps";
+import { CIVS } from "../../data/civs";
 
 type JoinPayload = { matchId: string; ticket?: string; seat?: "player1" | "player2" };
 
@@ -57,10 +59,32 @@ async function getCtx(matchId: string): Promise<{ match: MatchLean; state: Deriv
   return { match, state };
 }
 
+/** Pictures for everything the catalogue knows, by id. */
+const ARTWORK = new Map<string, string>(
+  [...DEFAULT_MAPS, ...CIVS].filter((e) => e.imageUrl).map((e) => [e.id, e.imageUrl as string])
+);
+
+/**
+ * Fill in artwork the match's own config is missing.
+ *
+ * A match stores a snapshot of the preset it was started from, which is what keeps
+ * a running draft stable while the preset is edited underneath it. The cost is that
+ * a gap in that snapshot is permanent: some demo presets shipped map entries with
+ * no picture, and every draft ever started from one shows blank tiles for those
+ * maps for as long as it exists.
+ *
+ * Looked up by id, so a custom entry the catalogue has never heard of is left alone
+ * — an author who added a map with no image still gets a map with no image.
+ */
+function withArtwork<T extends { id: string; imageUrl?: string }>(pool: T[]): T[] {
+  return pool.map((e) => (e.imageUrl || !ARTWORK.has(e.id) ? e : { ...e, imageUrl: ARTWORK.get(e.id) }));
+}
+
 async function buildPayload(matchId: string) {
   const ctx = await getCtx(matchId);
   if (!ctx) return null;
-  const { match, state } = ctx;
+  const { match } = ctx;
+  const state = { ...ctx.state, maps: withArtwork(ctx.state.maps), civs: withArtwork(ctx.state.civs) };
 
   const gameDocs = await MatchGame.find({ matchId }).lean();
   const votes: Record<number, { player1?: string; player2?: string }> = {};
