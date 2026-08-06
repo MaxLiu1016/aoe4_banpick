@@ -9,6 +9,11 @@ const PresetSchema = new Schema(
     config: { type: Schema.Types.Mixed, required: true },
     isPublic: { type: Boolean, default: false, index: true },
     isDemo: { type: Boolean, default: false }, // seeded demo presets, always present
+    // Which entry in data/demoPresets.ts this row is, and which revision of it.
+    // The seed matches on demoKey so a demo can be renamed in code without
+    // orphaning its row, and re-writes the row when the code's version is higher.
+    demoKey: { type: String, index: true, sparse: true },
+    demoVersion: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

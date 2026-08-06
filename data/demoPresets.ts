@@ -1,9 +1,23 @@
 import type { PresetConfig } from "@/lib/draft/schema";
 
+export interface DemoPreset {
+  /** Identity across renames — the seed matches on this, never on the name. */
+  key: string;
+  name: string;
+  description: string;
+  /** Raise this to hand the demo back to the code: the seed overwrites any copy in
+   *  the database whose stored version is lower. Leave it alone and edits made in
+   *  the admin UI survive every restart. */
+  version: number;
+  config: PresetConfig;
+}
+
 // Seeded demo presets — baked from the originals so they exist on every fresh DB.
 // Public, cloneable, owned by the seeded admin. Do not edit by hand casually.
-export const DEMO_PRESETS: { name: string; description: string; config: PresetConfig }[] = [
+export const DEMO_PRESETS: DemoPreset[] = [
   {
+    "key": "bcc-bo3",
+    "version": 1,
     "name": "Bo3 Draft(BCC)",
     "description": "For Border Conquest Cup, Standard Bo3 — map BP, hand draft, simultaneous offer & snipe.",
     "config": {
@@ -753,6 +767,8 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
     }
   },
   {
+    "key": "bcc-bo5",
+    "version": 1,
     "name": "Bo5 Draft(BCC)",
     "description": "For Border Conquest Cup, Standard Bo5 — map BP, hand draft, simultaneous offer & snipe.",
     "config": {
@@ -1646,6 +1662,8 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
     }
   },
   {
+    "key": "standard-bo3",
+    "version": 1,
     "name": "Bo3 Draft",
     "description": "Standard Bo3 — map BP, hand draft, simultaneous offer & snipe.",
     "config": {
@@ -2279,6 +2297,8 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
     }
   },
   {
+    "key": "easy-bo3",
+    "version": 1,
     "name": "easy Bo3 Draft",
     "description": "Simplified Bo3 demo.",
     "config": {
@@ -2663,5 +2683,5 @@ export const DEMO_PRESETS: { name: string; description: string; config: PresetCo
         "pausable": true
       }
     }
-  }
+  },
 ];

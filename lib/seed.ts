@@ -49,12 +49,25 @@ export async function seedInitialData(): Promise<void> {
   }
 
   // --- Demo presets (public, cloneable, owned by admin) ---
-  // Only CREATE demos that are missing — existing demos are left untouched so the
-  // super-admin can edit them in the UI and have those edits persist across
-  // restarts. The data file is just the seed for a fresh database.
+  // Versioned so the code can take a demo back. Normally an existing demo is left
+  // alone — the super-admin edits demos in the UI and those edits have to survive a
+  // restart. But when the version in data/demoPresets.ts moves ahead of the version
+  // stored on the row, the file wins and the row is rewritten: that is how a fixed
+  // rule set or an updated map pool actually reaches production.
   for (const d of DEMO_PRESETS) {
-    const exists = await Preset.findOne({ name: d.name, isDemo: true });
-    if (!exists) {
+    const doc = await Preset.findOne({ isDemo: true, demoKey: d.key });
+    if (!doc) {
+      // Rows seeded before demoKey existed are matched on the name once, then
+      // adopted at the current version. Adoption never overwrites: whatever is in
+      // the database has been live and may have been edited, and a migration is no
+      // reason to throw that away. The NEXT version bump rewrites it.
+      const legacy = await Preset.findOne({ isDemo: true, demoKey: { $exists: false }, name: d.name });
+      if (legacy) {
+        legacy.demoKey = d.key;
+        legacy.demoVersion = d.version;
+        await legacy.save();
+        continue;
+      }
       await Preset.create({
         ownerId: admin._id,
         name: d.name,
@@ -62,7 +75,21 @@ export async function seedInitialData(): Promise<void> {
         config: withEnglishStepLabels(d.config),
         isPublic: true,
         isDemo: true,
+        demoKey: d.key,
+        demoVersion: d.version,
       });
+      console.log(`[seed] created demo preset "${d.name}" (${d.key} v${d.version})`);
+      continue;
+    }
+    const stored = doc.demoVersion ?? 0;
+    if (d.version > stored) {
+      doc.name = d.name;
+      doc.description = d.description;
+      doc.config = withEnglishStepLabels(d.config);
+      doc.demoVersion = d.version;
+      doc.markModified("config"); // Mixed field — mongoose can't see into it
+      await doc.save();
+      console.log(`[seed] updated demo preset "${d.name}" (${d.key} v${stored} -> v${d.version})`);
     }
   }
 }
