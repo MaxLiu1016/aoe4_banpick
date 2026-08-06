@@ -44,6 +44,9 @@ export function DraftBoard({
         .filter(Boolean) as string[]
     );
 
+  // Maps already used by a game, so a drafted map that has had its turn reads as
+  // spent rather than still to come.
+  const playedMaps = new Set(state.games.map((g) => g.map).filter(Boolean) as string[]);
   const currentMap = state.games[state.currentGameIndex]?.map;
   const step = state.currentStep;
   const stepName = step ? t(`step.${step.type}`) : "";
@@ -159,6 +162,8 @@ export function DraftBoard({
           hand={(seat === "player1" ? state.draftedByP1 : state.draftedByP2).map((id) => civById.get(id)).filter(Boolean) as PoolView[]}
           used={usedBy(seat)}
           civBans={state.civBans.filter((b) => b.by === seat).map((b) => civById.get(b.id)).filter(Boolean) as PoolView[]}
+          mapsPicked={(seat === "player1" ? state.mapsByP1 : state.mapsByP2).map((id) => mapById.get(id)).filter(Boolean) as PoolView[]}
+          playedMaps={playedMaps}
           mapBans={state.maps.filter((m) => m.state === "banned" && m.by === seat)}
           picking={state.awaiting[seat]}
           t={t}
@@ -278,13 +283,16 @@ function GameCiv({ id, civById, won }: { id?: string; civById: Map<string, PoolV
 
 /** A player's own side of the draft: what they hold, and what they struck out. */
 function PlayerColumn({
-  seat, name, hand, used, civBans, mapBans, picking, t,
+  seat, name, hand, used, civBans, mapsPicked, playedMaps, mapBans, picking, t,
 }: {
   seat: Seat;
   name: string;
   hand: PoolView[];
   used: Set<string>;
   civBans: PoolView[];
+  /** Maps this player drafted into the shared pool — the ones still to be played on. */
+  mapsPicked: PoolView[];
+  playedMaps: Set<string>;
   mapBans: PoolView[];
   picking: boolean;
   t: (k: string, p?: Record<string, string | number>) => string;
@@ -341,6 +349,26 @@ function PlayerColumn({
                 <span className="ovl-slash absolute left-0 right-0 top-1/2 h-1" style={{ background: "var(--danger)" }} />
               </div>
             ))}
+          </div>
+        </>
+      )}
+
+      {mapsPicked.length > 0 && (
+        <>
+          {heading(t("spec.mapsPicked"), OWNER[seat])}
+          <div className={`mt-3 flex flex-wrap gap-3 ${right ? "justify-end" : ""}`}>
+            {mapsPicked.map((m) => {
+              const spent = playedMaps.has(m.id);
+              return (
+                <div key={m.id} className="relative w-[112px]">
+                  <Thumb src={m.imageUrl} alt={m.name}
+                    className={`h-[70px] w-[112px] rounded-md object-cover ${spent ? "grayscale opacity-40" : ""}`} />
+                  <span className="pointer-events-none absolute inset-0 rounded-md"
+                    style={{ border: spent ? "2px solid rgba(58,51,38,.9)" : `2px solid ${OWNER[seat]}` }} />
+                  {spent && <span className="absolute right-1 top-0.5 font-sans text-[12px] font-semibold text-muted">{t("spec.used")}</span>}
+                </div>
+              );
+            })}
           </div>
         </>
       )}

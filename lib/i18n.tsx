@@ -269,6 +269,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "spec.hand": { en: "HAND · {n} LEFT", zh: "手牌 · 剩 {n}", ja: "手札 · 残り {n}" },
   "spec.handPicking": { en: "PICKING NOW · {n} LEFT", zh: "選擇中 · 剩 {n}", ja: "選択中 · 残り {n}" },
   "spec.civsBanned": { en: "CIVS BANNED", zh: "已 ban 的文明", ja: "BAN した文明" },
+  "spec.mapsPicked": { en: "MAPS PICKED", zh: "選的地圖", ja: "選んだマップ" },
   "spec.mapsBanned": { en: "MAPS BANNED", zh: "已 ban 的地圖", ja: "BAN したマップ" },
   "spec.used": { en: "used", zh: "已用", ja: "使用済" },
   "spec.legendPool": { en: "In the pool", zh: "還在池子裡", ja: "プールに残っている" },
