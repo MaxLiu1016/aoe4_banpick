@@ -194,7 +194,8 @@ button:disabled { cursor: not-allowed; }
 /* Respect users who prefer reduced motion. */
 @media (prefers-reduced-motion: reduce) {
   .route-enter, .fade-in, .skeleton, .spinner, .civ-pop, .civ-pop-glow,
-  .ovl-pop, .ovl-slash, .ovl-slash-lg, .ovl-pulse, .ovl-glow, .ovl-flip {
+  .ovl-pop, .ovl-slash, .ovl-slash-lg, .ovl-pulse, .ovl-glow, .ovl-flip,
+  .animate-pulse {
     animation: none !important;
   }
 }

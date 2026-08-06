@@ -465,8 +465,10 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         createPortal(
           <>
             <ContextRail side="player1" name={p1Name} mapId={currentMap} mapName={currentMapName}
+              hand={p1Hand} handLeft={p1Hand.filter((h) => !h.used).length}
               bans={p1Banned} mapBans={p1MapBans} mapById={mapById} t={t} />
             <ContextRail side="player2" name={p2Name} mapId={currentMap} mapName={currentMapName}
+              hand={p2Hand} handLeft={p2Hand.filter((h) => !h.used).length}
               bans={p2Banned} mapBans={p2MapBans} mapById={mapById} t={t} />
           </>,
           document.body
@@ -502,9 +504,12 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
               <span>{t("match.currentMap")} <span className="text-foreground">{currentMapName}</span></span>
             </div>
           )}
-          <div className="mt-1 flex items-center gap-3 text-sm">
+          <div className="mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm">
             {myTurn && <span className="text-gold-bright">{t("match.yourMove")}</span>}
-            {payload!.status !== "paused" && <Countdown deadlineTs={payload!.deadlineTs} clockOffsetRef={clockOffsetRef} />}
+            {payload!.status !== "paused" && (
+              <Countdown deadlineTs={payload!.deadlineTs} clockOffsetRef={clockOffsetRef}
+                warn={!spectator && !!youPlayer && state.awaiting[youPlayer] && !ackPending} />
+            )}
           </div>
         </div>
       )}
@@ -947,13 +952,47 @@ function SimulBanStatus({ count, mine, youAwaited, oppAwaited, isPlayer, entryBy
  * 1200px column, and below 2xl there is no empty space to live in. On a phone it
  * would be covering the very thing it is describing.
  */
+/** One tile in a rail. Every entry — flag or map — gets the same box, so the
+ *  column reads as a grid instead of a pile of different shapes. */
+function RailTile({ entry, kind, dim, struck }: {
+  entry?: PoolView;
+  kind: "civ" | "map";
+  dim?: boolean;
+  struck?: boolean;
+}) {
+  return (
+    <span className="relative block" title={entry?.name}>
+      <Thumb
+        src={entry?.imageUrl}
+        alt={entry?.name ?? ""}
+        // Flags are letterboxed into the box, maps fill it. Same box either way.
+        className={`aspect-[16/10] w-full rounded bg-surface-2/60 ${kind === "civ" ? "object-contain" : "object-cover"} ${
+          struck ? "grayscale brightness-50" : dim ? "opacity-40 grayscale" : ""
+        }`}
+      />
+      {struck && <span className="absolute left-0 right-0 top-1/2 h-0.5 -translate-y-1/2 bg-danger" />}
+    </span>
+  );
+}
+
+function RailGroup({ label, tone, children }: { label: string; tone: string; children: React.ReactNode }) {
+  return (
+    <>
+      <div className={`mt-2 text-[9px] uppercase tracking-wide ${tone}`}>{label}</div>
+      <div className="mt-1 grid grid-cols-2 gap-1">{children}</div>
+    </>
+  );
+}
+
 function ContextRail({
-  side, name, mapId, mapName, bans, mapBans, mapById, t,
+  side, name, mapId, mapName, hand, handLeft, bans, mapBans, mapById, t,
 }: {
   side: "player1" | "player2";
   name: string;
   mapId?: string;
   mapName?: string;
+  hand: { key: string; civ?: PoolView; used?: boolean }[];
+  handLeft: number;
   bans: { key: string; civ?: PoolView }[];
   mapBans: { key: string; civ?: PoolView }[];
   mapById: (id?: string) => PoolView | undefined;
@@ -961,7 +1000,7 @@ function ContextRail({
 }) {
   const own = OWNER[side];
   const left = side === "player1";
-  if (!mapId && bans.length === 0 && mapBans.length === 0) return null;
+  if (!mapId && hand.length === 0 && bans.length === 0 && mapBans.length === 0) return null;
   return (
     <aside
       aria-hidden
@@ -969,39 +1008,33 @@ function ContextRail({
         left ? "left-4" : "right-4"
       }`}
     >
+      {/* The map spans the column: it is the one thing you must be able to read at
+          a glance, and it is a heading rather than one of a set. */}
       {mapId && (
         <div className="mb-2.5">
           <div className="text-[9px] uppercase tracking-wide text-muted">{t("match.currentMap")}</div>
-          <Thumb src={mapById(mapId)?.imageUrl} alt={mapName ?? ""} className="mt-1 aspect-[16/10] w-full rounded object-cover ring-1 ring-bronze" />
+          <div className="mt-1 rounded ring-1 ring-bronze">
+            <RailTile entry={mapById(mapId)} kind="map" />
+          </div>
           <div className="truncate text-[11px] leading-tight text-gold-bright">{mapName}</div>
         </div>
       )}
       <div className={`truncate border-b pb-1 font-display text-sm ${own.text} ${own.border}`}>{name}</div>
+
+      {hand.length > 0 && (
+        <RailGroup label={t("spec.hand", { n: handLeft })} tone={own.text}>
+          {hand.map((h) => <RailTile key={h.key} entry={h.civ} kind="civ" dim={h.used} />)}
+        </RailGroup>
+      )}
       {bans.length > 0 && (
-        <>
-          <div className="mt-2 text-[9px] uppercase tracking-wide text-danger">{t("spec.civsBanned")}</div>
-          <div className="mt-1 flex flex-wrap gap-1">
-            {bans.map((b) => (
-              <span key={b.key} className="relative block h-8 w-8" title={b.civ?.name}>
-                <Thumb src={b.civ?.imageUrl} alt={b.civ?.name ?? ""} className="h-8 w-8 rounded object-contain grayscale brightness-[.55]" />
-                <span className="absolute left-0 right-0 top-1/2 h-0.5 bg-danger" />
-              </span>
-            ))}
-          </div>
-        </>
+        <RailGroup label={t("spec.civsBanned")} tone="text-danger">
+          {bans.map((b) => <RailTile key={b.key} entry={b.civ} kind="civ" struck />)}
+        </RailGroup>
       )}
       {mapBans.length > 0 && (
-        <>
-          <div className="mt-2 text-[9px] uppercase tracking-wide text-muted">{t("spec.mapsBanned")}</div>
-          <div className="mt-1 flex flex-wrap gap-1">
-            {mapBans.map((b) => (
-              <span key={b.key} className="relative block w-full" title={b.civ?.name}>
-                <Thumb src={b.civ?.imageUrl} alt={b.civ?.name ?? ""} className="aspect-[16/10] w-full rounded object-cover grayscale brightness-50" />
-                <span className="absolute left-0 right-0 top-[44%] h-0.5 bg-danger" />
-              </span>
-            ))}
-          </div>
-        </>
+        <RailGroup label={t("spec.mapsBanned")} tone="text-muted">
+          {mapBans.map((b) => <RailTile key={b.key} entry={b.civ} kind="map" struck />)}
+        </RailGroup>
       )}
     </aside>
   );
@@ -1274,7 +1307,14 @@ function OptionToggle({ label, hint, checked, disabled, onChange }: {
   );
 }
 
-function Countdown({ deadlineTs, clockOffsetRef }: { deadlineTs: number | null; clockOffsetRef: React.RefObject<number> }) {
+/** Seconds left in the turn, and — for whoever owes the move — what happens at zero. */
+function Countdown({ deadlineTs, clockOffsetRef, warn = false }: {
+  deadlineTs: number | null;
+  clockOffsetRef: React.RefObject<number>;
+  /** This viewer is the one who gets picked for. Others don't need the threat. */
+  warn?: boolean;
+}) {
+  const { t } = useI18n();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!deadlineTs) return;
@@ -1287,11 +1327,21 @@ function Countdown({ deadlineTs, clockOffsetRef }: { deadlineTs: number | null; 
   const serverNow = now + (clockOffsetRef.current ?? 0);
   const remain = Math.max(0, Math.ceil((deadlineTs - serverNow) / 1000));
   return (
-    <span className={`font-display tabular-nums ${remain <= 5 ? "text-danger" : "text-muted"}`}>
-      ⏱ {remain}s
-    </span>
+    <>
+      <span className={`font-display tabular-nums ${remain <= 5 ? "text-danger" : "text-muted"}`}>
+        ⏱ {remain}s
+      </span>
+      {/* Running out of time doesn't forfeit the step — the server draws for you.
+          That is worth knowing three seconds early, while you can still stop it. */}
+      {warn && remain <= AUTOPICK_WARN_SEC && (
+        <span className="animate-pulse text-xs font-semibold text-danger">{t("match.autoPickSoon")}</span>
+      )}
+    </>
   );
 }
+
+/** How long before the clock runs out to say what the clock running out does. */
+const AUTOPICK_WARN_SEC = 3;
 
 type TFn = (k: string, v?: Record<string, string | number>) => string;
 
