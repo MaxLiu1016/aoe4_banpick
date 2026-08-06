@@ -769,7 +769,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
   },
   {
     "key": "bcc-bo5",
-    "version": 1,
+    "version": 2,
     "name": "Bo5 Draft(BCC)",
     "description": "For Border Conquest Cup, Standard Bo5 — map BP, hand draft, simultaneous offer & snipe.",
     "config": {
@@ -1312,33 +1312,9 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "label": "Pick civ to field (simultaneous)"
         },
         {
-          "id": "1248267c-cca1-42a3-85d8-45152adbc217",
-          "type": "CIV_OFFER",
-          "actor": "PLAYER2",
-          "pool": "civ",
-          "count": 2,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
-        },
-        {
           "id": "1edd0e13-e73a-4d65-9b6d-f6e0d4701d7c",
           "type": "CIV_SNIPE_OPPONENT",
           "actor": "PLAYER1",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Snipe opponent (simultaneous)"
-        },
-        {
-          "id": "c9f7059a-b3e7-4ada-a25d-d831ca8702de",
-          "type": "CIV_SNIPE_OPPONENT",
-          "actor": "PLAYER2",
           "pool": "civ",
           "count": 1,
           "timeLimitSec": 30,
@@ -1385,33 +1361,9 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "label": "Pick civ to field (simultaneous)"
         },
         {
-          "id": "4571436e-0a0b-4a9f-8e73-037f532f30f7",
-          "type": "CIV_OFFER",
-          "actor": "PLAYER2",
-          "pool": "civ",
-          "count": 2,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
-        },
-        {
           "id": "2c341893-895d-46a6-9b59-4dfa5f7a8e39",
           "type": "CIV_SNIPE_OPPONENT",
           "actor": "PLAYER1",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Snipe opponent (simultaneous)"
-        },
-        {
-          "id": "26b6f76a-4190-4a30-be28-8a498ef95b7d",
-          "type": "CIV_SNIPE_OPPONENT",
-          "actor": "PLAYER2",
           "pool": "civ",
           "count": 1,
           "timeLimitSec": 30,
@@ -1458,33 +1410,9 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "label": "Pick civ to field (simultaneous)"
         },
         {
-          "id": "b337054f-3b53-4e06-9664-c06d523a59d6",
-          "type": "CIV_OFFER",
-          "actor": "PLAYER2",
-          "pool": "civ",
-          "count": 2,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
-        },
-        {
           "id": "a78e112f-00aa-423c-b06f-b0c7e0172e7c",
           "type": "CIV_SNIPE_OPPONENT",
           "actor": "PLAYER1",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Snipe opponent (simultaneous)"
-        },
-        {
-          "id": "b138e434-acca-4d97-a479-a080fa544733",
-          "type": "CIV_SNIPE_OPPONENT",
-          "actor": "PLAYER2",
           "pool": "civ",
           "count": 1,
           "timeLimitSec": 30,
@@ -1531,33 +1459,9 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "label": "Pick civ to field (simultaneous)"
         },
         {
-          "id": "742959a5-e263-4dbe-94d0-d4fd79811346",
-          "type": "CIV_OFFER",
-          "actor": "PLAYER2",
-          "pool": "civ",
-          "count": 2,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
-        },
-        {
           "id": "458cfe29-26e3-4c95-99aa-34b6a24aed32",
           "type": "CIV_SNIPE_OPPONENT",
           "actor": "PLAYER1",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Snipe opponent (simultaneous)"
-        },
-        {
-          "id": "a49c3cfd-4f47-46cb-ad79-e88bdab44803",
-          "type": "CIV_SNIPE_OPPONENT",
-          "actor": "PLAYER2",
           "pool": "civ",
           "count": 1,
           "timeLimitSec": 30,
@@ -1604,33 +1508,9 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "label": "Pick civ to field (simultaneous)"
         },
         {
-          "id": "f83a2ea4-6c69-480c-aded-2f58cb344e4d",
-          "type": "CIV_OFFER",
-          "actor": "PLAYER2",
-          "pool": "civ",
-          "count": 2,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
-        },
-        {
           "id": "4d64f709-deec-44dd-b3c2-aa353169d93f",
           "type": "CIV_SNIPE_OPPONENT",
           "actor": "PLAYER1",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Snipe opponent (simultaneous)"
-        },
-        {
-          "id": "8350e330-da45-4c53-8531-00dd0858861b",
-          "type": "CIV_SNIPE_OPPONENT",
-          "actor": "PLAYER2",
           "pool": "civ",
           "count": 1,
           "timeLimitSec": 30,

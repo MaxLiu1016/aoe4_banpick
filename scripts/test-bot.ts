@@ -72,7 +72,12 @@ function play(config: PresetConfig, botSeat: "player1" | "player2"): Run {
 function main() {
   const formats: { name: string; config: PresetConfig }[] = [
     ...EGC_PRESETS.filter((p) => ["egc-qual-bo3", "egc-main-bo9"].includes(p.key)).map((p) => ({ name: p.name, config: p.config })),
-    ...DEMO_PRESETS.filter((d) => d.key === "bcc-bo3").map((d) => ({ name: d.name, config: d.config })),
+    // Both BCC formats. The Bo5 is here because it used to be unfinishable: each
+    // game carried two simultaneous offer rows, and a simultaneous row already
+    // covers both players, so it quietly asked four civs a game from a hand of
+    // seven and ran dry in game five. Only a series that went the distance ever
+    // reached it, which is why nobody had hit it.
+    ...DEMO_PRESETS.filter((d) => d.key === "bcc-bo3" || d.key === "bcc-bo5").map((d) => ({ name: d.name, config: d.config })),
   ];
 
   for (const f of formats) {
