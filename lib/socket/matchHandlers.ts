@@ -244,8 +244,17 @@ async function onExpire(io: Server, matchId: string, token: string) {
 
     const role = state.turn;
     if (role !== "player1" && role !== "player2" && role !== "host") return;
-    const target = randomLegalTarget(state);
-    if (!target) return;
+    // randomLegalTarget only knows the step types that existed before turn-based
+    // offers did — it answers null for a CIV_OFFER or a snipe taken on someone's
+    // turn. That null used to return here without broadcasting and without
+    // re-arming, so the clock sat on zero for ever, the turn never passed, and
+    // clicks kept working long after time was up. Ask the same question the bot
+    // asks instead; it covers every step type. HOST_DRAW isn't a seat, so the
+    // random draw keeps its own path.
+    const target = role === "host" ? randomLegalTarget(state) : botTargetFor(state, role);
+    // Even with nothing to play, say so: a silent return leaves every client
+    // showing a dead clock with no idea whether the server is still there.
+    if (!target) { await broadcast(io, matchId); return; }
     await applyAction(matchId, role, target);
     await broadcast(io, matchId);
   } catch {
