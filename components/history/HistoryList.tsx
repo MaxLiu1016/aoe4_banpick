@@ -127,9 +127,11 @@ export function HistoryList({ loggedIn, presetId }: { loggedIn: boolean; presetI
         // has to say the draft is over.
         const decided = m.decided;
         return (
-          <li key={m.id}>
-            <Link href={`/watch/${m.id}`}
-              className="aoe-panel flex items-center gap-4 rounded-xl px-4 py-3 transition hover:border-gold">
+          <li key={m.id} className="aoe-panel flex items-center gap-4 rounded-xl px-4 py-3 transition hover:border-gold">
+            {/* Spectating is the safe default for every row, so the row itself goes
+                there. Taking your seat back is a different act and gets its own
+                control — nested links are not legal HTML anyway. */}
+            <Link href={`/watch/${m.id}`} className="flex min-w-0 flex-1 items-center gap-4">
               <div className="min-w-0 flex-1">
                 <div className="truncate font-display text-base text-foreground">
                   {m.name || t("match.room")}
@@ -157,6 +159,15 @@ export function HistoryList({ loggedIn, presetId }: { loggedIn: boolean; presetI
                 {fmt.format(new Date(m.updatedAt))}
               </div>
             </Link>
+            {/* Only for a draft you were in that hasn't been decided: that is the
+                one you might have been dropped from and need to get back into.
+                Watching a room you are seated in leaves your seat empty. */}
+            {m.role && !decided && (
+              <Link href={`/match/${m.id}`}
+                className="shrink-0 rounded border border-gold px-3 py-1.5 text-xs text-gold-bright hover:brightness-110">
+                {t("history.rejoin")}
+              </Link>
+            )}
           </li>
         );
       })}

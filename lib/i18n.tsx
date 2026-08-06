@@ -108,6 +108,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "history.filteredPreset": { en: "this preset", zh: "這個規則組", ja: "このプリセット" },
   "history.won": { en: "You won", zh: "你獲勝", ja: "あなたの勝ち" },
   "history.lost": { en: "You lost", zh: "你落敗", ja: "あなたの負け" },
+  "history.rejoin": { en: "Rejoin", zh: "回到房間", ja: "部屋に戻る" },
   "history.done": { en: "Finished", zh: "完成", ja: "終了" },
   "history.role.player1": { en: "you were P1", zh: "你是 P1", ja: "あなたは P1" },
   "history.role.player2": { en: "you were P2", zh: "你是 P2", ja: "あなたは P2" },
