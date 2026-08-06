@@ -76,34 +76,6 @@ export function DraftBoard({
       className="absolute inset-0"
       style={{ background: "radial-gradient(1300px 640px at 50% -12%, rgba(216,178,74,.12), transparent 62%), var(--background)" }}
     >
-      {/* Whose turn it is, thrown along the edge of the board. Inside the canvas
-          rather than the window, so it scales with everything else and stays part
-          of the picture a stream is pointed at. Both sides on a simultaneous step,
-          each going out as that player locks in. */}
-      {(["player1", "player2"] as Seat[])
-        .filter((seat) => (state.simultaneous ? state.awaiting[seat] : state.turn === seat))
-        .map((seat) => (
-          <div key={seat} aria-hidden
-            className={`turn-glow absolute inset-y-0 w-[260px] ${seat === "player1" ? "left-0" : "right-0"}`}
-            style={{
-              background: `linear-gradient(to ${seat === "player1" ? "right" : "left"}, rgba(${OWNER_RGB[seat]},.4), transparent)`,
-            }} />
-        ))}
-
-      {/* Whose turn it is, thrown along the edge of the board. Inside the canvas
-          rather than the window, so it scales with everything else and stays part
-          of the picture a stream is pointed at. Both sides on a simultaneous step,
-          each going out as that player locks in. */}
-      {(["player1", "player2"] as Seat[])
-        .filter((seat) => (state.simultaneous ? state.awaiting[seat] : state.turn === seat))
-        .map((seat) => (
-          <div key={seat} aria-hidden
-            className={`turn-glow absolute inset-y-0 w-[260px] ${seat === "player1" ? "left-0" : "right-0"}`}
-            style={{
-              background: `linear-gradient(to ${seat === "player1" ? "right" : "left"}, rgba(${OWNER_RGB[seat]},.4), transparent)`,
-            }} />
-        ))}
-
       {/* ---- Header ---- */}
       <div
         className="absolute left-0 right-0 top-0 grid h-[118px] grid-cols-[1fr_auto_1fr] items-center px-12"

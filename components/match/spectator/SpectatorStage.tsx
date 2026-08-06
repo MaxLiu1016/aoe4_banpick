@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { getSocket } from "@/lib/socket/client";
 import { C2S, S2C } from "@/lib/socket/events";
 import { useI18n } from "@/lib/i18n";
@@ -8,7 +9,10 @@ import { DraftBoard } from "./DraftBoard";
 import { MatchSummary } from "./MatchSummary";
 import { GameResultCard } from "./GameResultCard";
 import { SnipeOutcome } from "./CivDuel";
-import { seatNames, type SpectatorPayload } from "./types";
+import { OWNER_RGB, seatNames, type Seat, type SpectatorPayload } from "./types";
+
+/** How long the snipe result stays up before the draft moves on. */
+const SNIPE_HOLD_MS = 10_000;
 
 /**
  * The broadcast page: a fixed 1920x1080 canvas scaled to fit whatever it is being
@@ -21,9 +25,6 @@ import { seatNames, type SpectatorPayload } from "./types";
  *
  * Read-only throughout: it joins with no ticket and emits nothing but the join.
  */
-/** How long the snipe result stays up before the draft moves on. */
-const SNIPE_HOLD_MS = 10_000;
-
 export function SpectatorStage({ matchId, roomName }: { matchId: string; roomName: string }) {
   const { t } = useI18n();
   const [payload, setPayload] = useState<SpectatorPayload | null>(null);
@@ -88,8 +89,36 @@ export function SpectatorStage({ matchId, roomName }: { matchId: string; roomNam
       ? payload.state.civDuel
       : null;
 
+  // Whose turn it is, thrown in from the edges of the window rather than the edges
+  // of the board. The stage is letterboxed on most screens, and lighting that
+  // margin reads as the board spilling colour into the room — which is the whole
+  // point of a cue you are meant to catch without looking at it. Only while the
+  // draft board is up: the result and summary screens are nobody's turn.
+  const onBoard = Boolean(payload) && !payload!.state.finished && !holding &&
+    !payload!.awaitingAck && payload!.state.currentStep?.type !== "GAME_RESULT" &&
+    payload!.status === "running";
+  const glowSeats = onBoard
+    ? (["player1", "player2"] as Seat[]).filter((seat) =>
+        payload!.state.simultaneous ? payload!.state.awaiting[seat] : payload!.state.turn === seat)
+    : [];
+
   return (
     <div className="flex h-screen w-screen items-center justify-center overflow-hidden bg-background">
+      {/* Portalled so the page wrapper's lingering route transform can't become the
+          containing block and pin these to the document instead of the window. */}
+      {glowSeats.length > 0 &&
+        createPortal(
+          <>
+            {glowSeats.map((seat) => (
+              <div key={seat} aria-hidden
+                className={`turn-glow fixed inset-y-0 z-10 w-[18vw] ${seat === "player1" ? "left-0" : "right-0"}`}
+                style={{
+                  background: `linear-gradient(to ${seat === "player1" ? "right" : "left"}, rgba(${OWNER_RGB[seat]},.42), transparent)`,
+                }} />
+            ))}
+          </>,
+          document.body
+        )}
       <div ref={stageRef} className="ovl-stage relative shrink-0">
         {!payload ? (
           <div className="flex h-full w-full items-center justify-center font-display text-[44px] text-muted">
