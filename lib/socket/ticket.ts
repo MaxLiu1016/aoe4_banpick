@@ -10,6 +10,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 interface TicketPayload {
   uid: string;
   name?: string;
+  /** Set for a player with no account. `uid` is then an id nothing else points to. */
+  guest?: true;
   exp: number; // epoch ms
 }
 
@@ -23,14 +25,14 @@ function secret(): string {
   return s;
 }
 
-export function signTicket(data: { uid: string; name?: string }, ttlSec = 300): string {
-  const payload: TicketPayload = { uid: data.uid, name: data.name, exp: Date.now() + ttlSec * 1000 };
+export function signTicket(data: { uid: string; name?: string; guest?: true }, ttlSec = 300): string {
+  const payload: TicketPayload = { uid: data.uid, name: data.name, guest: data.guest, exp: Date.now() + ttlSec * 1000 };
   const body = b64url(JSON.stringify(payload));
   const sig = b64url(createHmac("sha256", secret()).update(body).digest());
   return `${body}.${sig}`;
 }
 
-export function verifyTicket(token: string | undefined): { uid: string; name?: string } | null {
+export function verifyTicket(token: string | undefined): { uid: string; name?: string; guest?: true } | null {
   if (!token || typeof token !== "string" || !token.includes(".")) return null;
   const [body, sig] = token.split(".");
   if (!body || !sig) return null;
@@ -41,7 +43,7 @@ export function verifyTicket(token: string | undefined): { uid: string; name?: s
   try {
     const payload = JSON.parse(Buffer.from(body, "base64url").toString()) as TicketPayload;
     if (!payload.uid || typeof payload.exp !== "number" || payload.exp < Date.now()) return null;
-    return { uid: payload.uid, name: payload.name };
+    return { uid: payload.uid, name: payload.name, guest: payload.guest === true ? true : undefined };
   } catch {
     return null;
   }

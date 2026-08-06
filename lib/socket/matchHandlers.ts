@@ -38,6 +38,8 @@ interface MatchLean {
   player2Name?: string;
   player1Ready?: boolean;
   player2Ready?: boolean;
+  player1IsGuest?: boolean;
+  player2IsGuest?: boolean;
 }
 
 async function getCtx(matchId: string): Promise<{ match: MatchLean; state: DerivedState } | null> {
@@ -76,8 +78,8 @@ async function buildPayload(matchId: string) {
     awaitingAck,
     seats: {
       host: String(match.hostId),
-      player1: match.player1Id ? { id: String(match.player1Id), name: match.player1Name, ready: Boolean(match.player1Ready) } : null,
-      player2: match.player2Id ? { id: String(match.player2Id), name: match.player2Name, ready: Boolean(match.player2Ready) } : null,
+      player1: match.player1Id ? { id: String(match.player1Id), name: match.player1Name, ready: Boolean(match.player1Ready), guest: Boolean(match.player1IsGuest) } : null,
+      player2: match.player2Id ? { id: String(match.player2Id), name: match.player2Name, ready: Boolean(match.player2Ready), guest: Boolean(match.player2IsGuest) } : null,
     },
     votes,
     state,
@@ -407,11 +409,13 @@ export function registerMatchHandlers(io: Server) {
         if (p.seat && userId) {
           const seatField = p.seat === "player1" ? "player1Id" : "player2Id";
           const nameField = p.seat === "player1" ? "player1Name" : "player2Name";
+          const guestField = p.seat === "player1" ? "player1IsGuest" : "player2IsGuest";
           const alreadyP1 = match.player1Id && String(match.player1Id) === userId;
           const alreadyP2 = match.player2Id && String(match.player2Id) === userId;
           if (!match[seatField] && !alreadyP1 && !alreadyP2) {
             match[seatField] = userId;
             match[nameField] = ident?.name ?? "Player";
+            match[guestField] = ident?.guest === true;
             await match.save();
           }
           if (String(match[seatField]) === userId) role = p.seat;

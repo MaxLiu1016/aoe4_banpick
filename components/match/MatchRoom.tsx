@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { GUEST_ACCESS } from "@/lib/features";
+import { getGuestToken, guestName, setGuestName } from "@/lib/guest";
 import { Thumb } from "@/components/Thumb";
 import { getSocket } from "@/lib/socket/client";
 import { C2S, S2C } from "@/lib/socket/events";
@@ -37,7 +40,7 @@ const GRID_CIV = { gridTemplateColumns: "repeat(auto-fit, minmax(112px, 1fr))" }
 // coming back to.
 const GRID_MAP = { gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" };
 
-type Seat = { id: string; name?: string; ready?: boolean } | null;
+type Seat = { id: string; name?: string; ready?: boolean; guest?: boolean } | null;
 interface Payload {
   matchId: string;
   status: string;
@@ -76,6 +79,8 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const you = payload?.you ?? "spectator";
   const amHost = payload?.youAreHost ?? false;
   const state = payload?.state;
+  // Taking a seat no longer needs an account, just an identity the server signed.
+  const canPlay = !!session?.user || GUEST_ACCESS;
 
   useEffect(() => {
     setInviteUrl(`${window.location.origin}/match/${matchId}`);
@@ -105,10 +110,17 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
     // first: the old one may have expired while away, which would otherwise
     // silently demote us to spectator and make every control stop working.
     const joinRoom = async () => {
-      if (session?.user && !spectator) {
+      if (!spectator) {
         try {
-          const r = await fetch("/api/socket-token");
-          if (r.ok) ticketRef.current = (await r.json()).ticket;
+          // Signed in, the ticket is minted from the session. Signed out, it comes
+          // from the token in this browser — which is the whole no-account story:
+          // the seat is held by something the server signed, not by an account.
+          if (session?.user) {
+            const r = await fetch("/api/socket-token");
+            if (r.ok) ticketRef.current = (await r.json()).ticket;
+          } else if (GUEST_ACCESS) {
+            ticketRef.current = await getGuestToken();
+          }
         } catch { /* fall back to spectating */ }
       }
       if (cancelled) return;
@@ -129,7 +141,11 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   }, [matchId, session?.user?.id]);
 
   function emit(event: string, data: object) { getSocket().emit(event, data); }
-  function takeSeat(seat: "player1" | "player2") {
+  async function takeSeat(seat: "player1" | "player2", name?: string) {
+    // A guest's name lives in their token, and the seat is stamped with whatever
+    // the token says at the moment they sit down — so the rename has to land
+    // BEFORE the JOIN, not after it.
+    if (!session?.user && name) ticketRef.current = (await setGuestName(name)) ?? ticketRef.current;
     emit(C2S.JOIN, { matchId, ticket: ticketRef.current, seat });
   }
   function act(target: string) { emit(C2S.ACTION, { matchId, target }); }
@@ -159,7 +175,8 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         seats={payload!.seats}
         you={you}
         amHost={amHost}
-        loggedIn={!!session}
+        canPlay={canPlay}
+        loggedIn={!!session?.user}
         bestOf={state.bestOf}
         inviteUrl={inviteUrl}
         copied={copied}
@@ -288,7 +305,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         <>
         <div className="grid grid-cols-3 items-center">
           <SeatCard label={t("match.p1")} seat={payload!.seats.player1} role="player1" you={you} turn={state.turn}
-            score={state.score.player1} canTake={!spectator && !payload!.seats.player1 && you === "spectator" && !!session}
+            score={state.score.player1} canTake={!spectator && !payload!.seats.player1 && you === "spectator" && canPlay}
             onTake={() => takeSeat("player1")} crowned={state.finished && state.score.player1 > state.score.player2} />
           <div className="text-center">
             <div className="font-display text-3xl aoe-gold-text">{state.score.player1} — {state.score.player2}</div>
@@ -308,7 +325,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
             </div>
           </div>
           <SeatCard label={t("match.p2")} seat={payload!.seats.player2} role="player2" you={you} turn={state.turn}
-            score={state.score.player2} canTake={!spectator && !payload!.seats.player2 && you === "spectator" && !!session}
+            score={state.score.player2} canTake={!spectator && !payload!.seats.player2 && you === "spectator" && canPlay}
             onTake={() => takeSeat("player2")} right
             crowned={state.finished && state.score.player2 > state.score.player1} />
         </div>
@@ -917,10 +934,50 @@ function RenameControl({ current, onRename }: { current: string; onRename: (name
   );
 }
 
-function Lobby({ seats, you, amHost, loggedIn, bestOf, inviteUrl, copied, anonymous, publicHover, playAll, onCopy, onTake, onReady, onRename, onStart, onOptions, error }: {
+/**
+ * Sitting down without an account asks for a name first: the seat is stamped with
+ * whatever the guest's token says at the moment they take it, so the name has to
+ * exist before the seat does. Signed in, the account name is already there and the
+ * button is just a button.
+ *
+ * Lazily reading the stored name inside the click handler rather than at render
+ * keeps this safe to server-render — localStorage doesn't exist there, and seeding
+ * state from it would hydrate to a different value than the server drew.
+ */
+function TakeSeatButton({ needsName, onTake }: { needsName: boolean; onTake: (name?: string) => void }) {
+  const { t } = useI18n();
+  const [asking, setAsking] = useState(false);
+  const [name, setName] = useState("");
+  const clean = name.trim().slice(0, 32);
+
+  if (!asking) {
+    return (
+      <button
+        onClick={() => { if (!needsName) { onTake(); return; } setName(guestName() ?? ""); setAsking(true); }}
+        className="aoe-btn rounded px-4 py-2 font-display"
+      >
+        {t("match.takeSeat")}
+      </button>
+    );
+  }
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); if (clean) onTake(clean); }} className="flex flex-col items-center gap-2">
+      <input autoFocus value={name} onChange={(e) => setName(e.target.value)} maxLength={32}
+        placeholder={t("match.guestName")}
+        className="w-full rounded border border-border bg-surface-2 px-3 py-1.5 text-center text-sm text-foreground outline-none focus:border-gold" />
+      <button type="submit" disabled={!clean} className="aoe-btn rounded px-4 py-2 font-display disabled:opacity-50">
+        {t("match.takeSeat")}
+      </button>
+    </form>
+  );
+}
+
+function Lobby({ seats, you, amHost, canPlay, loggedIn, bestOf, inviteUrl, copied, anonymous, publicHover, playAll, onCopy, onTake, onReady, onRename, onStart, onOptions, error }: {
   seats: { host: string; player1: Seat; player2: Seat };
   you: SeatRole | "spectator";
   amHost: boolean;
+  /** Whether this viewer may take a seat at all (an account, or guest play being on). */
+  canPlay: boolean;
   loggedIn: boolean;
   bestOf: number;
   inviteUrl: string;
@@ -929,7 +986,7 @@ function Lobby({ seats, you, amHost, loggedIn, bestOf, inviteUrl, copied, anonym
   publicHover: boolean;
   playAll: boolean;
   onCopy: () => void;
-  onTake: (seat: "player1" | "player2") => void;
+  onTake: (seat: "player1" | "player2", name?: string) => void;
   onReady: (ready: boolean) => void;
   onRename: (name: string) => void;
   onStart: () => void;
@@ -965,8 +1022,8 @@ function Lobby({ seats, you, amHost, loggedIn, bestOf, inviteUrl, copied, anonym
           </div>
         ) : (
           <div className="mt-3">
-            {loggedIn && you === "spectator" ? (
-              <button onClick={() => onTake(role)} className="aoe-btn rounded px-4 py-2 font-display">{t("match.takeSeat")}</button>
+            {canPlay && you === "spectator" ? (
+              <TakeSeatButton needsName={!loggedIn} onTake={(name) => onTake(role, name)} />
             ) : (
               <span className="text-xs text-muted">{t("match.waitingPlayer")}</span>
             )}
@@ -984,6 +1041,15 @@ function Lobby({ seats, you, amHost, loggedIn, bestOf, inviteUrl, copied, anonym
         <h1 className="mt-3 font-display text-2xl aoe-gold-text">{t("match.boTitle", { n: bestOf })}</h1>
         <p className="mt-1 text-sm text-muted">{t("match.youAre")} <span className="text-foreground">{youLabel}</span></p>
         {amHost && <p className="mt-1 text-xs text-bronze">{t("match.hostHint")}</p>}
+        {/* Playing without an account works, but the identity holding your seat is
+            a token in THIS browser — worth saying before someone clears it mid-series
+            and finds their seat gone. */}
+        {!loggedIn && (
+          <p className="mt-2 text-xs text-muted">
+            {t("match.guestMode")}{" "}
+            <Link href="/login" className="text-gold-bright hover:underline">{t("nav.signin")}</Link>
+          </p>
+        )}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">

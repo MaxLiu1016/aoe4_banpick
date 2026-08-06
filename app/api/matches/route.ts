@@ -7,6 +7,8 @@ import { Match } from "@/lib/models/Match";
 import { MatchGame } from "@/lib/models/MatchGame";
 import { Preset } from "@/lib/models/Preset";
 import { getCurrentUser } from "@/lib/session";
+import { verifyTicket } from "@/lib/socket/ticket";
+import { GUEST_ACCESS, GUEST_MATCHES_PER_HOUR, GUEST_OPEN_LOBBIES } from "@/lib/features";
 import { validatePreset } from "@/lib/draft/validate";
 import type { PresetConfig } from "@/lib/draft/schema";
 
@@ -16,9 +18,32 @@ function shareCode(): string {
   return randomBytes(4).toString("hex"); // 8 hex chars
 }
 
+// Rooms opened per IP, for the no-account path only. In-memory is the right size
+// here: this runs as one custom-server process, and the worst case of losing the
+// counters is a restart granting one extra window.
+const guestRoomsByIp = new Map<string, number[]>();
+
+function guestRateLimited(req: Request): boolean {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const cutoff = Date.now() - 60 * 60 * 1000;
+  const recent = (guestRoomsByIp.get(ip) ?? []).filter((t) => t > cutoff);
+  if (recent.length >= GUEST_MATCHES_PER_HOUR) { guestRoomsByIp.set(ip, recent); return true; }
+  recent.push(Date.now());
+  guestRoomsByIp.set(ip, recent);
+  return false;
+}
+
 export async function POST(req: Request) {
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // No session? Fall back to the signed token a guest keeps in their browser.
+  // `guest` is what everything below branches on — a signed-in user's socket
+  // ticket would verify here too, and must not be mistaken for one.
+  const ticket = user ? null : verifyTicket(req.headers.get("x-guest-token") ?? undefined);
+  const guest = GUEST_ACCESS && ticket?.guest ? ticket : null;
+  if (!user && !guest) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (guest && guestRateLimited(req)) {
+    return NextResponse.json({ error: "Too many rooms opened. Try again later, or sign in." }, { status: 429 });
+  }
 
   const body = await req.json().catch(() => null);
   const parsed = CreateSchema.safeParse(body);
@@ -36,8 +61,19 @@ export async function POST(req: Request) {
     config: unknown;
   }>();
   if (!preset) return NextResponse.json({ error: "Preset not found" }, { status: 404 });
-  if (!preset.isPublic && String(preset.ownerId) !== user.id) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // Without an account you get the public formats and nothing else — there is no
+  // "your own presets" to fall back on, and a private one is not yours to open.
+  if (!preset.isPublic && (!user || String(preset.ownerId) !== user.id)) {
+    return NextResponse.json({ error: guest ? "Sign in to use a private format." : "Forbidden" }, { status: 403 });
+  }
+
+  // A guest who keeps opening rooms and never plays them is just filling the
+  // database. Make them finish (or abandon) what they already opened.
+  if (guest) {
+    const open = await Match.countDocuments({ hostId: guest.uid, status: "lobby" });
+    if (open >= GUEST_OPEN_LOBBIES) {
+      return NextResponse.json({ error: "You already have rooms waiting. Use one of those first." }, { status: 429 });
+    }
   }
 
   const problems = validatePreset(preset.config as PresetConfig);
@@ -49,7 +85,8 @@ export async function POST(req: Request) {
   // or stay as referee. Either way the host calls the game results.
   const match = await Match.create({
     presetId: preset._id,
-    hostId: user.id,
+    hostId: user?.id ?? guest!.uid,
+    hostIsGuest: !user,
     name: preset.name ?? "", // snapshot the room name shown in the lobby / share preview
     description: preset.description ?? "",
     config: preset.config, // snapshot

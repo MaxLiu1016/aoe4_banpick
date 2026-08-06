@@ -2,20 +2,26 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useI18n } from "@/lib/i18n";
+import { getGuestToken } from "@/lib/guest";
 import type { PresetIssue } from "@/lib/draft/validate";
 
 export function StartMatchButton({ presetId }: { presetId: string }) {
   const router = useRouter();
+  const { data: session } = useSession();
   const { t } = useI18n();
   const [busy, setBusy] = useState(false);
 
   async function start() {
     setBusy(true);
     try {
+      // Signed out, identity rides along as the browser's guest token. The server
+      // decides what that is worth — a public format opens, a private one doesn't.
+      const guest = session?.user ? undefined : await getGuestToken();
       const res = await fetch("/api/matches", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", ...(guest ? { "x-guest-token": guest } : {}) },
         body: JSON.stringify({ presetId }),
       });
       if (res.status === 401) { router.push("/login"); return; }

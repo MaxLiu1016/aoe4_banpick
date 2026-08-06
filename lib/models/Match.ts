@@ -16,6 +16,12 @@ const MatchSchema = new Schema(
     player2Name: { type: String },
     player1Ready: { type: Boolean, default: false },
     player2Ready: { type: Boolean, default: false },
+    // Whoever holds this id has no account — the id is a signed browser token, not
+    // a users row, so `ref: "User"` will never resolve it. Recorded so the UI can
+    // say so, and so abandoned guest rooms can be swept without touching real ones.
+    hostIsGuest: { type: Boolean, default: false, index: true },
+    player1IsGuest: { type: Boolean, default: false },
+    player2IsGuest: { type: Boolean, default: false },
     status: {
       type: String,
       enum: ["lobby", "running", "paused", "finished"],
