@@ -29,7 +29,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
   {
     "key": "bcc-bo3",
     "order": 20,
-    "version": 1,
+    "version": 2,
     "name": "Bo3 Draft(BCC)",
     "description": "For Border Conquest Cup, Standard Bo3 — map BP, hand draft, simultaneous offer & snipe.",
     "config": {
@@ -308,6 +308,18 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "excludeUsedCivs": true,
           "pausable": true,
           "label": "Random · Select map"
+        },
+        {
+          "id": "bcc-bo3-map-civ-gate",
+          "type": "SYNC_CONFIRM",
+          "actor": "PLAYER1",
+          "pool": "civ",
+          "count": 1,
+          "timeLimitSec": 60,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "Both players confirm to continue"
         },
         {
           "id": "65369351-7905-4dbb-a853-22ac8d89e7f0",
@@ -781,7 +793,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
   {
     "key": "bcc-bo5",
     "order": 21,
-    "version": 2,
+    "version": 3,
     "name": "Bo5 Draft(BCC)",
     "description": "For Border Conquest Cup, Standard Bo5 — map BP, hand draft, simultaneous offer & snipe.",
     "config": {
@@ -1058,6 +1070,18 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "excludeUsedCivs": true,
           "pausable": true,
           "label": "Random · Select map"
+        },
+        {
+          "id": "bcc-bo5-map-civ-gate",
+          "type": "SYNC_CONFIRM",
+          "actor": "PLAYER1",
+          "pool": "civ",
+          "count": 1,
+          "timeLimitSec": 60,
+          "showCurrentMap": false,
+          "excludeUsedCivs": true,
+          "pausable": true,
+          "label": "Both players confirm to continue"
         },
         {
           "id": "8d751a86-6b8d-478e-926c-3c775fcc6a6b",
