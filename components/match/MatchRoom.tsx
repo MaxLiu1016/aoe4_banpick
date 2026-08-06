@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { GUEST_ACCESS } from "@/lib/features";
 import { getGuestToken, guestName, setGuestName } from "@/lib/guest";
@@ -1041,15 +1040,10 @@ function Lobby({ seats, you, amHost, canPlay, loggedIn, bestOf, inviteUrl, copie
         <h1 className="mt-3 font-display text-2xl aoe-gold-text">{t("match.boTitle", { n: bestOf })}</h1>
         <p className="mt-1 text-sm text-muted">{t("match.youAre")} <span className="text-foreground">{youLabel}</span></p>
         {amHost && <p className="mt-1 text-xs text-bronze">{t("match.hostHint")}</p>}
-        {/* Playing without an account works, but the identity holding your seat is
-            a token in THIS browser — worth saying before someone clears it mid-series
-            and finds their seat gone. */}
-        {!loggedIn && (
-          <p className="mt-2 text-xs text-muted">
-            {t("match.guestMode")}{" "}
-            <Link href="/login" className="text-gold-bright hover:underline">{t("nav.signin")}</Link>
-          </p>
-        )}
+        {/* Not a pitch for signing up — the header already has that button. Signed
+            out, the thing holding your seat is a token in THIS browser, and the way
+            to lose it is to move to another device mid-series. So say only that. */}
+        {!loggedIn && <p className="mt-2 text-xs text-muted">{t("match.guestMode")}</p>}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
