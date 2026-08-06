@@ -292,3 +292,87 @@ export function LockRow({ state, names, t }: { state: DerivedState; names: Recor
     </>
   );
 }
+
+/**
+ * The moment after the snipe, held on screen: which civ each side lost, and which
+ * one is going out to play.
+ *
+ * It exists because this was the fastest thing in the draft — both snipes land, the
+ * step advances, and the board has already moved on before anyone has read what
+ * happened. A caster gets nothing to talk about and a player never sees what their
+ * opponent took off them. So the result gets its own beat, and the strike is drawn
+ * rather than simply being true.
+ */
+export function SnipeOutcome({
+  state, duel, names, civById, t,
+}: {
+  state: DerivedState;
+  duel: CivDuel;
+  names: Record<Seat, string>;
+  civById: Map<string, PoolView>;
+  t: Translate;
+}) {
+  const game = state.games[state.currentGameIndex];
+  const fielding = (seat: Seat) => (seat === "player1" ? game?.civP1 : game?.civP2);
+
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center"
+      style={{ background: "radial-gradient(1300px 640px at 50% -12%, rgba(216,178,74,.12), transparent 62%), var(--background)" }}>
+      <div className="font-sans text-[19px] font-semibold tracking-[.4em] text-muted">{t("spec.sniped")}</div>
+
+      <div className="mt-10 grid grid-cols-[1fr_auto_1fr] items-start gap-16 px-24">
+        {(["player1", "player2"] as Seat[]).map((seat, i) => {
+          // Your opponent is the one who struck yours out.
+          const struck = new Set(duel.snipedBy[other(seat)]);
+          const survivor = fielding(seat);
+          const node = (
+            <div key={seat} className="text-center">
+              <div className="truncate font-display text-[32px] font-bold leading-none" style={{ color: OWNER[seat] }}>{names[seat]}</div>
+              <div className="mt-6 flex flex-wrap items-start justify-center gap-6">
+                {duel.offered[seat].map((id) => {
+                  const civ = civById.get(id);
+                  const dead = struck.has(id);
+                  const alive = id === survivor;
+                  return (
+                    <div key={id} className="relative" style={{ width: 210 }}>
+                      <div
+                        className={`flex flex-col items-center justify-center rounded-[14px] p-3 ${alive ? "ovl-glow" : ""}`}
+                        style={{
+                          height: 210,
+                          border: `3px solid ${alive ? "var(--gold-bright)" : "rgba(58,51,38,.9)"}`,
+                          background: alive ? `rgba(${OWNER_RGB[seat]},.12)` : "var(--surface-2)",
+                          filter: dead ? "grayscale(1) brightness(.55)" : undefined,
+                          opacity: dead ? 0.55 : 1,
+                        }}
+                      >
+                        <Thumb src={civ?.imageUrl} alt={civ?.name ?? ""} className="h-[62%] w-[62%] object-contain" />
+                        <div className="mt-1.5 w-full truncate text-center font-display text-[19px] font-bold leading-tight"
+                          style={{ color: alive ? "var(--gold-bright)" : "var(--muted)" }}>
+                          {civ?.name ?? "—"}
+                        </div>
+                      </div>
+                      {/* Drawn, not just present: the bar sweeping across is the only
+                          part of this screen that tells you it just happened. */}
+                      {dead && <span className="ovl-slash-lg absolute left-0 right-0 top-1/2 h-[6px] -translate-y-1/2" style={{ background: "var(--danger)" }} />}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-5 font-sans text-[15px] font-semibold tracking-[.18em] text-muted">
+                {t("spec.fielding", { name: civById.get(survivor ?? "")?.name ?? "—" })}
+              </div>
+            </div>
+          );
+          return i === 0
+            ? [node, <div key="vs" className="pt-10 font-display text-[64px] font-bold leading-none text-gold"
+                style={{ textShadow: "0 3px 14px rgba(0,0,0,.8)" }}>VS</div>]
+            : node;
+        })}
+      </div>
+
+      <div className="mt-14 font-display text-[34px] font-bold leading-none text-gold-bright">
+        {t("spec.gameStarting", { n: state.currentGameIndex + 1 })}
+      </div>
+    </div>
+  );
+}

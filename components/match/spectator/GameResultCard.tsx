@@ -90,9 +90,10 @@ export function GameResultCard({ payload }: { payload: SpectatorPayload }) {
 
       <div className="absolute bottom-[52px] left-0 right-0 text-center font-sans text-[22px] font-semibold tracking-[.14em] text-muted">
         {!winner ? (
-          // Says what is happening, not what happened — and no clock, because a
-          // result step is never timed: the server will not call a game for you.
-          t("result.voteWatch")
+          // They are away playing it, not voting on it — the vote is what happens
+          // when they get back. And no clock: a result step is never timed, because
+          // the server will not call a game for you.
+          t("spec.gameInProgress", { n: idx + 1 })
         ) : showNext ? (
           <>
             {t("spec.nextGame", { n: nextIdx + 1 })}

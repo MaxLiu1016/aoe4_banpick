@@ -7,7 +7,8 @@ import { useI18n } from "@/lib/i18n";
 import { DraftBoard } from "./DraftBoard";
 import { MatchSummary } from "./MatchSummary";
 import { GameResultCard } from "./GameResultCard";
-import type { SpectatorPayload } from "./types";
+import { SnipeOutcome } from "./CivDuel";
+import { seatNames, type SpectatorPayload } from "./types";
 
 /**
  * The broadcast page: a fixed 1920x1080 canvas scaled to fit whatever it is being
@@ -20,6 +21,9 @@ import type { SpectatorPayload } from "./types";
  *
  * Read-only throughout: it joins with no ticket and emits nothing but the join.
  */
+/** How long the snipe result stays up before the draft moves on. */
+const SNIPE_HOLD_MS = 10_000;
+
 export function SpectatorStage({ matchId, roomName }: { matchId: string; roomName: string }) {
   const { t } = useI18n();
   const [payload, setPayload] = useState<SpectatorPayload | null>(null);
@@ -29,6 +33,9 @@ export function SpectatorStage({ matchId, roomName }: { matchId: string; roomNam
   // is read while rendering the board, and a ref read during render is a value
   // React can't promise is the one the render was built from.
   const [clockOffset, setClockOffset] = useState(0);
+  // Which game's snipe result is currently being held on screen, if any.
+  const [snipeHold, setSnipeHold] = useState<number | null>(null);
+  const prevStepRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     const el = stageRef.current;
@@ -48,6 +55,13 @@ export function SpectatorStage({ matchId, roomName }: { matchId: string; roomNam
     const socket = getSocket();
     const onState = (p: SpectatorPayload) => {
       if (typeof p.serverNow === "number") setClockOffset(p.serverNow - Date.now());
+      // Catch the transition rather than the state: arriving at a draft that is
+      // already past its snipe should not replay a beat that happened long ago.
+      const now = p.state.currentStep?.type;
+      if (prevStepRef.current === "CIV_SNIPE_OPPONENT" && now === "GAME_RESULT") {
+        setSnipeHold(p.state.currentGameIndex);
+      }
+      prevStepRef.current = now;
       setPayload(p);
     };
     socket.on(S2C.STATE, onState);
@@ -62,6 +76,18 @@ export function SpectatorStage({ matchId, roomName }: { matchId: string; roomNam
     };
   }, [matchId]);
 
+  // Held long enough to read out loud, then it gets out of the way on its own.
+  useEffect(() => {
+    if (snipeHold === null) return;
+    const id = setTimeout(() => setSnipeHold(null), SNIPE_HOLD_MS);
+    return () => clearTimeout(id);
+  }, [snipeHold]);
+
+  const holding =
+    snipeHold !== null && payload?.state.currentGameIndex === snipeHold && !payload.state.finished
+      ? payload.state.civDuel
+      : null;
+
   return (
     <div className="flex h-screen w-screen items-center justify-center overflow-hidden bg-background">
       <div ref={stageRef} className="ovl-stage relative shrink-0">
@@ -71,6 +97,14 @@ export function SpectatorStage({ matchId, roomName }: { matchId: string; roomNam
           </div>
         ) : payload.state.finished ? (
           <MatchSummary payload={payload} roomName={roomName} />
+        ) : holding ? (
+          <SnipeOutcome
+            state={payload.state}
+            duel={holding}
+            names={seatNames(payload, { player1: t("match.p1"), player2: t("match.p2") })}
+            civById={new Map(payload.state.civs.map((c) => [c.id, c]))}
+            t={t}
+          />
         ) : payload.awaitingAck || payload.state.currentStep?.type === "GAME_RESULT" ? (
           // The beat between games gets the whole screen. A pool grid is the wrong
           // thing to be looking at while a game is being called.
