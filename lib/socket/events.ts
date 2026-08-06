@@ -15,6 +15,7 @@ export const C2S = {
   READY: "match:ready", // { matchId, ready } — a seated player toggles ready
   RENAME: "match:rename", // { matchId, name } — a seated player renames themselves
   START: "match:start", // { matchId } — host force-starts once both seated
+  ADD_BOT: "match:addBot", // { matchId, seat } — sit a practice opponent in an empty seat
   // Host-only, lobby-only: override this draft's own settings. The preset supplies
   // the defaults; whether a given session is scouted, or plays out its dead
   // rubbers, is a property of the session rather than of the format.

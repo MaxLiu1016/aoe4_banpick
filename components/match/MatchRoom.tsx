@@ -39,7 +39,7 @@ const GRID_CIV = { gridTemplateColumns: "repeat(auto-fit, minmax(112px, 1fr))" }
 // coming back to.
 const GRID_MAP = { gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" };
 
-type Seat = { id: string; name?: string; ready?: boolean; guest?: boolean } | null;
+type Seat = { id: string; name?: string; ready?: boolean; guest?: boolean; bot?: boolean } | null;
 interface Payload {
   matchId: string;
   status: string;
@@ -147,6 +147,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
     if (!session?.user && name) ticketRef.current = (await setGuestName(name)) ?? ticketRef.current;
     emit(C2S.JOIN, { matchId, ticket: ticketRef.current, seat });
   }
+  function addBot(seat: "player1" | "player2") { emit(C2S.ADD_BOT, { matchId, seat }); }
   function act(target: string) { emit(C2S.ACTION, { matchId, target }); }
   function setReady(ready: boolean) { emit(C2S.READY, { matchId, ready }); }
   function ackResult(gameIndex: number) { emit(C2S.RESULT_ACK, { matchId, gameIndex }); }
@@ -184,6 +185,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         playAll={Boolean(state.playAll)}
         onCopy={copyInvite}
         onTake={takeSeat}
+        onAddBot={addBot}
         onReady={setReady}
         onRename={rename}
         onStart={forceStart}
@@ -971,7 +973,7 @@ function TakeSeatButton({ needsName, onTake }: { needsName: boolean; onTake: (na
   );
 }
 
-function Lobby({ seats, you, amHost, canPlay, loggedIn, bestOf, inviteUrl, copied, anonymous, publicHover, playAll, onCopy, onTake, onReady, onRename, onStart, onOptions, error }: {
+function Lobby({ seats, you, amHost, canPlay, loggedIn, bestOf, inviteUrl, copied, anonymous, publicHover, playAll, onCopy, onTake, onAddBot, onReady, onRename, onStart, onOptions, error }: {
   seats: { host: string; player1: Seat; player2: Seat };
   you: SeatRole | "spectator";
   amHost: boolean;
@@ -986,6 +988,7 @@ function Lobby({ seats, you, amHost, canPlay, loggedIn, bestOf, inviteUrl, copie
   playAll: boolean;
   onCopy: () => void;
   onTake: (seat: "player1" | "player2", name?: string) => void;
+  onAddBot: (seat: "player1" | "player2") => void;
   onReady: (ready: boolean) => void;
   onRename: (name: string) => void;
   onStart: () => void;
@@ -1002,7 +1005,7 @@ function Lobby({ seats, you, amHost, canPlay, loggedIn, bestOf, inviteUrl, copie
       <div className={`aoe-panel rounded-xl p-5 text-center ${mine ? "ring-1 ring-gold" : ""}`}>
         <div className="font-display text-xl leading-tight text-foreground">
           <span className="font-sans text-[11px] uppercase tracking-wide text-muted">{label}</span>
-          {seat?.name ? <span> · {seat.name}</span> : <span className="text-muted"> · {t("match.open")}</span>}
+          {seat?.name ? <span> · {seat.bot && "🤖 "}{seat.name}</span> : <span className="text-muted"> · {t("match.open")}</span>}
         </div>
         {mine && <div className="mt-0.5 text-[10px] text-muted">({t("match.you")})</div>}
         {seat ? (
@@ -1020,11 +1023,18 @@ function Lobby({ seats, you, amHost, canPlay, loggedIn, bestOf, inviteUrl, copie
             )}
           </div>
         ) : (
-          <div className="mt-3">
+          <div className="mt-3 flex flex-col items-center gap-2">
             {canPlay && you === "spectator" ? (
               <TakeSeatButton needsName={!loggedIn} onTake={(name) => onTake(role, name)} />
             ) : (
               <span className="text-xs text-muted">{t("match.waitingPlayer")}</span>
+            )}
+            {/* Waiting for someone who may not be coming. You can walk the whole
+                format through on your own instead. */}
+            {(you === "player1" || you === "player2" || amHost) && (
+              <button onClick={() => onAddBot(role)} className="rounded border border-border px-3 py-1.5 text-xs text-muted hover:text-gold-bright">
+                {t("match.addBot")}
+              </button>
             )}
           </div>
         )}
@@ -1044,6 +1054,9 @@ function Lobby({ seats, you, amHost, canPlay, loggedIn, bestOf, inviteUrl, copie
             out, the thing holding your seat is a token in THIS browser, and the way
             to lose it is to move to another device mid-series. So say only that. */}
         {!loggedIn && <p className="mt-2 text-xs text-muted">{t("match.guestMode")}</p>}
+        {(seats.player1?.bot || seats.player2?.bot) && (
+          <p className="mx-auto mt-2 max-w-xl text-xs text-muted">{t("match.botHint")}</p>
+        )}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">

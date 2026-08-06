@@ -119,7 +119,17 @@ export async function GET(req: Request) {
   // usually enough to work out who, names or no names. It also skips lobbies —
   // a room nobody has played in yet isn't a match.
   const filter: Record<string, unknown> = global
-    ? { "config.options.anonymous": { $ne: true }, status: { $in: ["running", "paused", "finished"] }, player1Id: { $ne: null }, player2Id: { $ne: null } }
+    ? {
+        "config.options.anonymous": { $ne: true },
+        status: { $in: ["running", "paused", "finished"] },
+        player1Id: { $ne: null },
+        player2Id: { $ne: null },
+        // Drafts against the practice bot are rehearsals. They stay in your own
+        // history, where they're useful, and out of the public feed, where a wall
+        // of them would say nothing about who is actually playing.
+        player1IsBot: { $ne: true },
+        player2IsBot: { $ne: true },
+      }
     : { $or: [{ hostId: user!.id }, { player1Id: user!.id }, { player2Id: user!.id }] };
 
   // Narrowing happens here rather than in the browser: the list is capped at the

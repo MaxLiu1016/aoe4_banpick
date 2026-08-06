@@ -22,6 +22,10 @@ const MatchSchema = new Schema(
     hostIsGuest: { type: Boolean, default: false, index: true },
     player1IsGuest: { type: Boolean, default: false },
     player2IsGuest: { type: Boolean, default: false },
+    // A practice opponent holds this seat. Kept out of the public feed: these are
+    // rehearsals, and a front page full of them says nothing about who is playing.
+    player1IsBot: { type: Boolean, default: false },
+    player2IsBot: { type: Boolean, default: false },
     status: {
       type: String,
       enum: ["lobby", "running", "paused", "finished"],

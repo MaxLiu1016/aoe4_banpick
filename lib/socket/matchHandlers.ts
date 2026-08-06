@@ -7,6 +7,7 @@ import { MatchGame } from "../models/MatchGame";
 import { deriveState, validateAction, type EngineAction, type SeatRole, type DerivedState } from "../draft/engine";
 import type { PresetConfig } from "../draft/schema";
 import { verifyTicket } from "./ticket";
+import { BOT_ID, BOT_NAME, BOT_THINK_MS, botDelay, botTargetFor } from "../bot";
 
 type JoinPayload = { matchId: string; ticket?: string; seat?: "player1" | "player2" };
 
@@ -40,7 +41,13 @@ interface MatchLean {
   player2Ready?: boolean;
   player1IsGuest?: boolean;
   player2IsGuest?: boolean;
+  player1IsBot?: boolean;
+  player2IsBot?: boolean;
 }
+
+/** Which seat, if any, a practice opponent is sitting in. */
+const botSeatOf = (m: MatchLean): "player1" | "player2" | null =>
+  m.player1IsBot ? "player1" : m.player2IsBot ? "player2" : null;
 
 async function getCtx(matchId: string): Promise<{ match: MatchLean; state: DerivedState } | null> {
   const match = await Match.findById(matchId).lean<MatchLean>();
@@ -78,8 +85,8 @@ async function buildPayload(matchId: string) {
     awaitingAck,
     seats: {
       host: String(match.hostId),
-      player1: match.player1Id ? { id: String(match.player1Id), name: match.player1Name, ready: Boolean(match.player1Ready), guest: Boolean(match.player1IsGuest) } : null,
-      player2: match.player2Id ? { id: String(match.player2Id), name: match.player2Name, ready: Boolean(match.player2Ready), guest: Boolean(match.player2IsGuest) } : null,
+      player1: match.player1Id ? { id: String(match.player1Id), name: match.player1Name, ready: Boolean(match.player1Ready), guest: Boolean(match.player1IsGuest), bot: Boolean(match.player1IsBot) } : null,
+      player2: match.player2Id ? { id: String(match.player2Id), name: match.player2Name, ready: Boolean(match.player2Ready), guest: Boolean(match.player2IsGuest), bot: Boolean(match.player2IsBot) } : null,
     },
     votes,
     state,
@@ -198,25 +205,6 @@ async function scheduleTimer(io: Server, matchId: string) {
   timers.set(matchId, { token, deadlineTs: Date.now() + ms, handle });
 }
 
-// Legal targets for a simultaneous (duel) step, per player.
-function duelTargetsFor(state: DerivedState, role: "player1" | "player2"): string[] {
-  const step = state.currentStep;
-  const d = state.civDuel;
-  if (!step || !d) return [];
-  if (step.type === "CIV_OFFER") {
-    const own = role === "player1" ? state.offerableP1 : state.offerableP2;
-    const offered = role === "player1" ? d.offered.player1 : d.offered.player2;
-    const usedPrev = state.games.filter((g) => g.gameIndex < state.currentGameIndex).map((g) => (role === "player1" ? g.civP1 : g.civP2));
-    return own.filter((id) => !offered.includes(id) && (!step.excludeUsedCivs || !usedPrev.includes(id)));
-  }
-  if (step.type === "CIV_SNIPE_OPPONENT") {
-    const oppOffer = role === "player1" ? d.offered.player2 : d.offered.player1;
-    const mine = role === "player1" ? d.snipedBy.player1 : d.snipedBy.player2;
-    return oppOffer.filter((id) => !mine.includes(id));
-  }
-  return [];
-}
-
 async function onExpire(io: Server, matchId: string, token: string) {
   try {
     const ctx = await getCtx(matchId);
@@ -241,15 +229,11 @@ async function onExpire(io: Server, matchId: string, token: string) {
         if (c.state.currentStepIndex !== stepIdx) break; // advanced to the next step — let it get its own timer
         const role: "player1" | "player2" | null = c.state.awaiting.player1 ? "player1" : c.state.awaiting.player2 ? "player2" : null;
         if (!role) break;
-        // SYNC_CONFIRM just needs a confirm from whoever hasn't pressed yet; the
-        // duel steps draw a random legal civ from that player's targets.
-        let target: string | null;
-        if (c.state.currentStep?.type === "SYNC_CONFIRM") {
-          target = "confirm";
-        } else {
-          const opts = duelTargetsFor(c.state, role);
-          target = opts.length ? opts[Math.floor(Math.random() * opts.length)] : null;
-        }
+        // One question — "what may this seat legally submit right now" — answered
+        // in one place. It used to ask only about the duel steps, so a SIMULTANEOUS
+        // ban that ran out of clock found no target and quietly filled nothing,
+        // leaving the draft waiting on a player whose time was already up.
+        const target = botTargetFor(c.state, role);
         if (!target) break;
         const res = await applyAction(matchId, role, target);
         if (!res.ok) break;
@@ -345,9 +329,77 @@ function redactFor(payload: FullPayload, role: Role, isHost: boolean): FullPaylo
   return touched ? { ...out, state } : out;
 }
 
+// Pending bot moves, keyed by matchId — same shape as the turn timers so a state
+// change cancels a move that was queued against the old state.
+const botMoves = new Map<string, { token: string; handle: ReturnType<typeof setTimeout> }>();
+
+function clearBot(matchId: string) {
+  const b = botMoves.get(matchId);
+  if (b) clearTimeout(b.handle);
+  botMoves.delete(matchId);
+}
+
+/** Queue the practice opponent's next move, if it owes one. */
+async function scheduleBot(io: Server, matchId: string) {
+  const ctx = await getCtx(matchId);
+  if (!ctx) { clearBot(matchId); return; }
+  const { match, state } = ctx;
+  const seat = botSeatOf(match);
+  if (!seat || match.status !== "running" || state.finished) { clearBot(matchId); return; }
+
+  // Between games nobody may act until both sides acknowledge the result. The bot
+  // acknowledges too, or the draft would sit there waiting for a machine to nod.
+  const ack = await awaitingAckInfo(matchId, state);
+  const owesAck = ack ? !ack.by[seat] : false;
+  if (!owesAck && !botTargetFor(state, seat)) { clearBot(matchId); return; }
+
+  const token = owesAck ? `ack:${ack!.gameIndex}` : `${state.currentStepIndex}:${state.currentStepProgress}`;
+  const existing = botMoves.get(matchId);
+  if (existing?.token === token) return; // already queued for this exact moment
+
+  clearBot(matchId);
+  const delay = owesAck ? BOT_THINK_MS : botDelay(effectiveLimit(state, match.config));
+  const handle = setTimeout(() => { void botAct(io, matchId, token); }, delay);
+  botMoves.set(matchId, { token, handle });
+}
+
+async function botAct(io: Server, matchId: string, token: string) {
+  try {
+    botMoves.delete(matchId);
+    const ctx = await getCtx(matchId);
+    if (!ctx) return;
+    const seat = botSeatOf(ctx.match);
+    if (!seat || ctx.match.status !== "running" || ctx.state.finished) return;
+
+    if (token.startsWith("ack:")) {
+      const gameIndex = Number(token.slice(4));
+      await MatchGame.updateOne({ matchId, gameIndex }, { $set: { [`acknowledgedBy.${seat}`]: true } }, { upsert: true });
+      await broadcast(io, matchId);
+      return;
+    }
+
+    // A step can owe the same seat several submissions (offer 2, ban 2). Deliver
+    // them all for this step, then stop — the next step gets its own delay so the
+    // draft doesn't sprint past a human trying to read it.
+    const stepIdx = ctx.state.currentStepIndex;
+    for (let i = 0; i < 50; i++) {
+      const c = await getCtx(matchId);
+      if (!c || c.state.finished || c.state.currentStepIndex !== stepIdx) break;
+      const target = botTargetFor(c.state, seat);
+      if (!target) break;
+      const res = await applyAction(matchId, seat, target);
+      if (!res.ok) break;
+    }
+    await broadcast(io, matchId);
+  } catch {
+    /* a failed bot move just leaves the turn to the timer */
+  }
+}
+
 async function broadcast(io: Server, matchId: string) {
   await autoResolve(matchId);
   await scheduleTimer(io, matchId);
+  await scheduleBot(io, matchId);
   const full = await buildPayload(matchId);
   if (!full) return;
   // "Finished" was only ever derived for the live payload, never written down, so
@@ -464,9 +516,20 @@ export function registerMatchHandlers(io: Server) {
         if ((role !== "player1" && role !== "player2") || socket.data.matchId !== matchId) return;
         await dbConnect();
         // Player voting only applies in "vote" mode; in "host" mode the host calls it.
-        const m = await Match.findById(matchId).lean<{ config?: { options?: { resultMode?: string } } }>();
+        const m = await Match.findById(matchId).lean<{
+          config?: { options?: { resultMode?: string } };
+          player1IsBot?: boolean;
+          player2IsBot?: boolean;
+        }>();
         if ((m?.config?.options?.resultMode ?? "vote") !== "vote") return;
-        const game = await MatchGame.findOneAndUpdate({ matchId, gameIndex }, { $set: { [`confirmedBy.${role}`]: winner } }, { upsert: true, new: true });
+        // The bot has no game to have won or lost — nobody actually played one —
+        // so it takes the human's word for it. Whoever you say won, won; that is
+        // what makes it possible to practise a specific branch of the series.
+        const botSeat = m?.player1IsBot ? "player1" : m?.player2IsBot ? "player2" : null;
+        const votes: Record<string, string> = { [`confirmedBy.${role}`]: winner };
+        if (botSeat && botSeat !== role) votes[`confirmedBy.${botSeat}`] = winner;
+
+        const game = await MatchGame.findOneAndUpdate({ matchId, gameIndex }, { $set: votes }, { upsert: true, new: true });
         const cb = (game?.confirmedBy as Record<string, string>) ?? {};
         if (cb.player1 && cb.player1 === cb.player2) await commitResult(matchId, gameIndex, winner, false);
         await broadcast(io, matchId);
@@ -532,6 +595,35 @@ export function registerMatchHandlers(io: Server) {
         await maybeStart(matchId);
         await broadcast(io, matchId);
       } catch { /* ignore */ }
+    });
+
+    // Sit a practice opponent in an empty seat, so one person can walk a whole
+    // format through. Anyone already in the room may call it — a lone player
+    // waiting for someone who isn't coming is exactly who needs this.
+    socket.on(C2S.ADD_BOT, async ({ matchId, seat }: { matchId: string; seat: "player1" | "player2" }) => {
+      try {
+        const role = socket.data.role as Role | undefined;
+        const seated = role === "player1" || role === "player2" || socket.data.isHost;
+        if (!seated || socket.data.matchId !== matchId) return;
+        if (seat !== "player1" && seat !== "player2") return;
+        await dbConnect();
+        const m = await Match.findById(matchId);
+        // Lobby only: dropping a bot into a draft already under way would rewrite
+        // whose turn it is halfway through.
+        if (!m || m.status !== "lobby") return;
+        const idField = seat === "player1" ? "player1Id" : "player2Id";
+        if (m[idField]) { socket.emit(S2C.ERROR, { message: "That seat is taken." }); return; }
+        m[idField] = BOT_ID;
+        m[seat === "player1" ? "player1Name" : "player2Name"] = BOT_NAME;
+        m[seat === "player1" ? "player1IsBot" : "player2IsBot"] = true;
+        // It is never not ready — there is nobody to wait for.
+        m[seat === "player1" ? "player1Ready" : "player2Ready"] = true;
+        await m.save();
+        await maybeStart(matchId);
+        await broadcast(io, matchId);
+      } catch (e) {
+        socket.emit(S2C.ERROR, { message: e instanceof Error ? e.message : "Could not add a bot." });
+      }
     });
 
     socket.on(C2S.START, async ({ matchId }: { matchId: string }) => {
