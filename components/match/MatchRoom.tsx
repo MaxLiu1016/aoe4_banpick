@@ -466,7 +466,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
             {(["player1", "player2"] as const)
               .filter((seat) => (state.simultaneous ? state.awaiting[seat] : state.turn === seat))
               .map((seat) => (
-                <div key={seat} aria-hidden className={`turn-glow ${seat === "player1" ? "left-0" : "right-0"}`}
+                <div key={seat} aria-hidden className={`turn-glow fixed inset-y-0 z-10 w-[220px] ${seat === "player1" ? "left-0" : "right-0"}`}
                   style={{
                     background: `linear-gradient(to ${seat === "player1" ? "right" : "left"}, rgba(${
                       seat === "player1" ? "56,189,248" : "251,113,133"
