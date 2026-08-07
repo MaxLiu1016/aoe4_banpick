@@ -7,6 +7,8 @@ export interface SpectatorPayload {
   publicHover?: boolean;
   anonymous?: boolean;
   deadlineTs: number | null;
+  /** Seconds the current step was given, so the display can never exceed it. */
+  limitSec?: number | null;
   serverNow?: number;
   /** A decided game waiting on both players to acknowledge — the between-games beat. */
   awaitingAck?: { gameIndex: number; winner: Seat; by: { player1: boolean; player2: boolean } } | null;

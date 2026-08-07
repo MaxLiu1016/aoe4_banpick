@@ -40,7 +40,14 @@ const GRID_CIV = { gridTemplateColumns: "repeat(auto-fit, minmax(112px, 1fr))" }
 // coming back to.
 /** Shared empty set, so callers don't allocate one per render. */
 const EMPTY_IDS: Set<string> = new Set();
-const GRID_MAP = { gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" };
+const GRID_MAP = { gridTemplateColumns: "repeat(auto-fit, minmax(176px, 1fr))" };
+
+/** Frosted plate for a name laid over artwork: the picture stays a picture. */
+const GLASS: React.CSSProperties = {
+  background: "rgba(15,17,21,.42)",
+  backdropFilter: "blur(7px)",
+  WebkitBackdropFilter: "blur(7px)",
+};
 
 type Seat = { id: string; name?: string; ready?: boolean; guest?: boolean; bot?: boolean } | null;
 interface Payload {
@@ -51,6 +58,8 @@ interface Payload {
   pausable?: boolean;
   anonymous?: boolean;
   deadlineTs: number | null;
+  /** Seconds the current step was given, so the display can never exceed it. */
+  limitSec?: number | null;
   serverNow?: number;
   seats: { host: string; player1: Seat; player2: Seat };
   votes: Record<number, { player1?: string; player2?: string }>;
@@ -709,7 +718,7 @@ function OverviewBand({
               {payload.status === "paused" ? (
                 <span className="font-display text-2xl text-danger">{t("match.paused")}</span>
               ) : (
-                <BigCountdown deadlineTs={payload.deadlineTs} clockOffsetRef={clockOffsetRef}
+                <BigCountdown deadlineTs={payload.deadlineTs} limitSec={payload.limitSec} clockOffsetRef={clockOffsetRef}
                   size={focus ? 40 : 44} live={youAwaiting} />
               )}
               {/* Whose the clock belongs to, when it isn't yours. */}
@@ -783,7 +792,7 @@ function TurnStrip({ state, payload, p1Name, p2Name, map, mapName, clockOffsetRe
       {payload.status === "paused" ? (
         <span className="font-display text-2xl text-danger">{t("match.paused")}</span>
       ) : (
-        <BigCountdown deadlineTs={payload.deadlineTs} clockOffsetRef={clockOffsetRef} size={38} live={youAwaiting} />
+        <BigCountdown deadlineTs={payload.deadlineTs} limitSec={payload.limitSec} clockOffsetRef={clockOffsetRef} size={38} live={youAwaiting} />
       )}
 
       <span className="font-display text-base">
@@ -869,7 +878,7 @@ function MapLabel({ name, size = 11, dim }: { name?: string; size?: number; dim?
   return (
     <span
       className={`pointer-events-none absolute bottom-[2px] left-[2px] right-[2px] truncate rounded-b px-1 text-center font-semibold ${dim ? "text-gold-bright/60" : "text-gold-bright"}`}
-      style={{ background: "rgba(15,17,21,.42)", backdropFilter: "blur(7px)", WebkitBackdropFilter: "blur(7px)", fontSize: size, lineHeight: `${Math.round(size * 1.4)}px` }}
+      style={{ ...GLASS, fontSize: size, lineHeight: `${Math.round(size * 1.4)}px` }}
     >
       {name}
     </span>
@@ -1609,8 +1618,10 @@ function OptionToggle({ label, hint, checked, disabled, onChange }: {
  * that always shouts stops meaning anything. `live` is "this is running against
  * you", which is when it earns the pulse and the warning underneath.
  */
-function BigCountdown({ deadlineTs, clockOffsetRef, size, live }: {
+function BigCountdown({ deadlineTs, limitSec, clockOffsetRef, size, live }: {
   deadlineTs: number | null;
+  /** The step's own limit. Rounding up can otherwise show one second more. */
+  limitSec?: number | null;
   clockOffsetRef: React.RefObject<number>;
   size: number;
   /** The viewer is one of the people this clock is running against. */
@@ -1630,7 +1641,7 @@ function BigCountdown({ deadlineTs, clockOffsetRef, size, live }: {
   // Compare against the server's clock (local clock + measured offset), so the
   // displayed seconds line up with when the server actually expires the turn.
   const serverNow = now + (clockOffsetRef.current ?? 0);
-  const remain = Math.max(0, Math.ceil((deadlineTs - serverNow) / 1000));
+  const remain = clamp(Math.ceil((deadlineTs - serverNow) / 1000), limitSec);
   return (
     <>
       <span
@@ -1650,6 +1661,18 @@ function BigCountdown({ deadlineTs, clockOffsetRef, size, live }: {
 
 /** How long before the clock runs out to say what the clock running out does. */
 const AUTOPICK_WARN_SEC = 3;
+
+/**
+ * Seconds left, never more than the step was given.
+ *
+ * The deadline is the server's, corrected by an offset measured a round trip
+ * before it is used, so `ceil` can land a whole second past the limit — a
+ * 30-second ban opening on "31" and staying there for a beat.
+ */
+function clamp(remain: number, limitSec?: number | null): number {
+  const capped = limitSec && limitSec > 0 ? Math.min(remain, limitSec) : remain;
+  return Math.max(0, capped);
+}
 
 type TFn = (k: string, v?: Record<string, string | number>) => string;
 
@@ -1795,13 +1818,20 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
               <Thumb src={e.imageUrl} alt={e.name} className={`w-full ${isMap ? "aspect-[16/10] object-cover" : "aspect-square object-contain"} ${banned ? "grayscale" : ""}`} />
               {/* The name carries the state too. At this cell size the border alone
                   is a few pixels of colour, and a taken civ used to read as dead
-                  because its label looked identical to a banned one's. */}
-              <span className={`w-full truncate leading-tight ${
-                banned ? "text-muted"
-                  : isBlocked ? "font-semibold text-danger"
-                  : taken && own ? `font-semibold ${own.text}`
-                  : "text-foreground"
-              } ${isMap ? "px-2 py-1.5 text-sm" : "mt-1.5 text-xs"}`}>{e.name}</span>
+                  because its label looked identical to a banned one's.
+                  A map wears its name: the row underneath was height the picture
+                  could have had, and the map is the thing being chosen. */}
+              <span
+                className={`truncate leading-tight ${
+                  banned ? "text-muted"
+                    : isBlocked ? "font-semibold text-danger"
+                    : taken && own ? `font-semibold ${own.text}`
+                    : "text-foreground"
+                } ${isMap ? "absolute inset-x-0 bottom-0 px-2 py-1 text-center text-sm font-semibold" : "mt-1.5 w-full text-xs"}`}
+                style={isMap ? GLASS : undefined}
+              >
+                {e.name}
+              </span>
               {banned && <span className="absolute inset-0 flex items-center justify-center text-4xl text-muted/70">✕</span>}
               {taken && <span className={`absolute right-1 top-1 text-xs ${own?.text ?? "text-gold-bright"}`}>●</span>}
               {isBlocked && <span className="absolute right-1 top-1 text-xs">🚫</span>}

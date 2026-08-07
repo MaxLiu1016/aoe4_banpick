@@ -102,6 +102,11 @@ async function buildPayload(matchId: string) {
     pausable: match.config?.options?.pausable ?? true,
     anonymous: Boolean(match.config?.options?.anonymous),
     deadlineTs: live && t ? t.deadlineTs : null,
+    // What the step was actually given. The deadline alone can round up to one
+    // more than that on the client — the clock offset is measured before the
+    // payload has finished travelling — and a 30-second step is not allowed to
+    // put a 31 on screen.
+    limitSec: live && t ? effectiveLimit(state, match.config) : null,
     // Client clocks are often skewed by seconds; send our wall-clock so the
     // client can correct the offset and display a countdown that matches when
     // the server timer actually fires (otherwise buttons "die" early/late).

@@ -13,11 +13,12 @@ const STEP_WINDOW = 3;
 // The canvas is a fixed 1920x1080, so every band's height is a share of a budget
 // rather than something that can grow. Named here because they have to add up.
 const HEADER_H = 112;
-const STEPBAR_H = 66;
-// Sized down to what it can afford: the two player columns hang off the bottom
-// of this band and a 1080-tall canvas has no more room to give them.
-const HERO_H = 166;
-const CONTENT_TOP = HEADER_H + STEPBAR_H + HERO_H; // 344
+const STEPBAR_H = 60;
+// Tall enough to leave air under the map's name. The two player columns hang off
+// the bottom of this band and a 1080-tall canvas has no more room to give them,
+// so the step bar gives some of its own back.
+const HERO_H = 196;
+const CONTENT_TOP = HEADER_H + STEPBAR_H + HERO_H; // 368
 
 // Where the two player columns sit, and therefore how wide the middle is. The
 // duel needs the width far more than the columns do — the pool is not on screen
@@ -225,7 +226,7 @@ export function DraftBoard({
         </div>
         {/* The clock used to live in the top-right corner at 40px, which is where
             you look last. It is the number the whole screen is waiting on. */}
-        <Countdown deadlineTs={payload.status === "paused" ? null : payload.deadlineTs} clockOffset={clockOffset} />
+        <Countdown deadlineTs={payload.status === "paused" ? null : payload.deadlineTs} limitSec={payload.limitSec} clockOffset={clockOffset} />
       </div>
 
       {/* ---- Player columns ---- */}
@@ -490,7 +491,7 @@ function PlayerColumn({
 }
 
 /** Seconds left on the current step, on the server's clock rather than this one's. */
-function Countdown({ deadlineTs, clockOffset }: { deadlineTs: number | null; clockOffset: number }) {
+function Countdown({ deadlineTs, limitSec, clockOffset }: { deadlineTs: number | null; limitSec?: number | null; clockOffset: number }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!deadlineTs) return;
@@ -502,7 +503,10 @@ function Countdown({ deadlineTs, clockOffset }: { deadlineTs: number | null; clo
   // every tick, which on a stream reads as the page glitching.
   const box = "inline-block shrink-0 text-center font-display text-[60px] font-bold leading-none";
   if (!deadlineTs) return <span className={`${box} text-muted`} style={{ width: 168 }}>—</span>;
-  const remain = Math.max(0, Math.ceil((deadlineTs - (now + clockOffset)) / 1000));
+  // Never more than the step was given: the offset is measured a round trip
+  // before it is used, so rounding up can land a second past the limit.
+  const raw = Math.ceil((deadlineTs - (now + clockOffset)) / 1000);
+  const remain = Math.max(0, limitSec && limitSec > 0 ? Math.min(raw, limitSec) : raw);
   const urgent = remain <= 10;
   return (
     <span
