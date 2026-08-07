@@ -84,27 +84,25 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   // The panel the player acts on, and the step it was last scrolled for.
   const actionRef = useRef<HTMLDivElement>(null);
   const lastStepRef = useRef<number | null>(null);
-  // Whether the board has scrolled off the top, which is exactly when the sticky
-  // strip has something to stand in for.
-  const [scrolledPast, setScrolledPast] = useState(false);
-  const stripObserver = useRef<IntersectionObserver | null>(null);
-  // A ref callback rather than an effect: the sentinel doesn't exist until the
-  // draft is running, and an effect that ran once in the lobby would never see it.
-  const watchSentinel = useCallback((el: HTMLDivElement | null) => {
-    stripObserver.current?.disconnect();
-    stripObserver.current = null;
-    if (!el) { setScrolledPast(false); return; }
+  // How much of the board is still on screen. The rails in the margins take over
+  // once two-thirds of it has gone — late enough that they are not repeating a
+  // board you can still read, early enough to be there before you need them.
+  const [boardGone, setBoardGone] = useState(false);
+  const boardObserver = useRef<IntersectionObserver | null>(null);
+  // A ref callback rather than an effect: the board doesn't exist until the draft
+  // is running, and an effect that ran once in the lobby would never see it.
+  const watchBoard = useCallback((el: HTMLDivElement | null) => {
+    boardObserver.current?.disconnect();
+    boardObserver.current = null;
+    if (!el) { setBoardGone(false); return; }
     const io = new IntersectionObserver(
-      // A clean handoff: the strip appears the moment the end of the board goes
-      // under the step bar, and not before. The strip covers the top of the page
-      // rather than sitting in the margin, so showing it early would put a second
-      // clock directly above the one still on screen.
-      // Only upward — a sentinel below the fold means the whole page fits anyway.
-      ([e]) => setScrolledPast(!e.isIntersecting && e.boundingClientRect.top < 60),
-      { threshold: 0, rootMargin: "-60px 0px 0px 0px" }
+      // Only upward: a board taller than the window is not "gone" just because
+      // its bottom is off the fold.
+      ([e]) => setBoardGone(e.intersectionRatio < 1 / 3 && e.boundingClientRect.top < 0),
+      { threshold: [0, 1 / 3, 1] }
     );
     io.observe(el);
-    stripObserver.current = io;
+    boardObserver.current = io;
   }, []);
   // Estimated server-minus-client clock offset (ms). Set from each payload's
   // serverNow so the countdown tracks the server's real deadline, not the local
@@ -323,6 +321,16 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
 
   const civById = (id?: string) => civsView.find((c) => c.id === id);
   const mapById = (id?: string) => mapsView.find((m) => m.id === id);
+  // What the rails carry once the board is gone: each side's hand, and what they
+  // struck out. Everything else about a side is on the board or on the panel.
+  const usedP1 = new Set(state.games.map((g) => g.civP1).filter(Boolean) as string[]);
+  const usedP2 = new Set(state.games.map((g) => g.civP2).filter(Boolean) as string[]);
+  const p1Hand = state.draftedByP1.map((id) => ({ key: id, civ: civById(id), used: usedP1.has(id) }));
+  const p2Hand = state.draftedByP2.map((id) => ({ key: id, civ: civById(id), used: usedP2.has(id) }));
+  const p1Banned = state.civBans.filter((b) => b.by === "player1").map((b) => ({ key: b.id, civ: civById(b.id) }));
+  const p2Banned = state.civBans.filter((b) => b.by === "player2").map((b) => ({ key: b.id, civ: civById(b.id) }));
+  const p1MapBans = mapsView.filter((m) => m.state === "banned" && m.by === "player1").map((m) => ({ key: m.id, civ: m }));
+  const p2MapBans = mapsView.filter((m) => m.state === "banned" && m.by === "player2").map((m) => ({ key: m.id, civ: m }));
   // Civs the opponent closed off against YOU specifically. A ban with "opponent"
   // scope never changes the civ's global state — it is still the banner's to take —
   // so the pool grid had no way of knowing it was dead to you, and drew it exactly
@@ -348,7 +356,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           about, which is also what the page scrolls to — so by the time the board
           has gone, everything the strip was carrying is already in front of you. */}
       <div className="sticky top-0 z-30 -mx-4 bg-background/95 backdrop-blur">
-        {SHOW_TURN_STRIP && scrolledPast && !state.finished && payload!.status === "running" && (
+        {SHOW_TURN_STRIP && boardGone && !state.finished && payload!.status === "running" && (
           <TurnStrip
             state={state} payload={payload!} p1Name={p1Name} p2Name={p2Name}
             map={mapById(currentMap)} mapName={currentMapName} clockOffsetRef={clockOffsetRef}
@@ -361,6 +369,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
 
       {error && <div className="rounded border border-danger/60 bg-danger/10 px-4 py-2 text-sm text-danger">{error}</div>}
 
+      <div ref={watchBoard}>
       <OverviewBand
         state={state} payload={payload!} focus={poolStep} you={you}
         youAwaiting={!spectator && !!youPlayer && state.awaiting[youPlayer] && payload!.status === "running" && !ackPending && !inGame}
@@ -374,6 +383,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         onPause={() => emit(C2S.PAUSE, { matchId, paused: payload!.status !== "paused" })}
         t={t}
       />
+      </div>
 
       {/* Between-games gate: hold the clock until both players acknowledge the result */}
       {payload!.awaitingAck && !state.finished && (
@@ -409,9 +419,23 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           document.body
         )}
 
-      {/* Marks the end of the board. Once it passes the top of the window the
-          sticky strip takes over carrying the clock and the map. */}
-      <div ref={watchSentinel} aria-hidden className="h-px" />
+      {/* Portalled to <body> on purpose. The page wrapper animates on every route
+          change with fill-mode both, so it keeps a transform after the animation
+          ends — and a transformed ancestor becomes the containing block for
+          position:fixed, which pinned these to the middle of the whole document
+          instead of the middle of the window.
+          Mounting only once the board has gone also keeps the server render empty,
+          so there is no hydration mismatch from touching `document` here. */}
+      {boardGone && !state.finished &&
+        createPortal(
+          <>
+            <ContextRail side="player1" name={p1Name} hand={p1Hand} handLeft={p1Hand.filter((h) => !h.used).length}
+              bans={p1Banned} mapBans={p1MapBans} t={t} />
+            <ContextRail side="player2" name={p2Name} hand={p2Hand} handLeft={p2Hand.filter((h) => !h.used).length}
+              bans={p2Banned} mapBans={p2MapBans} t={t} />
+          </>,
+          document.body
+        )}
 
       {/* Everything you actually act on, under one anchor. The board above carries
           whose turn it is and how long is left, so what is left down here is the
@@ -1009,6 +1033,89 @@ function SeatName({ seat, name, you, occupied, crowned, acting, canTake, needsNa
       <span className={`truncate font-display text-base ${OWNER[seat].text} ${acting ? "underline decoration-gold decoration-2 underline-offset-4" : ""}`}>{name}</span>
       {you === seat && <span className="text-[10px] text-muted">({t("match.you")})</span>}
     </div>
+  );
+}
+
+function RailTile({ entry, kind, dim, struck }: {
+  entry?: PoolView;
+  kind: "civ" | "map";
+  dim?: boolean;
+  struck?: boolean;
+}) {
+  return (
+    <span className="relative block" title={entry?.name}>
+      {/* Civs get a square: a flag letterboxed into a 16:10 box was mostly box. */}
+      <Thumb
+        src={entry?.imageUrl}
+        alt={entry?.name ?? ""}
+        className={`w-full rounded bg-surface-2/60 ${kind === "civ" ? "aspect-square object-contain" : "aspect-[16/10] object-cover"} ${
+          struck ? "border border-[rgba(154,145,125,.45)] grayscale" : dim ? "opacity-40 grayscale" : ""
+        }`}
+      />
+      {struck && <span className="absolute left-0 right-0 top-1/2 h-0.5 -translate-y-1/2 bg-danger" />}
+    </span>
+  );
+}
+
+function RailGroup({ label, tone, cols, children }: { label: string; tone: string; cols: number; children: React.ReactNode }) {
+  return (
+    <>
+      <div className={`mt-2 text-[9px] uppercase tracking-wide ${tone}`}>{label}</div>
+      <div className="mt-1 grid gap-1" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>{children}</div>
+    </>
+  );
+}
+
+/**
+ * Who holds what, in the margin, once the board has gone.
+ *
+ * Not the map and not the clock — those live on the panel being acted on now, and
+ * a second copy of them in the corner of the eye is one place too many to look.
+ * What the board alone knows is each side's hand and what they struck out, and
+ * that is what stays behind when it scrolls away.
+ *
+ * Only where there is margin to put it: below 2xl the content runs to the edges
+ * and a rail would sit on top of the pool.
+ */
+function ContextRail({
+  side, name, hand, handLeft, bans, mapBans, t,
+}: {
+  side: "player1" | "player2";
+  name: string;
+  hand: { key: string; civ?: PoolView; used?: boolean }[];
+  handLeft: number;
+  bans: { key: string; civ?: PoolView }[];
+  mapBans: { key: string; civ?: PoolView }[];
+  t: TFn;
+}) {
+  const own = OWNER[side];
+  const left = side === "player1";
+  if (hand.length === 0 && bans.length === 0 && mapBans.length === 0) return null;
+  return (
+    <aside
+      aria-hidden
+      className={`fade-in pointer-events-none fixed top-1/2 z-20 hidden max-h-[80vh] w-[148px] -translate-y-1/2 overflow-y-auto rounded-xl border border-border bg-surface/85 p-2.5 backdrop-blur-sm 2xl:block ${
+        left ? "left-4" : "right-4"
+      }`}
+    >
+      <div className={`truncate border-b pb-1 font-display text-sm ${own.text} ${own.border}`}>{name}</div>
+
+      {hand.length > 0 && (
+        <RailGroup label={t("spec.hand", { n: handLeft })} tone={own.text} cols={3}>
+          {hand.map((h) => <RailTile key={h.key} entry={h.civ} kind="civ" dim={h.used} />)}
+        </RailGroup>
+      )}
+      {bans.length > 0 && (
+        <RailGroup label={t("spec.civsBanned")} tone="text-danger" cols={4}>
+          {bans.map((b) => <RailTile key={b.key} entry={b.civ} kind="civ" struck />)}
+        </RailGroup>
+      )}
+      {mapBans.length > 0 && (
+        <RailGroup label={t("spec.mapsBanned")} tone="text-muted" cols={2}>
+          {mapBans.map((b) => <RailTile key={b.key} entry={b.civ} kind="map" struck />)}
+        </RailGroup>
+      )}
+    </aside>
   );
 }
 
