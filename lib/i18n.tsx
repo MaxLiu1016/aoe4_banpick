@@ -183,6 +183,13 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "match.currentMap": { en: "Current map:", zh: "本局地圖：", ja: "このゲームのマップ：" },
   "match.maps": { en: "Maps", zh: "地圖", ja: "マップ" },
   "match.civs": { en: "Civilizations", zh: "文明", ja: "文明" },
+  // Pool legend. Four states, and the third one only exists because a ban can be
+  // aimed at one player: the civ stays live for whoever banned it.
+  "match.legendAvailable": { en: "Open", zh: "還能選", ja: "選択可能" },
+  "match.legendBanned": { en: "Banned", zh: "已禁用", ja: "禁止済み" },
+  "match.legendBlocked": { en: "Closed to you", zh: "對你封鎖", ja: "あなたには禁止" },
+  "match.legendTaken": { en: "Taken", zh: "已被選走", ja: "取得済み" },
+  "match.blockedHint": { en: "{name} — your opponent banned this against you. They can still take it.", zh: "{name} —— 對手把這張對你封鎖了，他自己還能選", ja: "{name} —— 相手があなたに対して禁止しました。相手はまだ選べます" },
   "match.handP1": { en: "Player 1 · civ pool", zh: "玩家 1 · 文明池", ja: "プレイヤー 1 · 文明プール" },
   "match.handP2": { en: "Player 2 · civ pool", zh: "玩家 2 · 文明池", ja: "プレイヤー 2 · 文明プール" },
   "match.mapsP1": { en: "Player 1 · map pool", zh: "玩家 1 · 地圖池", ja: "プレイヤー 1 · マッププール" },

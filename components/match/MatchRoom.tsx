@@ -303,6 +303,14 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const usedP2 = new Set(state.games.map((g) => g.civP2).filter(Boolean) as string[]);
   const p1Hand = state.draftedByP1.map((id) => ({ key: id, civ: civById(id), used: usedP1.has(id) }));
   const p2Hand = state.draftedByP2.map((id) => ({ key: id, civ: civById(id), used: usedP2.has(id) }));
+  // Civs the opponent closed off against YOU specifically. A ban with "opponent"
+  // scope never changes the civ's global state — it is still the banner's to take —
+  // so the pool grid had no way of knowing it was dead to you, and drew it exactly
+  // like an open civ. Every EGC ban is this kind, which is why "banned" and "still
+  // available" were indistinguishable in the format that leans on them hardest.
+  const blockedForMe = opp
+    ? state.civBans.filter((b) => b.scope === "opponent" && b.by === opp).map((b) => b.id)
+    : [];
   // Civs each player banned (any scope — pool or opponent).
   const p1Banned = state.civBans.filter((b) => b.by === "player1").map((b) => ({ key: b.id, civ: civById(b.id), banned: true }));
   const p2Banned = state.civBans.filter((b) => b.by === "player2").map((b) => ({ key: b.id, civ: civById(b.id), banned: true }));
@@ -566,6 +574,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
       {showCivs && (
         <Pool title={t("match.civs")} entries={civsView} clickable={clickable} onPick={act}
           pendingIds={simulBan ? myPendingBans : undefined}
+          blockedIds={blockedForMe}
           oppHover={oppHover} onHover={(id) => sendHover("civ", id)}
           tone={step?.type === "CIV_BAN" ? "ban" : "pick"} />
       )}
@@ -1460,15 +1469,29 @@ function SeatCard({ label, seat, role, you, turn, score, canTake, onTake, right,
   );
 }
 
-function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightSelectable, pendingIds, kind = "civ", tone = "neutral" }: {
+function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightSelectable, pendingIds, blockedIds, kind = "civ", tone = "neutral" }: {
   title: string; entries: PoolView[]; clickable: (e: PoolView) => boolean; onPick: (id: string) => void;
   onHover: (id: string | null) => void; oppHover: string | null; highlightSelectable?: string[]; kind?: "civ" | "map";
   /** Your own not-yet-revealed simultaneous bans — shown only to you. */
   pendingIds?: string[];
+  /** Entries the opponent banned against you alone: dead to you, still theirs to take. */
+  blockedIds?: string[];
   tone?: "ban" | "pick" | "neutral";
 }) {
+  const { t } = useI18n();
   const isMap = kind === "map";
   const pending = new Set(pendingIds ?? []);
+  const blocked = new Set(blockedIds ?? []);
+  // Which of the four states this pool actually contains. A legend that lists a
+  // state nothing on screen is in teaches nothing and costs a line of noise —
+  // most formats ban globally and never produce a "closed to you" entry at all.
+  const has = { open: false, banned: false, blocked: false, taken: false };
+  for (const e of entries) {
+    if (e.state === "banned") has.banned = true;
+    else if (e.state === "picked" || e.state === "drafted") has.taken = true;
+    else if (blocked.has(e.id)) has.blocked = true;
+    else has.open = true;
+  }
   return (
     <section className="aoe-panel rounded-xl p-4">
       <h3 className="mb-3 font-display text-sm uppercase tracking-wide text-muted">{title}</h3>
@@ -1482,6 +1505,7 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
           const taken = e.state === "picked" || e.state === "drafted";
           const own = taken ? ownerOf(e.by) : null;
           const isPending = pending.has(e.id);
+          const isBlocked = !banned && !taken && blocked.has(e.id);
           return (
             <button
               key={e.id}
@@ -1500,6 +1524,13 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
                   // step used to overwrite this, so during "loser picks the map" the
                   // maps each player had picked looked unavailable rather than theirs.
                   : taken ? (own ? `${own.border} ${own.bg}` : "border-bronze bg-surface-2")
+                  // Closed to you alone. Deliberately NOT the greyed-out ban look:
+                  // this civ is still live, just not for you, and drawing it as dead
+                  // stock would misreport what the opponent can still field.
+                  // Dashed, because solid red is spoken for: in this app a colour is
+                  // an owner, and a solid red border means "player 2 holds this".
+                  // The dash is what says the border is a barrier, not a claim.
+                  : isBlocked ? "border-dashed border-danger bg-danger/[.08]"
                   : "border-bronze bg-surface-2",
                 // Select step: light up what may actually be chosen, dim the rest.
                 // Runs after the ownership colours so it adds to them, not over them.
@@ -1515,7 +1546,10 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
                               // cursor, and can't be mistaken for "this is P2's".
                               ? "cursor-pointer hover:border-danger hover:bg-danger/10"
                               : "cursor-pointer hover:border-gold hover:bg-surface-2")
-                           : "opacity-50")
+                           // A blocked entry keeps its colour: the fade is how "not
+                           // your turn" is said, and saying it here would collapse
+                           // two different reasons you can't click into one look.
+                           : isBlocked ? "" : "opacity-50")
                     : "",
                 // Your own pending simultaneous ban — locked in, not yet revealed.
                 isPending ? "border-gold ring-2 ring-gold bg-gold/10 saturate-50" : "",
@@ -1523,18 +1557,56 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
                   ? (tone === "ban" ? "ring-2 ring-danger bg-danger/20" : "ring-2 ring-gold-bright bg-gold/10")
                   : "",
               ].join(" ")}
-              title={e.name}
+              title={isBlocked ? t("match.blockedHint", { name: e.name }) : e.name}
             >
               <Thumb src={e.imageUrl} alt={e.name} className={`w-full ${isMap ? "aspect-[16/10] object-cover" : "aspect-square object-contain"} ${banned ? "grayscale" : ""}`} />
-              <span className={`w-full truncate leading-tight ${banned ? "text-muted" : "text-foreground"} ${isMap ? "px-2 py-1.5 text-sm" : "mt-1.5 text-xs"}`}>{e.name}</span>
+              {/* The name carries the state too. At this cell size the border alone
+                  is a few pixels of colour, and a taken civ used to read as dead
+                  because its label looked identical to a banned one's. */}
+              <span className={`w-full truncate leading-tight ${
+                banned ? "text-muted"
+                  : isBlocked ? "font-semibold text-danger"
+                  : taken && own ? `font-semibold ${own.text}`
+                  : "text-foreground"
+              } ${isMap ? "px-2 py-1.5 text-sm" : "mt-1.5 text-xs"}`}>{e.name}</span>
               {banned && <span className="absolute inset-0 flex items-center justify-center text-4xl text-muted/70">✕</span>}
               {taken && <span className={`absolute right-1 top-1 text-xs ${own?.text ?? "text-gold-bright"}`}>●</span>}
+              {isBlocked && <span className="absolute right-1 top-1 text-xs">🚫</span>}
               {isPending && <span className="absolute left-1 top-1 text-sm text-gold-bright">🔒</span>}
             </button>
           );
         })}
       </div>
+
+      {/* Four states is one more than anybody wants to infer from colour alone,
+          and the newest of them ("closed to you") has no equivalent anywhere else
+          in the app. Only the states actually present get a row. */}
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[11px] text-muted">
+        {has.open && <LegendItem swatch="border-bronze bg-surface-2" label={t("match.legendAvailable")} />}
+        {has.banned && <LegendItem swatch="border-border bg-surface-2 opacity-60 saturate-0" label={t("match.legendBanned")} />}
+        {has.blocked && <LegendItem swatch="border-dashed border-danger bg-danger/20" label={t("match.legendBlocked")} />}
+        {has.taken && (
+          <span className="inline-flex items-center gap-1.5">
+            {/* Two swatches, one label: "taken" has no colour of its own — the
+                colour IS which player took it. */}
+            <span className="inline-flex gap-0.5">
+              <span className={`inline-block h-3 w-3 rounded-sm border-2 ${OWNER.player1.border} ${OWNER.player1.bg}`} />
+              <span className={`inline-block h-3 w-3 rounded-sm border-2 ${OWNER.player2.border} ${OWNER.player2.bg}`} />
+            </span>
+            {t("match.legendTaken")}
+          </span>
+        )}
+      </div>
     </section>
+  );
+}
+
+function LegendItem({ swatch, label }: { swatch: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className={`inline-block h-3 w-3 rounded-sm border-2 ${swatch}`} />
+      {label}
+    </span>
   );
 }
 
