@@ -68,8 +68,13 @@ export interface DerivedState {
    * Every step in order, flattened for the progress bar so players can see the
    * whole flow and where they are in it. `actor` is null for simultaneous steps
    * (nobody owns them) and for LOSER/WINNER steps whose game hasn't resolved.
+   *
+   * `count` is how many entries the step asks for, and it is here so the board can
+   * reserve the slots a player will end up filling. Without it the pick band grows
+   * a tile at a time and shoves everything below it down the page — which happens
+   * to be exactly when the player is reaching for the pool.
    */
-  stepBar: { type: string; label: string; gameIndex: number; actor: SeatRole | null }[];
+  stepBar: { type: string; label: string; gameIndex: number; actor: SeatRole | null; count: number }[];
   /** True when the current step is a simultaneous (hidden) duel step. */
   simultaneous: boolean;
   /**
@@ -459,6 +464,7 @@ export function deriveState(
     label: s.label || (s.type as string),
     gameIndex: gameOf[i],
     actor: isSimultaneousStep(s) ? null : resolveActor(s, gameOf[i], games),
+    count: s.count,
   }));
 
   // Normally the series ends the moment one side is mathematically safe. With

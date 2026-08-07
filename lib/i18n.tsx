@@ -216,6 +216,10 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "match.colMap": { en: "Map", zh: "地圖", ja: "マップ" },
   "match.colWinner": { en: "Winner", zh: "勝方", ja: "勝者" },
   // turn labels
+  // The board says whose turn it is by pointing at them, so the label is a lead-in
+  // to a name rather than a sentence about one.
+  "turn.now": { en: "Now:", zh: "輪到", ja: "手番：" },
+  "turn.simultaneous": { en: "Both at once", zh: "雙方同時", ja: "両者同時" },
   "turn.offerBoth": { en: "Both players: secretly pick civs to field", zh: "雙方：秘密選文明出戰", ja: "両プレイヤー：出場する文明を秘密裏に選択" },
   "turn.snipeBoth": { en: "Both players: secretly snipe opponent", zh: "雙方：秘密狙擊對手", ja: "両プレイヤー：相手を秘密裏にスナイプ" },
   "turn.confirmBoth": { en: "Waiting for both players to confirm", zh: "等待雙方確認", ja: "両プレイヤーの確認待ち" },
