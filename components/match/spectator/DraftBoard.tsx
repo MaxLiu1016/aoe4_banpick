@@ -5,7 +5,7 @@ import { Thumb } from "@/components/Thumb";
 import { useI18n } from "@/lib/i18n";
 import type { DerivedState, PoolView } from "@/lib/draft/engine";
 import { CivDuelPanel, LockRow } from "./CivDuel";
-import { OWNER, OWNER_RGB, seatNames, type Seat, type SpectatorPayload } from "./types";
+import { OWNER, OWNER_RGB, other, seatNames, type Seat, type SpectatorPayload } from "./types";
 
 /** Steps either side of the current one to keep on screen. */
 const STEP_WINDOW = 3;
@@ -117,24 +117,33 @@ export function DraftBoard({
         }}
       >
         <div className="min-w-0">
-          <div className="truncate font-display text-[22px] font-semibold leading-tight text-foreground">{roomName}</div>
-          <div className="mt-0.5 font-sans text-[15px] font-semibold tracking-[.18em] text-muted">
+          <div className="truncate font-display text-[27px] font-semibold leading-tight text-foreground">{roomName}</div>
+          <div className="mt-1 font-sans text-[17px] font-semibold tracking-[.18em] text-muted">
             {t("spec.format", { n: state.bestOf, g: state.currentGameIndex + 1 })}
           </div>
-          {/* Games already played. They used to have a strip across the bottom of
-              the board; up here they cost nothing and give the pool its height. */}
+          {/* Games already played: what each side fielded and who took it. They
+              used to have a strip across the bottom of the board; up here they
+              cost nothing and give the pool its height back. */}
           {decided.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2.5">
               {decided.map((g) => {
                 const w = g.winner as Seat;
+                const civ = (seat: Seat) => civById.get((seat === "player1" ? g.civP1 : g.civP2) ?? "");
+                const won = civ(w), lost = civ(other(w));
                 return (
-                  <span key={g.gameIndex} className="flex items-center gap-1.5 rounded-md px-2 py-0.5"
-                    style={{ border: "1px solid rgba(58,51,38,.9)", background: "rgba(32,36,45,.5)" }}>
-                    <span className="font-sans text-[13px] font-semibold tracking-[.1em] text-muted">G{g.gameIndex + 1}</span>
-                    <Thumb src={civById.get(w === "player1" ? g.civP1 ?? "" : g.civP2 ?? "")?.imageUrl} alt=""
-                      className="h-[22px] w-[22px] object-contain" />
-                    <span className="max-w-[110px] truncate font-sans text-[13px] font-semibold" style={{ color: OWNER[w] }}>
-                      {names[w]}
+                  <span key={g.gameIndex} className="flex items-center gap-1.5 rounded-md px-2 py-1"
+                    style={{ border: `1px solid ${OWNER[w]}`, background: `rgba(${OWNER_RGB[w]},.1)` }}>
+                    <span className="font-sans text-[16px] font-semibold tracking-[.08em]" style={{ color: OWNER[w] }}>
+                      G{g.gameIndex + 1}
+                    </span>
+                    <span className="relative shrink-0" title={won?.name}>
+                      <Thumb src={won?.imageUrl} alt={won?.name ?? ""} className="h-[30px] w-[30px] object-contain" />
+                      <span className="absolute -right-1.5 -top-2 text-[13px] leading-none">👑</span>
+                    </span>
+                    <span className="font-sans text-[12px] text-muted">vs</span>
+                    <span className="shrink-0" title={lost?.name}>
+                      <Thumb src={lost?.imageUrl} alt={lost?.name ?? ""}
+                        className="h-[30px] w-[30px] object-contain opacity-45 grayscale" />
                     </span>
                   </span>
                 );
@@ -316,10 +325,14 @@ function HeroMap({ map, t }: { map?: PoolView; t: (k: string, p?: Record<string,
 }
 
 /** A map's name, laid over the bottom of its own picture — the column has no
- *  height to spare for a caption underneath, and an unnamed map is a texture. */
+ *  height to spare for a caption underneath, and an unnamed map is a texture.
+ *
+ *  Held inside the frame rather than flush to the edge: the frame is what says
+ *  whose map this is, and a label sitting on top of it cuts the bottom out of
+ *  the one border on the tile that carries meaning. */
 function MapName({ name, dim }: { name: string; dim?: boolean }) {
   return (
-    <span className={`absolute inset-x-0 bottom-0 truncate rounded-b-md px-1 text-center font-sans text-[12px] font-semibold leading-[16px] ${dim ? "text-gold-bright/70" : "text-gold-bright"}`}
+    <span className={`absolute bottom-[2px] left-[2px] right-[2px] truncate rounded-b-[5px] px-1 text-center font-sans text-[12px] font-semibold leading-[16px] ${dim ? "text-gold-bright/70" : "text-gold-bright"}`}
       style={{ background: "rgba(15,17,21,.78)" }}>
       {name}
     </span>
@@ -480,13 +493,17 @@ function Countdown({ deadlineTs, clockOffset }: { deadlineTs: number | null; clo
     const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
   }, [deadlineTs]);
-  if (!deadlineTs) return <span className="shrink-0 font-display text-[60px] font-bold leading-none text-muted">—</span>;
+  // Fixed width, because Cinzel has no tabular figures and a 1 is narrower than
+  // a 4 — without it the heading and the map beside the clock shuffle sideways on
+  // every tick, which on a stream reads as the page glitching.
+  const box = "inline-block shrink-0 text-center font-display text-[60px] font-bold leading-none";
+  if (!deadlineTs) return <span className={`${box} text-muted`} style={{ width: 168 }}>—</span>;
   const remain = Math.max(0, Math.ceil((deadlineTs - (now + clockOffset)) / 1000));
   const urgent = remain <= 10;
   return (
     <span
-      className={`shrink-0 font-display text-[60px] font-bold leading-none tabular-nums ${urgent ? "ovl-pulse" : ""}`}
-      style={{ color: urgent ? undefined : "var(--gold-bright)" }}
+      className={`${box} ${urgent ? "ovl-pulse" : ""}`}
+      style={{ width: 168, color: urgent ? undefined : "var(--gold-bright)" }}
     >
       {Math.floor(remain / 60)}:{String(remain % 60).padStart(2, "0")}
     </span>

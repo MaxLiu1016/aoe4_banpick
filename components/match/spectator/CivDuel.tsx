@@ -108,12 +108,12 @@ export function CivDuelPanel({
           from={cards.player1.length} revealIndex={revealIndex} names={names} state={state} t={t}
         />
       </div>
-      {(sniping || hidden) && (
-        // Said out loud, because "why can't I see it?" is the first thing a viewer
-        // asks and the answer is the point of the phase.
-        <div className="mt-7 text-center font-sans text-[16px] text-muted">
-          {t(sniping ? "spec.snipeHidden" : "spec.hiddenOffer")}
-        </div>
+      {hidden && (
+        // Said out loud for the offer, because "why can't I see it?" is the first
+        // thing a viewer asks and the answer is the point of the phase. The snipe
+        // says it for itself: two hands already face-up, and nothing happening to
+        // them yet.
+        <div className="mt-7 text-center font-sans text-[16px] text-muted">{t("spec.hiddenOffer")}</div>
       )}
     </div>
   );

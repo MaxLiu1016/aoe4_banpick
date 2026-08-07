@@ -409,10 +409,10 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         {step && !state.finished && (
           <div className="flex items-center justify-center gap-4">
             {currentMap && step.type !== "GAME_RESULT" && (
-              <div className="flex w-[146px] shrink-0 flex-col items-center">
+              <div className="relative shrink-0" style={{ width: 176, height: 110 }}>
                 <Thumb src={mapById(currentMap)?.imageUrl} alt={currentMapName ?? ""}
-                  className="h-[91px] w-[146px] rounded-md border-2 border-gold bg-surface-2 object-cover" />
-                <span className="w-full truncate text-center font-display text-sm leading-tight text-gold-bright">{currentMapName}</span>
+                  className="h-full w-full rounded-md border-2 border-gold bg-surface-2 object-cover" />
+                <MapLabel name={currentMapName} size={14} />
               </div>
             )}
             <p className={`font-display text-xl aoe-gold-text ${currentMap ? "text-left" : "text-center"}`}>
@@ -639,7 +639,7 @@ function OverviewBand({
                 slots={reserved("MAP_PICK", s)} played={played} mapById={mapById} focus={focus} />
             ))}
             {neutral.map((id) => (
-              <BandTile key={id} entry={mapById(id)} kind="map" ring="border-bronze" h={focus ? 46 : 55} w={focus ? 74 : 88} />
+              <BandTile key={id} entry={mapById(id)} kind="map" ring="border-bronze" h={focus ? 58 : 70} w={focus ? 93 : 112} />
             ))}
           </>
         )}
@@ -682,7 +682,7 @@ function OverviewBand({
               </TileRow>
               <TileRow align={left ? "right" : "left"}>
                 {state.maps.filter((m) => m.state === "banned" && m.by === s).map((m) => (
-                  <BandTile key={m.id} entry={m} kind="map" ring="border-[rgba(154,145,125,.45)]" h={46} w={74} struck />
+                  <BandTile key={m.id} entry={m} kind="map" ring="border-[rgba(154,145,125,.45)]" h={58} w={93} struck />
                 ))}
               </TileRow>
             </div>
@@ -774,9 +774,9 @@ function TurnStrip({ state, payload, p1Name, p2Name, map, mapName, clockOffsetRe
       {/* The map this is all for. Big, because a civ pick made against the wrong
           map is the one mistake this whole screen exists to prevent. */}
       {map && (
-        <div className="flex w-[104px] shrink-0 flex-col items-center">
-          <Thumb src={map.imageUrl} alt={map.name} className="h-[46px] w-[74px] rounded border-2 border-gold bg-surface-2 object-cover" />
-          <span className="w-full truncate text-center text-[11px] leading-tight text-gold-bright">{mapName}</span>
+        <div className="relative shrink-0" style={{ width: 92, height: 58 }}>
+          <Thumb src={map.imageUrl} alt={map.name} className="h-full w-full rounded border-2 border-gold bg-surface-2 object-cover" />
+          <MapLabel name={mapName} size={10} />
         </div>
       )}
 
@@ -801,7 +801,7 @@ function GameCell({ game, current, map, names, focus, t }: {
   names: { player1: string; player2: string }; focus: boolean; t: TFn;
 }) {
   const won = game.winner ?? null;
-  const w = focus ? (current ? 84 : 64) : 124;
+  const w = focus ? (current ? 100 : 78) : 150;
   const h = Math.round(w * 0.62);
   // No map yet is the normal state for every game but the first: the loser of the
   // previous one picks it, and that has not happened. A dashed box says "not yet"
@@ -820,10 +820,9 @@ function GameCell({ game, current, map, names, focus, t }: {
         won ? tone!.border : current ? "border-gold ovl-glow" : "border-border"
       }`} style={{ width: w, height: h, opacity: won ? 0.75 : 1 }}>
         <Thumb src={map?.imageUrl} alt={map?.name ?? ""} className="h-full w-full object-cover" />
+        <MapLabel name={map?.name} size={focus ? 10 : 12} dim={Boolean(won)} />
         {won && <span className="absolute right-0.5 top-0 text-[11px] leading-tight">👑</span>}
       </div>
-      {/* The map is named at every size, focused or not. */}
-      <span className="w-full truncate text-center text-[11px] leading-tight text-gold-bright">{map?.name}</span>
       <span className={`w-full truncate text-center text-[10px] leading-tight ${
         won ? tone!.text : current ? "text-gold-bright" : "text-muted"
       }`}>
@@ -840,7 +839,7 @@ function MapPoolSeg({ seat, ids, slots, played, mapById, focus }: {
 }) {
   const total = Math.max(slots, ids.length);
   if (total === 0) return null;
-  const h = focus ? 46 : 55, w = focus ? 74 : 88;
+  const h = focus ? 58 : 70, w = focus ? 93 : 112;
   return (
     <div className="flex items-start gap-1">
       {Array.from({ length: total }, (_, i) => {
@@ -857,6 +856,26 @@ function TileRow({ align, children }: { align: "left" | "right"; children: React
   return <div className={`flex flex-wrap gap-1.5 ${align === "right" ? "justify-end" : "justify-start"}`}>{children}</div>;
 }
 
+/**
+ * A map's name, on the map.
+ *
+ * Under the picture it costs a line of height everywhere it appears, and those
+ * lines add up to the reason every map on this page was small. Over the picture
+ * it costs nothing, so each one grows by exactly the caption it used to carry.
+ * Inset by the border: the frame is what says whose map this is.
+ */
+function MapLabel({ name, size = 11, dim }: { name?: string; size?: number; dim?: boolean }) {
+  if (!name) return null;
+  return (
+    <span
+      className={`pointer-events-none absolute bottom-[2px] left-[2px] right-[2px] truncate rounded-b px-1 text-center font-semibold ${dim ? "text-gold-bright/60" : "text-gold-bright"}`}
+      style={{ background: "rgba(15,17,21,.78)", fontSize: size, lineHeight: `${Math.round(size * 1.4)}px` }}
+    >
+      {name}
+    </span>
+  );
+}
+
 function BandTile({ entry, kind, ring, h, w, dim, struck, pop, title }: {
   entry?: PoolView; kind: "civ" | "map"; ring: string; h: number; w: number;
   dim?: boolean; struck?: boolean; pop?: boolean; title?: string;
@@ -870,20 +889,12 @@ function BandTile({ entry, kind, ring, h, w, dim, struck, pop, title }: {
       {struck && <span className="absolute left-0 right-0 top-1/2 h-0.5 -translate-y-1/2 bg-danger" />}
     </div>
   );
-  // Every map says its name. Civ flags are their own labels — you know Mongols by
-  // the blue — but a top-down screenshot of terrain is not, and at these sizes an
-  // unlabelled map is a texture. Scaled to the tile so a 36px ban and a 48px pick
-  // are both readable rather than both 11px.
-  if (kind === "civ") {
-    return <div className="relative shrink-0" style={{ width: w, height: h }} title={title ?? entry?.name}>{img}</div>;
-  }
+  // Every map says its name; a civ flag is its own label. The name rides on the
+  // picture, so the picture gets the height the caption used to take.
   return (
-    <div className="flex shrink-0 flex-col items-center" style={{ width: w }} title={title ?? entry?.name}>
+    <div className="relative shrink-0" style={{ width: w, height: h }} title={title ?? entry?.name}>
       {img}
-      <span className={`w-full truncate text-center leading-tight ${struck || dim ? "text-gold-bright/55" : "text-gold-bright"}`}
-        style={{ fontSize: Math.max(9, Math.round(h * 0.24)) }}>
-        {entry?.name}
-      </span>
+      {kind === "map" && <MapLabel name={entry?.name} size={Math.max(9, Math.round(h * 0.19))} dim={struck || dim} />}
     </div>
   );
 }
@@ -1612,7 +1623,10 @@ function BigCountdown({ deadlineTs, clockOffsetRef, size, live }: {
     const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
   }, [deadlineTs]);
-  if (!deadlineTs) return <span className="font-display text-muted" style={{ fontSize: size * 0.55 }}>—</span>;
+  // A fixed box for the same reason the broadcast clock has one: the display font
+  // has no tabular figures, so a changing digit count nudges everything beside it.
+  const w = size * 1.9;
+  if (!deadlineTs) return <span className="inline-block text-center font-display text-muted" style={{ fontSize: size * 0.55, width: w }}>—</span>;
   // Compare against the server's clock (local clock + measured offset), so the
   // displayed seconds line up with when the server actually expires the turn.
   const serverNow = now + (clockOffsetRef.current ?? 0);
@@ -1620,8 +1634,8 @@ function BigCountdown({ deadlineTs, clockOffsetRef, size, live }: {
   return (
     <>
       <span
-        className={`font-display leading-none tabular-nums ${live ? "text-gold-bright" : "text-muted"} ${live && remain <= 10 ? "ovl-pulse" : ""}`}
-        style={{ fontSize: size }}
+        className={`inline-block text-center font-display leading-none ${live ? "text-gold-bright" : "text-muted"} ${live && remain <= 10 ? "ovl-pulse" : ""}`}
+        style={{ fontSize: size, width: w }}
       >
         {remain}
       </span>
@@ -1867,10 +1881,12 @@ function VersusBanner({ game, p1Name, p2Name, civById, mapById }: {
         <div className="flex flex-col items-center">
           <div className="font-display text-3xl aoe-gold-text drop-shadow">VS</div>
           {map && (
-            <Thumb src={map.imageUrl} alt={map.name}
-              className="mt-2 h-[86px] w-[138px] rounded-md border-2 border-gold bg-surface-2 object-cover" />
+            <div className="relative mt-2" style={{ width: 168, height: 105 }}>
+              <Thumb src={map.imageUrl} alt={map.name}
+                className="h-full w-full rounded-md border-2 border-gold bg-surface-2 object-cover" />
+              <MapLabel name={map.name} size={13} />
+            </div>
           )}
-          <div className="mt-1 font-display text-sm text-gold-bright">{map?.name ?? ""}</div>
         </div>
         <Side name={p2Name} civ={c2} tone="rose" won={game?.winner === "player2"} />
       </div>

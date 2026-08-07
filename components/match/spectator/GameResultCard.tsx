@@ -3,7 +3,7 @@
 import { Thumb } from "@/components/Thumb";
 import { useI18n } from "@/lib/i18n";
 import type { PoolView } from "@/lib/draft/engine";
-import { OWNER, other, seatNames, type Seat, type SpectatorPayload } from "./types";
+import { OWNER, seatNames, type Seat, type SpectatorPayload } from "./types";
 
 /**
  * The beat between games: what each side fielded, on what map, and who took it.
@@ -31,20 +31,9 @@ export function GameResultCard({ payload }: { payload: SpectatorPayload }) {
   const map = game.map ? mapById.get(game.map) : undefined;
   const civOf = (seat: Seat) => civById.get((seat === "player1" ? game.civP1 : game.civP2) ?? "");
 
-  // The headline. "Won game 3" is a fact; "took the lead" is the story, and the
-  // score already knows which one this was.
-  //
-  // Nothing at all until there is a winner: the headline slot is for the result,
-  // and filling it with "who took it?" is a caption asking the audience a question
-  // they are already watching the answer to. It sits above everything else, so
-  // appearing late moves nothing.
-  const headline = !winner
-    ? null
-    : state.score[winner] > state.score[other(winner)]
-    ? t("spec.tookLead", { name: names[winner] })
-    : state.score[winner] === state.score[other(winner)]
-    ? t("spec.levelled", { name: names[winner] })
-    : t("spec.wonGame", { name: names[winner], n: idx + 1 });
+  // No headline. "Max takes the lead", "Max levels the series" — the scoreline is
+  // directly underneath saying the same thing in two digits, and it says it for
+  // every state rather than for three the copy happened to enumerate.
 
   // Who opens the next game — the engine has already resolved LOSER/WINNER on the
   // step bar, so this is a lookup rather than a second guess at the rules.
@@ -65,7 +54,6 @@ export function GameResultCard({ payload }: { payload: SpectatorPayload }) {
         <div className="font-sans text-[19px] font-semibold tracking-[.4em] text-muted">
           {t("spec.gameOf", { n: idx + 1, total: state.bestOf, map: (map?.name ?? "—").toUpperCase() })}
         </div>
-        {headline && <div className="mt-3.5 font-display text-[62px] font-bold leading-none text-gold-bright">{headline}</div>}
       </div>
 
       <div className="absolute left-0 right-0 top-[250px] grid grid-cols-[1fr_340px_1fr] items-center gap-6 px-[90px]">
