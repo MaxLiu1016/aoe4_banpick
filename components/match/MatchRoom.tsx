@@ -261,7 +261,11 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const step = state.currentStep;
   // While the between-games result gate is up, nobody may act until both players ack.
   const ackPending = !!payload!.awaitingAck && !state.finished;
-  const myTurn = !spectator && you === state.turn && state.status === "running" && !ackPending;
+  // Nobody is drafting while a game is being played. The step has an actor —
+  // whoever calls the result first — but it is not a turn, and treating it as one
+  // put "your move" and a lit screen edge in front of somebody who was in-game.
+  const inGame = state.currentStep?.type === "GAME_RESULT";
+  const myTurn = !spectator && you === state.turn && state.status === "running" && !ackPending && !inGame;
   const isHost = amHost;
 
   const showMaps = step?.type === "MAP_BAN" || step?.type === "MAP_PICK" || step?.type === "MAP_SELECT";
@@ -345,7 +349,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           <TurnStrip
             state={state} payload={payload!} p1Name={p1Name} p2Name={p2Name}
             map={mapById(currentMap)} mapName={currentMapName} clockOffsetRef={clockOffsetRef}
-            youAwaiting={!spectator && !!youPlayer && state.awaiting[youPlayer] && !ackPending}
+            youAwaiting={!spectator && !!youPlayer && state.awaiting[youPlayer] && !ackPending && !inGame}
             t={t}
           />
         )}
@@ -356,7 +360,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
 
       <OverviewBand
         state={state} payload={payload!} focus={poolStep} you={you}
-        youAwaiting={!spectator && !!youPlayer && state.awaiting[youPlayer] && payload!.status === "running" && !ackPending}
+        youAwaiting={!spectator && !!youPlayer && state.awaiting[youPlayer] && payload!.status === "running" && !ackPending && !inGame}
         p1Name={p1Name} p2Name={p2Name} civById={civById} mapById={mapById}
         clockOffsetRef={clockOffsetRef} outcomeLabel={outcomeLabel}
         canTake={!spectator && you === "spectator" && canPlay}
@@ -385,7 +389,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           Both sides light up on a simultaneous step, and each goes out as that
           player locks in — so the glow answers "who are we waiting for", not just
           "whose step is this". */}
-      {payload!.status === "running" && !state.finished && !ackPending &&
+      {payload!.status === "running" && !state.finished && !ackPending && !inGame &&
         createPortal(
           <>
             {(["player1", "player2"] as const)
@@ -578,7 +582,10 @@ function OverviewBand({
 }) {
   const seats = ["player1", "player2"] as const;
   const step = state.currentStep;
-  const acting = state.finished
+  // A game being played is nobody's turn. The step has an actor — whoever calls
+  // the result — but underlining their name while they are in-game says they owe
+  // this screen something, and they don't.
+  const acting = state.finished || step?.type === "GAME_RESULT"
     ? []
     : state.simultaneous
       ? seats.filter((s) => state.awaiting[s])
@@ -703,6 +710,12 @@ function OverviewBand({
         <div className="order-2 flex flex-col items-center text-center">
           {state.finished ? (
             <span className="font-display text-lg aoe-gold-text">{outcomeLabel}</span>
+          ) : state.currentStep?.type === "GAME_RESULT" ? (
+            // Reuses the broadcast board's string: the same sentence, and two of
+            // them would only drift apart.
+            <span className="font-display text-lg aoe-gold-text">
+              {t("spec.gameInProgress", { n: state.currentGameIndex + 1 })}
+            </span>
           ) : (
             <>
               <span className={youAwaiting ? "font-display text-lg text-gold-bright" : "text-[13px] font-semibold text-gold-bright"}>
@@ -765,12 +778,15 @@ function TurnStrip({ state, payload, p1Name, p2Name, map, mapName, clockOffsetRe
     ? seats.filter((s) => state.awaiting[s])
     : state.turn === "player1" || state.turn === "player2" ? [state.turn] : [];
   const names = { player1: p1Name, player2: p2Name };
+  const inGame = state.currentStep?.type === "GAME_RESULT";
   return (
     <div className="fade-in flex items-center justify-center gap-5 px-4 py-2">
       {/* Whose move, and what the move is. */}
       <div className="flex min-w-0 flex-col items-end leading-tight">
-        <span className={`truncate font-display text-[15px] ${youAwaiting ? "text-gold-bright" : "text-foreground"}`}>
-          {youAwaiting ? t("match.yourMove")
+        <span className={`truncate font-display text-[15px] ${youAwaiting || inGame ? "text-gold-bright" : "text-foreground"}`}>
+          {/* Nobody is drafting while a game is being played. */}
+          {inGame ? t("spec.gameInProgress", { n: state.currentGameIndex + 1 })
+            : youAwaiting ? t("match.yourMove")
             : state.simultaneous ? t("turn.simultaneous")
             : acting.length === 1 ? (
               <><span className={OWNER[acting[0]].text}>{names[acting[0]]}</span></>
@@ -792,7 +808,8 @@ function TurnStrip({ state, payload, p1Name, p2Name, map, mapName, clockOffsetRe
 
       {payload.status === "paused" ? (
         <span className="font-display text-2xl text-danger">{t("match.paused")}</span>
-      ) : (
+      ) : inGame ? null : (
+        // Calling a game is never on a clock, so there is nothing to count.
         <BigCountdown deadlineTs={payload.deadlineTs} limitSec={payload.limitSec} clockOffsetRef={clockOffsetRef} size={38} live={youAwaiting} />
       )}
 
