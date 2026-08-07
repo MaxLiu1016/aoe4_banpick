@@ -427,7 +427,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
       <div ref={actionRef} className="scroll-mt-4 space-y-5">
         {/* One line of instruction, sitting on the panel it is about. */}
         {step && !state.finished && (
-          <p className="text-center text-sm text-muted">
+          <p className="text-center font-display text-xl aoe-gold-text">
             {step.type === "GAME_RESULT" ? t("match.gameN", { n: state.currentGameIndex + 1 }) : (step.label || step.type)}
           </p>
         )}
@@ -479,6 +479,11 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
       {/* Two-pool duel: simultaneous hidden counter-snipe of opponent's offer */}
       {showSnipeOpp && duel && (
         <SnipePhase
+          // Every snipe step gets a fresh panel. Without this React reuses the one
+          // instance across games, and game 2 opens with game 1's marks still
+          // staged and its "already sent" latch down — a confirm button that does
+          // nothing at all.
+          key={state.currentStepIndex}
           duel={duel}
           youPlayer={youPlayer}
           opp={opp}
@@ -486,6 +491,8 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           canAct={canActDuel}
           onSnipe={act}
           civById={civById}
+          deadlineTs={payload!.status === "paused" ? null : payload!.deadlineTs}
+          clockOffsetRef={clockOffsetRef}
         />
       )}
 
@@ -607,7 +614,7 @@ function OverviewBand({
   const mystery = (seat: "player1" | "player2") =>
     hidden && duel!.offered[seat].length === 0 && !state.awaiting[seat] ? duel!.offerTarget[seat] : 0;
 
-  const size = focus ? 44 : 62;
+  const size = focus ? 56 : 76;
   const names = { player1: p1Name, player2: p2Name };
 
   return (
@@ -640,10 +647,10 @@ function OverviewBand({
             <span className="mx-1.5 h-10 w-px self-center bg-bronze" aria-hidden />
             {seats.map((s) => (
               <MapPoolSeg key={s} seat={s} ids={s === "player1" ? state.mapsByP1 : state.mapsByP2}
-                slots={reserved("MAP_PICK", s)} played={played} mapById={mapById} />
+                slots={reserved("MAP_PICK", s)} played={played} mapById={mapById} focus={focus} />
             ))}
             {neutral.map((id) => (
-              <BandTile key={id} entry={mapById(id)} kind="map" ring="border-bronze" h={26} w={42} />
+              <BandTile key={id} entry={mapById(id)} kind="map" ring="border-bronze" h={focus ? 36 : 44} w={focus ? 58 : 70} />
             ))}
           </>
         )}
@@ -658,7 +665,8 @@ function OverviewBand({
           const ids = s === "player1" ? state.draftedByP1 : state.draftedByP2;
           const usedIds = new Set(state.games.map((g) => (s === "player1" ? g.civP1 : g.civP2)).filter(Boolean) as string[]);
           const slots = Math.max(reserved("CIV_PICK", s), ids.length);
-          const tile = focus ? 44 : slots > 6 ? 44 : size;
+          // A long hand shrinks rather than wrapping into a shape nobody reads.
+          const tile = slots > 8 ? Math.round(size * 0.8) : size;
           return (
             <div key={s} className={`${left ? "order-1 items-end" : "order-3 items-start"} flex min-w-0 flex-col gap-1.5`}>
               <SeatName seat={s} name={names[s]} you={you} occupied={Boolean(payload.seats[s])}
@@ -675,12 +683,17 @@ function OverviewBand({
                 })}
                 {Array.from({ length: mystery(s) }, (_, n) => <MysterySlot key={`m${n}`} h={tile} w={tile} />)}
               </TileRow>
+              {/* Civ bans and map bans get a line each. Wrapped together they
+                  formed one ragged run of mixed shapes, and "which of these were
+                  maps?" is not a question the row should be asking. */}
               <TileRow align={left ? "right" : "left"}>
                 {state.civBans.filter((b) => b.by === s).map((b) => (
-                  <BandTile key={b.id} entry={civById(b.id)} kind="civ" ring="border-[rgba(154,145,125,.45)]" h={36} w={36} struck />
+                  <BandTile key={b.id} entry={civById(b.id)} kind="civ" ring="border-[rgba(154,145,125,.45)]" h={44} w={44} struck />
                 ))}
+              </TileRow>
+              <TileRow align={left ? "right" : "left"}>
                 {state.maps.filter((m) => m.state === "banned" && m.by === s).map((m) => (
-                  <BandTile key={m.id} entry={m} kind="map" ring="border-[rgba(154,145,125,.45)]" h={36} w={57} struck />
+                  <BandTile key={m.id} entry={m} kind="map" ring="border-[rgba(154,145,125,.45)]" h={44} w={70} struck />
                 ))}
               </TileRow>
             </div>
@@ -773,7 +786,7 @@ function GameCell({ game, current, map, names, focus, t }: {
   names: { player1: string; player2: string }; focus: boolean; t: TFn;
 }) {
   const won = game.winner ?? null;
-  const w = focus ? (current ? 58 : 42) : 110;
+  const w = focus ? (current ? 84 : 64) : 124;
   const h = Math.round(w * 0.62);
   // No map yet is the normal state for every game but the first: the loser of the
   // previous one picks it, and that has not happened. A dashed box says "not yet"
@@ -805,19 +818,20 @@ function GameCell({ game, current, map, names, focus, t }: {
 }
 
 /** The maps one player put on the table, with the ones they still owe drawn empty. */
-function MapPoolSeg({ seat, ids, slots, played, mapById }: {
+function MapPoolSeg({ seat, ids, slots, played, mapById, focus }: {
   seat: "player1" | "player2"; ids: string[]; slots: number;
-  played: Set<string>; mapById: (id?: string) => PoolView | undefined;
+  played: Set<string>; mapById: (id?: string) => PoolView | undefined; focus: boolean;
 }) {
   const total = Math.max(slots, ids.length);
   if (total === 0) return null;
+  const h = focus ? 36 : 44, w = focus ? 58 : 70;
   return (
     <div className="flex gap-1">
       {Array.from({ length: total }, (_, i) => {
         const id = ids[i];
         return id
-          ? <BandTile key={id} entry={mapById(id)} kind="map" ring={OWNER[seat].border} h={26} w={42} dim={played.has(id)} />
-          : <EmptySlot key={`e${i}`} h={26} w={42} />;
+          ? <BandTile key={id} entry={mapById(id)} kind="map" ring={OWNER[seat].border} h={h} w={w} dim={played.has(id)} />
+          : <EmptySlot key={`e${i}`} h={h} w={w} />;
       })}
     </div>
   );
@@ -1026,7 +1040,22 @@ function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed
   );
 }
 
-function SnipePhase({ duel, youPlayer, opp, canAct, onSnipe, civById }: {
+/**
+ * The counter-snipe: take one of the civs the opponent just put on the table away
+ * from them, for this game only.
+ *
+ * Two stages rather than one. The cards are big now — a whole civ, named, at the
+ * size you can read across a room — and a single click on one of those used to be
+ * irreversible. So a click marks, and a second press commits.
+ *
+ * That leaves a gap the old design didn't have: chosen but not sent. If the clock
+ * ran out there, the server would fill the step with a RANDOM target and quietly
+ * throw away the one that had been picked — worse than the click-to-send it
+ * replaced. So the clock hitting zero sends whatever has been marked. The server
+ * gives the displayed deadline a grace period before it fills anything in
+ * (GRACE_MS in the socket layer), and that grace exists for exactly this.
+ */
+function SnipePhase({ duel, youPlayer, opp, canAct, onSnipe, civById, deadlineTs, clockOffsetRef }: {
   duel: CivDuel;
   youPlayer: "player1" | "player2" | null;
   opp: "player1" | "player2" | null;
@@ -1034,43 +1063,56 @@ function SnipePhase({ duel, youPlayer, opp, canAct, onSnipe, civById }: {
   canAct: boolean;
   onSnipe: (id: string) => void;
   civById: (id?: string) => PoolView | undefined;
+  deadlineTs: number | null;
+  clockOffsetRef: React.RefObject<number>;
 }) {
   const { t } = useI18n();
   const myOffer = youPlayer ? duel.offered[youPlayer] : [];
   const oppOffer = opp ? duel.offered[opp] : [];
-  const mySnipes = new Set(youPlayer ? duel.snipedBy[youPlayer] : []);
+  const submitted = new Set(youPlayer ? duel.snipedBy[youPlayer] : []);
+  const need = duel.snipeCount;
 
-  return (
-    <section className="aoe-panel rounded-xl p-5">
-      <h3 className="font-display text-lg aoe-gold-text text-center">{t("snipe.title", { n: duel.snipeCount })}</h3>
-      <p className="mt-1 text-center text-xs text-muted">{t("snipe.hint")}</p>
-      <div className="aoe-rule my-3" />
+  const [staged, setStaged] = useState<string[]>([]);
+  // Sending is one-way and two things can trigger it — the button and the clock.
+  // Whichever gets there first locks the other out for good.
+  const sentRef = useRef(false);
 
-      {youPlayer ? (
-        <div className="space-y-4">
-          <div>
-            <div className="text-xs uppercase tracking-wide text-muted">{t("snipe.oppOffered", { n: duel.snipeCount })}</div>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {oppOffer.map((id) => {
-                const sniped = mySnipes.has(id);
-                return (
-                  <button key={id} disabled={!canAct || sniped} onClick={() => onSnipe(id)}
-                    className={`rounded-md transition ${canAct && !sniped ? "hover:scale-105 cursor-pointer" : ""} ${sniped ? "ring-2 ring-gold" : ""}`}>
-                    <CivChip civ={civById(id)} mark={sniped ? "x" : undefined} />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <div>
-            <div className="text-xs uppercase tracking-wide text-muted">{t("snipe.yourOfferSurvivor")}</div>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {myOffer.map((id) => <CivChip key={id} civ={civById(id)} />)}
-            </div>
-          </div>
-          {!canAct && <p className="text-center text-sm text-gold-bright">{t("snipe.lockedWait")}</p>}
-        </div>
-      ) : (
+  const send = useCallback(() => {
+    if (sentRef.current || staged.length === 0) return;
+    sentRef.current = true;
+    for (const id of staged) onSnipe(id);
+  }, [onSnipe, staged]);
+
+  // Armed off the deadline rather than watched every tick: a countdown that only
+  // has to do something once doesn't need to re-render anything to do it.
+  useEffect(() => {
+    if (!deadlineTs || !canAct) return;
+    const id = setTimeout(send, Math.max(0, deadlineTs - Date.now() - clockOffsetRef.current));
+    return () => clearTimeout(id);
+  }, [deadlineTs, canAct, send, clockOffsetRef]);
+
+  // "The clock is about to answer for you" — raised once it is true, so the panel
+  // never has to tick in order to know it.
+  const [urgentFor, setUrgentFor] = useState<number | null>(null);
+  useEffect(() => {
+    if (!deadlineTs || !canAct) return;
+    const id = setTimeout(() => setUrgentFor(deadlineTs), Math.max(0, deadlineTs - Date.now() - clockOffsetRef.current - 5000));
+    return () => clearTimeout(id);
+  }, [deadlineTs, canAct, clockOffsetRef]);
+  const urgent = urgentFor === deadlineTs && staged.length > 0;
+
+  const toggle = (id: string) => {
+    if (!canAct) return;
+    // Past the limit the oldest mark gives way, so a click always does something
+    // rather than silently failing against a full hand.
+    setStaged((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id].slice(-need)));
+  };
+
+  if (!youPlayer) {
+    return (
+      <section className="aoe-panel rounded-xl p-5">
+        <h3 className="text-center font-display text-lg aoe-gold-text">{t("snipe.title", { n: need })}</h3>
+        <div className="aoe-rule my-3" />
         <div className="grid grid-cols-2 gap-4">
           <div>
             <div className="text-xs uppercase tracking-wide text-muted">{t("snipe.p1offered")}</div>
@@ -1082,7 +1124,76 @@ function SnipePhase({ duel, youPlayer, opp, canAct, onSnipe, civById }: {
           </div>
           <p className="col-span-2 text-center text-xs text-muted">{t("snipe.secret")}</p>
         </div>
+      </section>
+    );
+  }
+
+  const oppTone = opp ? OWNER[opp] : OWNER.player2;
+  const locked = !canAct;
+  return (
+    <section className="aoe-panel rounded-xl p-5">
+      <h3 className="text-center font-display text-lg aoe-gold-text">{t("snipe.title", { n: need })}</h3>
+      <p className="mt-1 text-center text-xs text-muted">{locked ? t("snipe.hint") : t("snipe.pickThenConfirm")}</p>
+      <div className="aoe-rule my-4" />
+
+      <div className="flex flex-wrap justify-center gap-4">
+        {oppOffer.map((id) => {
+          const civ = civById(id);
+          const marked = staged.includes(id) || submitted.has(id);
+          return (
+            <button
+              key={id}
+              disabled={locked}
+              onClick={() => toggle(id)}
+              style={{ width: 190 }}
+              className={`relative rounded-[10px] border-2 p-3.5 text-center transition ${
+                marked
+                  ? `border-gold bg-gold/10 ring-2 ring-gold/50 ${urgent ? "ovl-pulse" : ""}`
+                  : `${oppTone.border} ${oppTone.bg} ${locked ? "" : "cursor-pointer hover:border-danger hover:bg-danger/[.14]"}`
+              }`}
+              title={civ?.name}
+            >
+              <Thumb src={civ?.imageUrl} alt={civ?.name ?? ""}
+                className={`mx-auto aspect-square w-[80%] object-contain ${marked ? "grayscale" : ""}`} />
+              <span className="mt-1 block truncate font-display text-[19px] font-bold text-foreground">{civ?.name}</span>
+              {marked && (
+                <>
+                  <span aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center text-[56px] leading-none"
+                    style={{ color: "rgba(181,72,47,.85)" }}>✕</span>
+                  <span className="absolute right-1.5 top-1.5 rounded bg-surface/80 px-1 text-[10px] text-gold-bright">
+                    🔒 {t("snipe.yourTarget")}
+                  </span>
+                </>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {locked ? (
+        <p className="mt-4 text-center text-sm text-gold-bright">{t("snipe.lockedWait")}</p>
+      ) : (
+        <div className="mt-4 flex flex-col items-center gap-1">
+          <button onClick={send} disabled={staged.length < need}
+            className={`aoe-btn rounded px-5 py-2 font-display disabled:opacity-40 ${urgent ? "ovl-pulse" : ""}`}>
+            {t("snipe.confirm", { n: staged.length, total: need })}
+          </button>
+          <span className={`text-[11px] ${urgent ? "font-semibold text-danger" : "text-muted"}`}>
+            {urgent ? t("snipe.autoSend") : t("snipe.noUndo")}
+          </span>
+        </div>
       )}
+
+      {/* What you put up, so the whole trade is readable from one place. */}
+      <div className="mt-5 flex flex-col items-center gap-1.5 border-t border-border/60 pt-3">
+        <span className="text-[10px] uppercase tracking-wide text-muted">{t("snipe.yourOfferShort")}</span>
+        <div className="flex gap-2">
+          {myOffer.map((id) => (
+            <Thumb key={id} src={civById(id)?.imageUrl} alt={civById(id)?.name ?? ""}
+              className={`h-[52px] w-[52px] rounded border-2 bg-surface-2 object-contain ${youPlayer ? OWNER[youPlayer].border : ""}`} />
+          ))}
+        </div>
+      </div>
     </section>
   );
 }

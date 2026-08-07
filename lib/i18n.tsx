@@ -250,6 +250,13 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "snipe.hint": { en: "A sniped civ only misses this game. It comes back and can be used in a later one.", zh: "被狙掉的文明只是這一局不能用，下一局還可以再拿出來。", ja: "スナイプされた文明はこのゲームで使えないだけです。次のゲームではまた出せます。" },
   "snipe.oppOffered": { en: "Opponent offered — snipe {n}", zh: "對手出牌——狙擊 {n} 張", ja: "相手の提示——{n} つスナイプ" },
   "snipe.yourOfferSurvivor": { en: "Your offer (the un-sniped one becomes your civ)", zh: "你的出牌（沒被狙的成為本局文明）", ja: "あなたの提示（スナイプされなかった方が今ゲームの文明になります）" },
+  // Two-stage snipe: mark a target, then commit it.
+  "snipe.pickThenConfirm": { en: "Pick a card below, then confirm. Your opponent can't see your choice.", zh: "點下方的卡片選定目標，再按確認。對方看不到你的選擇。", ja: "下のカードを選んでから確定してください。相手にはあなたの選択は見えません。" },
+  "snipe.confirm": { en: "Confirm snipe ({n}/{total})", zh: "確認狙擊（{n}/{total}）", ja: "スナイプ確定（{n}/{total}）" },
+  "snipe.noUndo": { en: "This can't be changed afterwards.", zh: "確認後不可更改", ja: "確定後は変更できません" },
+  "snipe.autoSend": { en: "Time running out sends what you have marked.", zh: "時間到會自動送出你已選定的目標", ja: "時間切れになると選択済みの標的が送信されます" },
+  "snipe.yourTarget": { en: "your target", zh: "你的目標", ja: "あなたの標的" },
+  "snipe.yourOfferShort": { en: "Your offer", zh: "你的出牌", ja: "あなたの提示" },
   "snipe.lockedWait": { en: "Snipe locked. Waiting for opponent…", zh: "狙擊已鎖定，等待對手…", ja: "スナイプをロックしました。相手を待っています…" },
   "snipe.secret": { en: "Both players are secretly sniping…", zh: "雙方正在秘密狙擊…", ja: "両プレイヤーが秘密裏にスナイプ中…" },
   "snipe.p1offered": { en: "Player 1 offered", zh: "玩家 1 出牌", ja: "プレイヤー 1 の提示" },
