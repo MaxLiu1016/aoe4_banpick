@@ -10,7 +10,7 @@ import { ClonePresetButton } from "@/components/preset/ClonePresetButton";
 import { PublicToggle } from "@/components/preset/PublicToggle";
 import { FavoriteButton } from "@/components/preset/FavoriteButton";
 
-const LIMIT = 9;
+import { PRESET_PAGE_SIZE as LIMIT } from "@/lib/preset/pageSize";
 
 export function PresetBrowser({ initial }: { initial?: { items: ClientPreset[]; total: number } }) {
   const { t } = useI18n();

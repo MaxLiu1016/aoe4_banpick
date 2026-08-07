@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/session";
 import { dbConnect } from "@/lib/mongoose";
 import { Preset } from "@/lib/models/Preset";
 import { toClientPreset } from "@/lib/presets";
+import { PRESET_PAGE_SIZE } from "@/lib/preset/pageSize";
 import { T } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export const dynamic = "force-dynamic";
 async function publicFirstPage() {
   try {
     await dbConnect();
-    const docs = await Preset.find({ isPublic: true }).sort({ isDemo: -1, demoOrder: 1, updatedAt: -1 }).limit(9).lean();
+    const docs = await Preset.find({ isPublic: true }).sort({ isDemo: -1, demoOrder: 1, updatedAt: -1 }).limit(PRESET_PAGE_SIZE).lean();
     const total = await Preset.countDocuments({ isPublic: true });
     return { items: docs.map((d) => toClientPreset(d as never)), total };
   } catch {
