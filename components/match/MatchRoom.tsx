@@ -286,6 +286,10 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const opp = youPlayer === "player1" ? "player2" : youPlayer === "player2" ? "player1" : null;
   const duel = state.civDuel;
   const canActDuel = !spectator && !!youPlayer && state.awaiting[youPlayer] && payload!.status === "running" && !ackPending;
+  // "This is running against you" — the one thing the prompt row raises its voice
+  // for. Same test the board used before the clock moved down here.
+  const myPrompt = !spectator && !!youPlayer && state.awaiting[youPlayer]
+    && payload!.status === "running" && !ackPending && !inGame;
   // Simultaneous ban: there is no "turn" — both players act at once, gated on
   // `awaiting`, and each other's picks stay hidden until both have submitted.
   const simulBan = Boolean(step?.simultaneous) && (step?.type === "MAP_BAN" || step?.type === "CIV_BAN");
@@ -340,12 +344,11 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
 
   return (
     <div className="space-y-5">
-      {/* The one thing that stays on screen. The board below it says everything,
-          but it scrolls away exactly when the draft gets busy — so what you need
-          in order to act, and nothing else, rides along at the top: the clock,
-          the map you are drafting for, whose turn, and the score. */}
+      {/* Off for now. The clock and the map moved down to the panel they are
+          about, which is also what the page scrolls to — so by the time the board
+          has gone, everything the strip was carrying is already in front of you. */}
       <div className="sticky top-0 z-30 -mx-4 bg-background/95 backdrop-blur">
-        {scrolledPast && !state.finished && payload!.status === "running" && (
+        {SHOW_TURN_STRIP && scrolledPast && !state.finished && payload!.status === "running" && (
           <TurnStrip
             state={state} payload={payload!} p1Name={p1Name} p2Name={p2Name}
             map={mapById(currentMap)} mapName={currentMapName} clockOffsetRef={clockOffsetRef}
@@ -421,7 +424,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
             instruction and directly above the pool being clicked — which is where
             the eye already is. */}
         {step && !state.finished && (
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center justify-center gap-5">
             {currentMap && step.type !== "GAME_RESULT" && (
               <div className="relative shrink-0" style={{ width: 176, height: 110 }}>
                 <Thumb src={mapById(currentMap)?.imageUrl} alt={currentMapName ?? ""}
@@ -429,9 +432,32 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
                 <MapLabel name={currentMapName} size={14} />
               </div>
             )}
-            <p className={`font-display text-xl aoe-gold-text ${currentMap ? "text-left" : "text-center"}`}>
-              {step.type === "GAME_RESULT" ? t("match.gameN", { n: state.currentGameIndex + 1 }) : (step.label || step.type)}
-            </p>
+            <div className={currentMap ? "min-w-0 text-left" : "text-center"}>
+              <p className="font-display text-xl aoe-gold-text">
+                {step.type === "GAME_RESULT" ? t("match.gameN", { n: state.currentGameIndex + 1 }) : (step.label || step.type)}
+              </p>
+              {/* Whose move and how long is left, on the thing they are about. */}
+              {!inGame && (
+                <div className={`mt-1.5 flex items-center gap-4 ${currentMap ? "" : "justify-center"}`}>
+                  <span className={myPrompt ? "font-display text-lg text-gold-bright" : "text-[13px] font-semibold text-gold-bright"}>
+                    {myPrompt ? t("match.yourMove")
+                      : state.simultaneous ? t("turn.simultaneous")
+                      : state.turn === "player1" || state.turn === "player2" ? (
+                        <>
+                          {t("turn.now")}{" "}
+                          <span className={`font-display text-[15px] ${OWNER[state.turn].text}`}>
+                            {state.turn === "player1" ? p1Name : p2Name}
+                          </span>
+                        </>
+                      ) : state.turn === "host" ? t("turn.randomDraw") : t("turn.awaitResult")}
+                  </span>
+                  {payload!.status !== "paused" && (
+                    <BigCountdown deadlineTs={payload!.deadlineTs} limitSec={payload!.limitSec}
+                      clockOffsetRef={clockOffsetRef} size={44} live={myPrompt} />
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -640,6 +666,21 @@ function OverviewBand({
             🕶 {t("match.anonymous")}
           </span>
         )}
+        {/* Where the series stands, when that is a thing rather than a turn. */}
+        {state.finished ? (
+          <span className="font-display text-lg aoe-gold-text">{outcomeLabel}</span>
+        ) : state.currentStep?.type === "GAME_RESULT" ? (
+          <span className="font-display text-lg aoe-gold-text">
+            {t("spec.gameInProgress", { n: state.currentGameIndex + 1 })}
+          </span>
+        ) : payload.status === "paused" ? (
+          <span className="font-display text-lg text-danger">{t("match.paused")}</span>
+        ) : null}
+        {canPause && (
+          <button onClick={onPause} className="font-sans text-[11px] text-muted hover:text-gold-bright">
+            {payload.status === "paused" ? `▶ ${t("match.resume")}` : `⏸ ${t("match.pause")}`}
+          </button>
+        )}
       </div>
 
       {/* Maps: the games, then what is left to play them on */}
@@ -664,8 +705,10 @@ function OverviewBand({
 
       <div className="aoe-rule my-2.5" />
 
-      {/* Both hands converging on the clock, bans underneath. */}
-      <div className="grid items-start gap-2" style={{ gridTemplateColumns: `1fr ${focus ? 190 : 220}px 1fr` }}>
+      {/* The two hands, converging. The clock used to sit between them and it has
+          gone down to the panel it is running against, so there is nothing left
+          in the middle to hold them apart. */}
+      <div className="grid items-stretch" style={{ gridTemplateColumns: "1fr 1fr" }}>
         {seats.map((s, i) => {
           const left = i === 0;
           const ids = s === "player1" ? state.draftedByP1 : state.draftedByP2;
@@ -674,7 +717,9 @@ function OverviewBand({
           // A long hand shrinks rather than wrapping into a shape nobody reads.
           const tile = slots > 8 ? Math.round(size * 0.8) : size;
           return (
-            <div key={s} className={`${left ? "order-1 items-end" : "order-3 items-start"} flex min-w-0 flex-col gap-1.5`}>
+            // A midline. Reserved slots are colourless on both sides, so without
+            // it the two hands run together into one row of fifteen tiles.
+            <div key={s} className={`${left ? "items-end pr-6" : "items-start border-l border-bronze/40 pl-6"} flex min-w-0 flex-col gap-1.5`}>
               <SeatName seat={s} name={names[s]} you={you} occupied={Boolean(payload.seats[s])}
                 crowned={state.finished && state.score[s] > state.score[s === "player1" ? "player2" : "player1"]}
                 acting={acting.includes(s)} canTake={canTake && !payload.seats[s]} needsName={needsName}
@@ -706,47 +751,6 @@ function OverviewBand({
           );
         })}
 
-        {/* The clock, and who it is running against. */}
-        <div className="order-2 flex flex-col items-center text-center">
-          {state.finished ? (
-            <span className="font-display text-lg aoe-gold-text">{outcomeLabel}</span>
-          ) : state.currentStep?.type === "GAME_RESULT" ? (
-            // Reuses the broadcast board's string: the same sentence, and two of
-            // them would only drift apart.
-            <span className="font-display text-lg aoe-gold-text">
-              {t("spec.gameInProgress", { n: state.currentGameIndex + 1 })}
-            </span>
-          ) : (
-            <>
-              <span className={youAwaiting ? "font-display text-lg text-gold-bright" : "text-[13px] font-semibold text-gold-bright"}>
-                {youAwaiting ? t("match.yourMove")
-                  : state.simultaneous ? t("turn.simultaneous")
-                  : acting.length === 1 ? (
-                  <>
-                    {acting[0] === "player1" ? "◀ " : ""}
-                    {t("turn.now")} <span className={`font-display text-[15px] ${OWNER[acting[0]].text}`}>{names[acting[0]]}</span>
-                    {acting[0] === "player2" ? " ▶" : ""}
-                  </>
-                ) : state.turn === "host" ? t("turn.randomDraw") : t("turn.awaitResult")}
-              </span>
-              {payload.status === "paused" ? (
-                <span className="font-display text-2xl text-danger">{t("match.paused")}</span>
-              ) : (
-                <BigCountdown deadlineTs={payload.deadlineTs} limitSec={payload.limitSec} clockOffsetRef={clockOffsetRef}
-                  size={focus ? 40 : 44} live={youAwaiting} />
-              )}
-              {/* Whose the clock belongs to, when it isn't yours. */}
-              {!youAwaiting && acting.length > 0 && (
-                <span className="text-[10px] uppercase tracking-[.16em] text-muted">{state.currentStep?.label || state.currentStep?.type}</span>
-              )}
-            </>
-          )}
-          {canPause && (
-            <button onClick={onPause} className="mt-0.5 text-[10px] text-muted hover:text-gold-bright">
-              {payload.status === "paused" ? `▶ ${t("match.resume")}` : `⏸ ${t("match.pause")}`}
-            </button>
-          )}
-        </div>
       </div>
     </div>
   );
@@ -1679,6 +1683,17 @@ function BigCountdown({ deadlineTs, limitSec, clockOffsetRef, size, live }: {
 
 /** How long before the clock runs out to say what the clock running out does. */
 const AUTOPICK_WARN_SEC = 3;
+
+/**
+ * Whether the top-of-window strip rides along once the board scrolls away.
+ *
+ * Off: the clock and the current map now sit on the panel being acted on, which
+ * is where the page scrolls to when your turn comes round — so the strip was
+ * repeating, at the top of the screen, what was already in the middle of it.
+ * Kept rather than deleted; the strip is the answer again the moment anything
+ * moves back up onto the board.
+ */
+const SHOW_TURN_STRIP = false;
 
 /**
  * Seconds left, never more than the step was given.
