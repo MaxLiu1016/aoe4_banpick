@@ -72,28 +72,27 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   // The panel the player acts on, and the step it was last scrolled for.
   const actionRef = useRef<HTMLDivElement>(null);
   const lastStepRef = useRef<number | null>(null);
-  // Whether the scoreboard and map board have scrolled off the top, which is
-  // exactly when the floating rails have something to stand in for.
+  // Whether the board has scrolled off the top, which is exactly when the sticky
+  // strip has something to stand in for.
   const [scrolledPast, setScrolledPast] = useState(false);
-  const railObserver = useRef<IntersectionObserver | null>(null);
+  const stripObserver = useRef<IntersectionObserver | null>(null);
   // A ref callback rather than an effect: the sentinel doesn't exist until the
   // draft is running, and an effect that ran once in the lobby would never see it.
   const watchSentinel = useCallback((el: HTMLDivElement | null) => {
-    railObserver.current?.disconnect();
-    railObserver.current = null;
+    stripObserver.current?.disconnect();
+    stripObserver.current = null;
     if (!el) { setScrolledPast(false); return; }
     const io = new IntersectionObserver(
-      // Fires once the sentinel is anywhere above the bottom fifth of the window —
-      // that is, as soon as the boards start leaving rather than after they are
-      // completely gone. Erring early is free: the rails sit in the margin and
-      // cost nothing when the boards happen to still be visible, whereas a sliver
-      // of board left on screen used to suppress them at exactly the wrong moment.
-      // Still only upward: a sentinel below the fold means the whole page fits.
-      ([e]) => setScrolledPast(!e.isIntersecting && e.boundingClientRect.top < window.innerHeight * 0.8),
-      { threshold: 0, rootMargin: "-80% 0px 0px 0px" }
+      // A clean handoff: the strip appears the moment the end of the board goes
+      // under the step bar, and not before. The strip covers the top of the page
+      // rather than sitting in the margin, so showing it early would put a second
+      // clock directly above the one still on screen.
+      // Only upward — a sentinel below the fold means the whole page fits anyway.
+      ([e]) => setScrolledPast(!e.isIntersecting && e.boundingClientRect.top < 60),
+      { threshold: 0, rootMargin: "-60px 0px 0px 0px" }
     );
     io.observe(el);
-    railObserver.current = io;
+    stripObserver.current = io;
   }, []);
   // Estimated server-minus-client clock offset (ms). Set from each payload's
   // serverNow so the countdown tracks the server's real deadline, not the local
@@ -302,12 +301,8 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const currentMap = state.games[state.currentGameIndex]?.map;
   const currentMapName = mapsView.find((m) => m.id === currentMap)?.name;
 
-  // Pool 1 (each player's persistent "hand"), shown under the player; played civs marked used.
   const civById = (id?: string) => civsView.find((c) => c.id === id);
-  const usedP1 = new Set(state.games.map((g) => g.civP1).filter(Boolean) as string[]);
-  const usedP2 = new Set(state.games.map((g) => g.civP2).filter(Boolean) as string[]);
-  const p1Hand = state.draftedByP1.map((id) => ({ key: id, civ: civById(id), used: usedP1.has(id) }));
-  const p2Hand = state.draftedByP2.map((id) => ({ key: id, civ: civById(id), used: usedP2.has(id) }));
+  const mapById = (id?: string) => mapsView.find((m) => m.id === id);
   // Civs the opponent closed off against YOU specifically. A ban with "opponent"
   // scope never changes the civ's global state — it is still the banner's to take —
   // so the pool grid had no way of knowing it was dead to you, and drew it exactly
@@ -316,15 +311,6 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const blockedForMe = opp
     ? state.civBans.filter((b) => b.scope === "opponent" && b.by === opp).map((b) => b.id)
     : [];
-  // Civs each player banned (any scope — pool or opponent).
-  const p1Banned = state.civBans.filter((b) => b.by === "player1").map((b) => ({ key: b.id, civ: civById(b.id), banned: true }));
-  const p2Banned = state.civBans.filter((b) => b.by === "player2").map((b) => ({ key: b.id, civ: civById(b.id), banned: true }));
-  const mapById = (id?: string) => mapsView.find((m) => m.id === id);
-  // Maps each player banned. These were only ever visible in the big pool grid,
-  // which disappears as soon as the map phase is over — so "who banned what" was
-  // unanswerable for the rest of the draft.
-  const p1MapBans = mapsView.filter((m) => m.state === "banned" && m.by === "player1").map((m) => ({ key: m.id, civ: m, banned: true }));
-  const p2MapBans = mapsView.filter((m) => m.state === "banned" && m.by === "player2").map((m) => ({ key: m.id, civ: m, banned: true }));
 
   // Display names (fall back to "Player 1/2" when a seat is unnamed).
   const p1Name = payload!.seats.player1?.name || t("match.p1");
@@ -338,7 +324,21 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
 
   return (
     <div className="space-y-5">
-      <StepBar steps={state.stepBar} currentIndex={state.currentStepIndex} finished={state.finished} />
+      {/* The one thing that stays on screen. The board below it says everything,
+          but it scrolls away exactly when the draft gets busy — so what you need
+          in order to act, and nothing else, rides along at the top: the clock,
+          the map you are drafting for, whose turn, and the score. */}
+      <div className="sticky top-0 z-30 -mx-4 bg-background/95 backdrop-blur">
+        {scrolledPast && !state.finished && payload!.status === "running" && (
+          <TurnStrip
+            state={state} payload={payload!} p1Name={p1Name} p2Name={p2Name}
+            map={mapById(currentMap)} mapName={currentMapName} clockOffsetRef={clockOffsetRef}
+            youAwaiting={!spectator && !!youPlayer && state.awaiting[youPlayer] && !ackPending}
+            t={t}
+          />
+        )}
+        <StepBar steps={state.stepBar} currentIndex={state.currentStepIndex} finished={state.finished} />
+      </div>
 
       {error && <div className="rounded border border-danger/60 bg-danger/10 px-4 py-2 text-sm text-danger">{error}</div>}
 
@@ -390,41 +390,15 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           document.body
         )}
 
-      {/* Marks the end of the scoreboard/map/ban boards. Once this passes the top
-          of the window the floating rails take over carrying that context. */}
+      {/* Marks the end of the board. Once it passes the top of the window the
+          sticky strip takes over carrying the clock and the map. */}
       <div ref={watchSentinel} aria-hidden className="h-px" />
-
-      {/* Portalled to <body> on purpose. The page wrapper animates on every route
-          change with fill-mode both, so it keeps a transform after the animation
-          ends — and a transformed ancestor becomes the containing block for
-          position:fixed, which pinned these to the middle of the whole document
-          instead of the middle of the window.
-          Mounting only once scrolled also keeps the server render empty, so there
-          is no hydration mismatch from touching `document` here. */}
-      {scrolledPast &&
-        createPortal(
-          <>
-            {/* Below 2xl there is no room beside the content for a rail, and the
-                board carrying the clock has just scrolled away. A 44px strip is
-                what fits, and the clock is the part that can't be missing. */}
-            <StickyTurnBar state={state} payload={payload!}
-              youAwaiting={!spectator && !!youPlayer && state.awaiting[youPlayer] && !ackPending}
-              p1Name={p1Name} p2Name={p2Name} clockOffsetRef={clockOffsetRef} t={t} />
-            <ContextRail side="player1" name={p1Name} mapId={currentMap} mapName={currentMapName}
-              hand={p1Hand} handLeft={p1Hand.filter((h) => !h.used).length}
-              bans={p1Banned} mapBans={p1MapBans} mapById={mapById} t={t} />
-            <ContextRail side="player2" name={p2Name} mapId={currentMap} mapName={currentMapName}
-              hand={p2Hand} handLeft={p2Hand.filter((h) => !h.used).length}
-              bans={p2Banned} mapBans={p2MapBans} mapById={mapById} t={t} />
-          </>,
-          document.body
-        )}
 
       {/* Everything you actually act on, under one anchor. The board above carries
           whose turn it is and how long is left, so what is left down here is the
           thing to click — and that is what the page should bring to you when the
           step changes, not a caption about it. */}
-      <div ref={actionRef} className="scroll-mt-4 space-y-5">
+      <div ref={actionRef} className="scroll-mt-28 space-y-5">
         {/* One line of instruction, sitting on the panel it is about. */}
         {step && !state.finished && (
           <p className="text-center font-display text-xl aoe-gold-text">
@@ -741,37 +715,63 @@ function OverviewBand({
 }
 
 /**
- * The board's middle column, reduced to a strip across the top of the window.
+ * What you need in order to take your turn, pinned to the top of the page.
  *
- * Only below 2xl: above it the floating rails have the room to carry the same
- * thing beside the content, and two copies of the clock in view at once is one
- * too many.
+ * The board carries all of this and more, but the board is where the page starts
+ * and the pool is where it ends — by the time you are picking, the board is gone.
+ * So this is the board reduced to the two facts you cannot act without: how long
+ * you have, and which map you are drafting for. They are the biggest things on it
+ * for that reason; the turn, the step and the score come along because they are
+ * cheap to carry once the strip exists.
  */
-function StickyTurnBar({ state, payload, youAwaiting, p1Name, p2Name, clockOffsetRef, t }: {
-  state: DerivedState; payload: Payload; youAwaiting: boolean;
-  p1Name: string; p2Name: string; clockOffsetRef: React.RefObject<number>; t: TFn;
+function TurnStrip({ state, payload, p1Name, p2Name, map, mapName, clockOffsetRef, youAwaiting, t }: {
+  state: DerivedState;
+  payload: Payload;
+  p1Name: string;
+  p2Name: string;
+  map?: PoolView;
+  mapName?: string;
+  clockOffsetRef: React.RefObject<number>;
+  youAwaiting: boolean;
+  t: TFn;
 }) {
-  if (state.finished || payload.status !== "running") return null;
   const seats = ["player1", "player2"] as const;
   const acting = state.simultaneous
     ? seats.filter((s) => state.awaiting[s])
     : state.turn === "player1" || state.turn === "player2" ? [state.turn] : [];
   const names = { player1: p1Name, player2: p2Name };
   return (
-    <div className="fade-in fixed inset-x-0 top-0 z-30 flex h-11 items-center justify-center gap-4 border-b border-border bg-surface/95 px-4 backdrop-blur-sm 2xl:hidden">
-      <span className="truncate text-[13px] font-semibold text-gold-bright">
-        {state.simultaneous ? t("turn.simultaneous") : acting.length === 1 ? (
-          <>
-            {t("turn.now")} <span className={`font-display text-[15px] ${OWNER[acting[0]].text}`}>{names[acting[0]]}</span>
-          </>
-        ) : state.turn === "host" ? t("turn.randomDraw") : t("turn.awaitResult")}
-      </span>
-      <span className="hidden truncate text-[11px] uppercase tracking-wide text-muted sm:inline">
-        {state.currentStep?.label || state.currentStep?.type}
-      </span>
-      <BigCountdown deadlineTs={payload.deadlineTs} clockOffsetRef={clockOffsetRef}
-        size={24} live={youAwaiting} />
-      <span className="font-display text-sm">
+    <div className="fade-in flex items-center justify-center gap-5 px-4 py-2">
+      {/* Whose move, and what the move is. */}
+      <div className="flex min-w-0 flex-col items-end leading-tight">
+        <span className={`truncate font-display text-[15px] ${youAwaiting ? "text-gold-bright" : "text-foreground"}`}>
+          {youAwaiting ? t("match.yourMove")
+            : state.simultaneous ? t("turn.simultaneous")
+            : acting.length === 1 ? (
+              <><span className={OWNER[acting[0]].text}>{names[acting[0]]}</span></>
+            ) : state.turn === "host" ? t("turn.randomDraw") : t("turn.awaitResult")}
+        </span>
+        <span className="max-w-[22ch] truncate text-[11px] text-muted">
+          {state.currentStep?.label || state.currentStep?.type}
+        </span>
+      </div>
+
+      {/* The map this is all for. Big, because a civ pick made against the wrong
+          map is the one mistake this whole screen exists to prevent. */}
+      {map && (
+        <div className="flex items-center gap-2">
+          <Thumb src={map.imageUrl} alt={map.name} className="h-[48px] w-[77px] rounded border-2 border-gold bg-surface-2 object-cover" />
+          <span className="hidden max-w-[20ch] truncate font-display text-base text-gold-bright sm:inline">{mapName}</span>
+        </div>
+      )}
+
+      {payload.status === "paused" ? (
+        <span className="font-display text-2xl text-danger">{t("match.paused")}</span>
+      ) : (
+        <BigCountdown deadlineTs={payload.deadlineTs} clockOffsetRef={clockOffsetRef} size={38} live={youAwaiting} />
+      )}
+
+      <span className="font-display text-base">
         <span className={OWNER.player1.text}>{state.score.player1}</span>
         <span className="mx-1 text-bronze">—</span>
         <span className={OWNER.player2.text}>{state.score.player2}</span>
@@ -1233,7 +1233,8 @@ function StepBar({ steps, currentIndex, finished }: {
 
   if (steps.length === 0) return null;
   return (
-    <div ref={ref} className="no-scrollbar sticky top-0 z-20 -mx-4 flex gap-2 overflow-x-auto border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
+    // Sticky is on the wrapper now, so the turn strip and this ride up together.
+    <div ref={ref} className="no-scrollbar flex gap-2 overflow-x-auto border-b border-border px-4 py-3">
       {steps.map((s, i) => {
         const done = finished || i < currentIndex;
         const current = !finished && i === currentIndex;
@@ -1326,92 +1327,6 @@ function SimulBanStatus({ count, mine, youAwaited, oppAwaited, isPlayer, entryBy
  */
 /** One tile in a rail. Every entry — flag or map — gets the same box, so the
  *  column reads as a grid instead of a pile of different shapes. */
-function RailTile({ entry, kind, dim, struck }: {
-  entry?: PoolView;
-  kind: "civ" | "map";
-  dim?: boolean;
-  struck?: boolean;
-}) {
-  return (
-    <span className="relative block" title={entry?.name}>
-      <Thumb
-        src={entry?.imageUrl}
-        alt={entry?.name ?? ""}
-        // Flags are letterboxed into the box, maps fill it. Same box either way.
-        className={`aspect-[16/10] w-full rounded bg-surface-2/60 ${kind === "civ" ? "object-contain" : "object-cover"} ${
-          struck ? "border border-[rgba(154,145,125,.45)] grayscale brightness-50" : dim ? "opacity-40 grayscale" : ""
-        }`}
-      />
-      {struck && <span className="absolute left-0 right-0 top-1/2 h-0.5 -translate-y-1/2 bg-danger" />}
-    </span>
-  );
-}
-
-function RailGroup({ label, tone, children }: { label: string; tone: string; children: React.ReactNode }) {
-  return (
-    <>
-      <div className={`mt-2 text-[9px] uppercase tracking-wide ${tone}`}>{label}</div>
-      <div className="mt-1 grid grid-cols-2 gap-1">{children}</div>
-    </>
-  );
-}
-
-function ContextRail({
-  side, name, mapId, mapName, hand, handLeft, bans, mapBans, mapById, t,
-}: {
-  side: "player1" | "player2";
-  name: string;
-  mapId?: string;
-  mapName?: string;
-  hand: { key: string; civ?: PoolView; used?: boolean }[];
-  handLeft: number;
-  bans: { key: string; civ?: PoolView }[];
-  mapBans: { key: string; civ?: PoolView }[];
-  mapById: (id?: string) => PoolView | undefined;
-  t: TFn;
-}) {
-  const own = OWNER[side];
-  const left = side === "player1";
-  if (!mapId && hand.length === 0 && bans.length === 0 && mapBans.length === 0) return null;
-  return (
-    <aside
-      aria-hidden
-      className={`fade-in pointer-events-none fixed top-1/2 z-20 hidden max-h-[80vh] w-[148px] -translate-y-1/2 overflow-y-auto rounded-xl border border-border bg-surface/85 p-2.5 backdrop-blur-sm 2xl:block ${
-        left ? "left-4" : "right-4"
-      }`}
-    >
-      {/* The map spans the column: it is the one thing you must be able to read at
-          a glance, and it is a heading rather than one of a set. */}
-      {mapId && (
-        <div className="mb-2.5">
-          <div className="text-[9px] uppercase tracking-wide text-muted">{t("match.currentMap")}</div>
-          <div className="mt-1 rounded ring-1 ring-bronze">
-            <RailTile entry={mapById(mapId)} kind="map" />
-          </div>
-          <div className="truncate text-[11px] leading-tight text-gold-bright">{mapName}</div>
-        </div>
-      )}
-      <div className={`truncate border-b pb-1 font-display text-sm ${own.text} ${own.border}`}>{name}</div>
-
-      {hand.length > 0 && (
-        <RailGroup label={t("spec.hand", { n: handLeft })} tone={own.text}>
-          {hand.map((h) => <RailTile key={h.key} entry={h.civ} kind="civ" dim={h.used} />)}
-        </RailGroup>
-      )}
-      {bans.length > 0 && (
-        <RailGroup label={t("spec.civsBanned")} tone="text-danger">
-          {bans.map((b) => <RailTile key={b.key} entry={b.civ} kind="civ" struck />)}
-        </RailGroup>
-      )}
-      {mapBans.length > 0 && (
-        <RailGroup label={t("spec.mapsBanned")} tone="text-muted">
-          {mapBans.map((b) => <RailTile key={b.key} entry={b.civ} kind="map" struck />)}
-        </RailGroup>
-      )}
-    </aside>
-  );
-}
-
 function RenameControl({ current, onRename }: { current: string; onRename: (name: string) => void }) {
   const { t } = useI18n();
   const [editing, setEditing] = useState(false);
