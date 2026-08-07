@@ -219,11 +219,50 @@ button:disabled { cursor: not-allowed; }
   animation: turn-glow 2.2s ease-in-out infinite;
 }
 
+/* ---- Ban / pick ---------------------------------------------------------- */
+
+/* A tile being claimed. The scale is the "landed" part; the ring is thrown off it
+   in the owner's colour so the eye is pulled to WHERE it happened, which on a
+   twenty-three-tile grid is the only part that is hard. */
+@keyframes tile-take {
+  0%   { transform: scale(1); }
+  38%  { transform: scale(1.09); }
+  100% { transform: scale(1); }
+}
+.tile-take { animation: tile-take 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* A tile being struck out: a flash, a flinch, and the colour draining as it goes.
+   A ban is the most consequential thing anyone does on this screen and it used to
+   be the least visible — the tile simply became grey between two frames. */
+@keyframes tile-strike {
+  0%   { transform: scale(1) rotate(0deg); filter: brightness(2.1); }
+  18%  { transform: scale(1.06) rotate(-1.4deg); }
+  42%  { transform: scale(0.95) rotate(1.1deg); }
+  68%  { transform: scale(1.02) rotate(-0.5deg); }
+  100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+}
+.tile-strike { animation: tile-strike 0.62s ease-out both; }
+
+/* The ring itself: starts on the tile's edge and leaves. */
+@keyframes tile-ring {
+  from { opacity: 0.85; transform: scale(1); }
+  to   { opacity: 0; transform: scale(1.4); }
+}
+.tile-ring { animation: tile-ring 0.6s ease-out both; }
+
+/* The cross landing on a banned tile, rather than being there all along. */
+@keyframes x-stamp {
+  0%   { opacity: 0; transform: scale(2.6) rotate(-14deg); }
+  55%  { opacity: 1; transform: scale(0.92) rotate(2deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+.x-stamp { animation: x-stamp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
 /* Respect users who prefer reduced motion. */
 @media (prefers-reduced-motion: reduce) {
   .route-enter, .fade-in, .skeleton, .spinner, .civ-pop, .civ-pop-glow,
   .ovl-pop, .ovl-slash, .ovl-slash-lg, .ovl-pulse, .ovl-glow, .ovl-flip, .turn-glow,
-  .ovl-sweep, .animate-pulse {
+  .ovl-sweep, .animate-pulse, .tile-take, .tile-strike, .tile-ring, .x-stamp {
     animation: none !important;
   }
 }

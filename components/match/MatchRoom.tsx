@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { GUEST_ACCESS } from "@/lib/features";
 import { getGuestToken, guestName, setGuestName } from "@/lib/guest";
 import { Thumb } from "@/components/Thumb";
+import { useChangeStamp } from "./useChangeStamp";
 import { getSocket } from "@/lib/socket/client";
 import { C2S, S2C } from "@/lib/socket/events";
 import { useI18n } from "@/lib/i18n";
@@ -1752,93 +1753,24 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
     <section className="aoe-panel rounded-xl p-4">
       <h3 className="mb-3 font-display text-sm uppercase tracking-wide text-muted">{title}</h3>
       <div className="grid gap-2" style={isMap ? GRID_MAP : GRID_CIV}>
-        {entries.map((e) => {
-          const can = clickable(e);
-          // During a select step (highlightSelectable given), only those entries are highlighted.
-          const isSelectStep = highlightSelectable != null;
-          const selectable = highlightSelectable ? highlightSelectable.includes(e.id) : true;
-          const banned = e.state === "banned";
-          const taken = e.state === "picked" || e.state === "drafted";
-          const own = taken ? ownerOf(e.by) : null;
-          const isPending = pending.has(e.id);
-          const isBlocked = !banned && !taken && blocked.has(e.id);
-          return (
-            <button
-              key={e.id}
-              disabled={!can}
-              onClick={() => can && onPick(e.id)}
-              onMouseEnter={() => onHover(e.id)}
-              onMouseLeave={() => onHover(null)}
-              className={[
-                "relative flex flex-col items-center overflow-hidden rounded-lg border-2 transition",
-                isMap ? "" : "p-2",
-                // Layered rather than one chain: whose an entry is has to survive
-                // every other state, or a map somebody picked reads as dead stock.
-                // Banned entries are colourless on purpose — grey, faded, ✕.
-                banned ? "border-border bg-surface-2 opacity-30 saturate-0"
-                  // Owned by someone: their border and their tint, always. A select
-                  // step used to overwrite this, so during "loser picks the map" the
-                  // maps each player had picked looked unavailable rather than theirs.
-                  : taken ? (own ? `${own.border} ${own.bg}` : "border-bronze bg-surface-2")
-                  // Closed to you alone. Deliberately NOT the greyed-out ban look:
-                  // this civ is still live, just not for you, and drawing it as dead
-                  // stock would misreport what the opponent can still field.
-                  // Dashed, because solid red is spoken for: in this app a colour is
-                  // an owner, and a solid red border means "player 2 holds this".
-                  // The dash is what says the border is a barrier, not a claim.
-                  : isBlocked ? "border-dashed border-danger bg-danger/[.08]"
-                  : "border-bronze bg-surface-2",
-                // Select step: light up what may actually be chosen, dim the rest.
-                // Runs after the ownership colours so it adds to them, not over them.
-                isSelectStep
-                  ? (selectable
-                      // Bright gold for the player actually selecting; dimmer for
-                      // a watcher (e.g. the winner while the loser picks the map).
-                      ? (can ? "ring-2 ring-gold cursor-pointer hover:brightness-110" : "ring-1 ring-gold/30")
-                      : "opacity-30")
-                  : !banned && !taken
-                    ? (can ? (tone === "ban"
-                              // Ban hover stays red: it is transient, follows your own
-                              // cursor, and can't be mistaken for "this is P2's".
-                              ? "cursor-pointer hover:border-danger hover:bg-danger/10"
-                              : "cursor-pointer hover:border-gold hover:bg-surface-2")
-                           // A blocked entry keeps its colour: the fade is how "not
-                           // your turn" is said, and saying it here would collapse
-                           // two different reasons you can't click into one look.
-                           : isBlocked ? "" : "opacity-50")
-                    : "",
-                // Your own pending simultaneous ban — locked in, not yet revealed.
-                isPending ? "border-gold ring-2 ring-gold bg-gold/10 saturate-50" : "",
-                oppHover === e.id
-                  ? (tone === "ban" ? "ring-2 ring-danger bg-danger/20" : "ring-2 ring-gold-bright bg-gold/10")
-                  : "",
-              ].join(" ")}
-              title={isBlocked ? t("match.blockedHint", { name: e.name }) : e.name}
-            >
-              <Thumb src={e.imageUrl} alt={e.name} className={`w-full ${isMap ? "aspect-[16/10] object-cover" : "aspect-square object-contain"} ${banned ? "grayscale" : ""}`} />
-              {/* The name carries the state too. At this cell size the border alone
-                  is a few pixels of colour, and a taken civ used to read as dead
-                  because its label looked identical to a banned one's.
-                  A map wears its name: the row underneath was height the picture
-                  could have had, and the map is the thing being chosen. */}
-              <span
-                className={`truncate leading-tight ${
-                  banned ? "text-muted"
-                    : isBlocked ? "font-semibold text-danger"
-                    : taken && own ? `font-semibold ${own.text}`
-                    : "text-foreground"
-                } ${isMap ? "absolute inset-x-0 bottom-0 px-2 py-1 text-center text-sm font-semibold" : "mt-1.5 w-full text-xs"}`}
-                style={isMap ? GLASS : undefined}
-              >
-                {e.name}
-              </span>
-              {banned && <span className="absolute inset-0 flex items-center justify-center text-4xl text-muted/70">✕</span>}
-              {taken && <span className={`absolute right-1 top-1 text-xs ${own?.text ?? "text-gold-bright"}`}>●</span>}
-              {isBlocked && <span className="absolute right-1 top-1 text-xs">🚫</span>}
-              {isPending && <span className="absolute left-1 top-1 text-sm text-gold-bright">🔒</span>}
-            </button>
-          );
-        })}
+        {entries.map((e) => (
+          <PoolTile
+            key={e.id}
+            e={e}
+            isMap={isMap}
+            can={clickable(e)}
+            tone={tone}
+            // During a select step (highlightSelectable given), only those entries are highlighted.
+            isSelectStep={highlightSelectable != null}
+            selectable={highlightSelectable ? highlightSelectable.includes(e.id) : true}
+            isPending={pending.has(e.id)}
+            blocked={blocked.has(e.id)}
+            oppHovered={oppHover === e.id}
+            onPick={onPick}
+            onHover={onHover}
+            t={t}
+          />
+        ))}
       </div>
 
       {/* Four states is one more than anybody wants to infer from colour alone,
@@ -1861,6 +1793,120 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
         )}
       </div>
     </section>
+  );
+}
+
+/**
+ * One entry in the pool, and the moment it stops being available.
+ *
+ * A ban is the most consequential thing anyone does on this screen and it used to
+ * be the least visible: the tile simply became grey between two frames, somewhere
+ * in a grid of twenty-three. It flinches now, and throws a ring in the colour of
+ * whatever just happened to it, so the eye is pulled to WHERE — which is the part
+ * that is actually hard to find.
+ *
+ * The stamp is what keeps that honest. Animations play on change, never on mount,
+ * so opening a draft that is already half-banned does not replay every ban at once.
+ */
+function PoolTile({ e, isMap, can, tone, isSelectStep, selectable, isPending, blocked, oppHovered, onPick, onHover, t }: {
+  e: PoolView; isMap: boolean; can: boolean; tone: "ban" | "pick" | "neutral";
+  isSelectStep: boolean; selectable: boolean; isPending: boolean; blocked: boolean;
+  oppHovered: boolean; onPick: (id: string) => void; onHover: (id: string | null) => void; t: TFn;
+}) {
+  const banned = e.state === "banned";
+  const taken = e.state === "picked" || e.state === "drafted";
+  const own = taken ? ownerOf(e.by) : null;
+  const isBlocked = !banned && !taken && blocked;
+
+  const stamp = useChangeStamp(`${e.state}:${e.by ?? ""}:${isBlocked ? "b" : ""}`);
+  const struck = banned || isBlocked;
+  const fresh = stamp > 0 && (struck || taken);
+  const ringColour = struck ? "var(--danger)" : e.by === "player1" ? "var(--p1)" : e.by === "player2" ? "var(--p2)" : "var(--gold)";
+
+  return (
+    <div className="relative">
+      {/* Outside the button on purpose: the button clips its own overflow so the
+          artwork can bleed to the edges, and that clipped the ring away too. */}
+      {fresh && (
+        <span key={stamp} aria-hidden className="tile-ring pointer-events-none absolute inset-0 z-10 rounded-lg"
+          style={{ boxShadow: `0 0 0 3px ${ringColour}, 0 0 20px 3px ${ringColour}` }} />
+      )}
+    <button
+      disabled={!can}
+      onClick={() => can && onPick(e.id)}
+      onMouseEnter={() => onHover(e.id)}
+      onMouseLeave={() => onHover(null)}
+      className={[
+        "relative flex w-full flex-col items-center overflow-hidden rounded-lg border-2 transition",
+        isMap ? "" : "p-2",
+        fresh ? (struck ? "tile-strike" : "tile-take") : "",
+        // Layered rather than one chain: whose an entry is has to survive
+        // every other state, or a map somebody picked reads as dead stock.
+        // Banned entries are colourless on purpose — grey, faded, ✕.
+        banned ? "border-border bg-surface-2 opacity-30 saturate-0"
+          // Owned by someone: their border and their tint, always. A select
+          // step used to overwrite this, so during "loser picks the map" the
+          // maps each player had picked looked unavailable rather than theirs.
+          : taken ? (own ? `${own.border} ${own.bg}` : "border-bronze bg-surface-2")
+          // Closed to you alone. Deliberately NOT the greyed-out ban look:
+          // this civ is still live, just not for you, and drawing it as dead
+          // stock would misreport what the opponent can still field.
+          // Dashed, because solid red is spoken for: in this app a colour is
+          // an owner, and a solid red border means "player 2 holds this".
+          // The dash is what says the border is a barrier, not a claim.
+          : isBlocked ? "border-dashed border-danger bg-danger/[.08]"
+          : "border-bronze bg-surface-2",
+        // Select step: light up what may actually be chosen, dim the rest.
+        // Runs after the ownership colours so it adds to them, not over them.
+        isSelectStep
+          ? (selectable
+              // Bright gold for the player actually selecting; dimmer for
+              // a watcher (e.g. the winner while the loser picks the map).
+              ? (can ? "ring-2 ring-gold cursor-pointer hover:brightness-110" : "ring-1 ring-gold/30")
+              : "opacity-30")
+          : !banned && !taken
+            ? (can ? (tone === "ban"
+                      // Ban hover stays red: it is transient, follows your own
+                      // cursor, and can't be mistaken for "this is P2's".
+                      ? "cursor-pointer hover:border-danger hover:bg-danger/10"
+                      : "cursor-pointer hover:border-gold hover:bg-surface-2")
+                   // A blocked entry keeps its colour: the fade is how "not
+                   // your turn" is said, and saying it here would collapse
+                   // two different reasons you can't click into one look.
+                   : isBlocked ? "" : "opacity-50")
+            : "",
+        // Your own pending simultaneous ban — locked in, not yet revealed.
+        isPending ? "border-gold ring-2 ring-gold bg-gold/10 saturate-50" : "",
+        oppHovered ? (tone === "ban" ? "ring-2 ring-danger bg-danger/20" : "ring-2 ring-gold-bright bg-gold/10") : "",
+      ].join(" ")}
+      title={isBlocked ? t("match.blockedHint", { name: e.name }) : e.name}
+    >
+      <Thumb src={e.imageUrl} alt={e.name} className={`w-full ${isMap ? "aspect-[16/10] object-cover" : "aspect-square object-contain"} ${banned ? "grayscale" : ""}`} />
+      {/* The name carries the state too. At this cell size the border alone
+          is a few pixels of colour, and a taken civ used to read as dead
+          because its label looked identical to a banned one's.
+          A map wears its name: the row underneath was height the picture
+          could have had, and the map is the thing being chosen. */}
+      <span
+        className={`truncate leading-tight ${
+          banned ? "text-muted"
+            : isBlocked ? "font-semibold text-danger"
+            : taken && own ? `font-semibold ${own.text}`
+            : "text-foreground"
+        } ${isMap ? "absolute inset-x-0 bottom-0 px-2 py-1 text-center text-sm font-semibold" : "mt-1.5 w-full text-xs"}`}
+        style={isMap ? GLASS : undefined}
+      >
+        {e.name}
+      </span>
+      {banned && (
+        <span className={`absolute inset-0 flex items-center justify-center text-5xl font-bold ${stamp > 0 ? "x-stamp" : ""}`}
+          style={{ color: "rgba(181,72,47,.9)" }}>✕</span>
+      )}
+      {taken && <span className={`absolute right-1 top-1 text-xs ${own?.text ?? "text-gold-bright"}`}>●</span>}
+      {isBlocked && <span className="absolute right-1 top-1 text-xs">🚫</span>}
+      {isPending && <span className="absolute left-1 top-1 text-sm text-gold-bright">🔒</span>}
+    </button>
+    </div>
   );
 }
 

@@ -5,6 +5,7 @@ import { Thumb } from "@/components/Thumb";
 import { useI18n } from "@/lib/i18n";
 import type { DerivedState, PoolView } from "@/lib/draft/engine";
 import { CivDuelPanel, LockRow } from "./CivDuel";
+import { useChangeStamp } from "../useChangeStamp";
 import { OWNER, OWNER_RGB, other, seatNames, type Seat, type SpectatorPayload } from "./types";
 
 /** Steps either side of the current one to keep on screen. */
@@ -12,7 +13,7 @@ const STEP_WINDOW = 3;
 
 // The canvas is a fixed 1920x1080, so every band's height is a share of a budget
 // rather than something that can grow. Named here because they have to add up.
-const HEADER_H = 112;
+const HEADER_H = 128;
 const STEPBAR_H = 60;
 // Tall enough to leave air under the map's name. The two player columns hang off
 // the bottom of this band and a 1080-tall canvas has no more room to give them,
@@ -261,34 +262,9 @@ export function DraftBoard({
         ) : (
           <>
             <div className="grid gap-3.5" style={{ gridTemplateColumns: `repeat(${poolCols}, minmax(0, 1fr))` }}>
-              {entries.map((c) => {
-                const owner: Seat | null = (c.state === "drafted" || c.state === "picked") && (c.by === "player1" || c.by === "player2") ? c.by : null;
-                const out = !owner && outOfPool.has(c.id);
-                return (
-                  <div
-                    key={c.id}
-                    className="relative rounded-[10px] p-2"
-                    style={{
-                      border: owner ? `2px solid ${OWNER[owner]}` : out ? "2px solid rgba(154,145,125,.45)" : "2px solid rgba(138,106,50,.85)",
-                      background: owner ? `rgba(${OWNER_RGB[owner]},.12)` : "var(--surface-2)",
-                      opacity: out ? 0.32 : 1,
-                    }}
-                  >
-                    <Thumb src={c.imageUrl} alt={c.name}
-                      className={`block w-full ${mapStep ? "aspect-[16/10] object-cover" : "aspect-square object-contain"} ${out ? "grayscale" : ""}`} />
-                    <div
-                      className="mt-1 truncate text-center font-sans text-[15px] font-semibold leading-tight"
-                      style={{ color: owner ? OWNER[owner] : out ? "var(--muted)" : "var(--foreground)" }}
-                    >
-                      {c.name}
-                    </div>
-                    {owner && (
-                      <span className="absolute right-1.5 top-[5px] font-sans text-[14px] font-bold leading-none" style={{ color: OWNER[owner] }}>●</span>
-                    )}
-                    {out && <span className="ovl-slash absolute left-1.5 right-1.5 top-[44%] h-1" style={{ background: "var(--danger)" }} />}
-                  </div>
-                );
-              })}
+              {entries.map((c) => (
+                <PoolCell key={c.id} entry={c} isMap={mapStep} out={!(c.state === "drafted" || c.state === "picked") && outOfPool.has(c.id)} />
+              ))}
             </div>
             <div className="mt-[22px] flex items-center justify-center gap-[26px] font-sans text-[15px] font-semibold tracking-[.06em] text-muted">
               <Legend swatch={{ border: "2px solid var(--bronze)" }} label={t("spec.legendPool")} />
@@ -325,6 +301,49 @@ function HeroMap({ map, t }: { map?: PoolView; t: (k: string, p?: Record<string,
         <Thumb src={map.imageUrl} alt={map.name} className="h-full w-full object-cover" />
       </div>
       <div className="mt-1.5 w-full truncate font-display text-[22px] font-bold leading-tight text-gold-bright">{map.name}</div>
+    </div>
+  );
+}
+
+/**
+ * One entry in the pool, and the moment it stops being available.
+ *
+ * The strike used to be the only thing that moved, and it moved on mount too — so
+ * a stream joining a half-finished draft replayed every ban it had missed, all at
+ * once. Now the tile flinches or takes the claim as it happens, throws a ring in
+ * the colour of what happened, and does nothing at all for history.
+ */
+function PoolCell({ entry, isMap, out }: { entry: PoolView; isMap: boolean; out: boolean }) {
+  const owner: Seat | null =
+    (entry.state === "drafted" || entry.state === "picked") && (entry.by === "player1" || entry.by === "player2") ? entry.by : null;
+  const stamp = useChangeStamp(`${entry.state}:${entry.by ?? ""}:${out ? "x" : ""}`);
+  const fresh = stamp > 0 && (out || Boolean(owner));
+  const ringColour = out ? "var(--danger)" : owner ? OWNER[owner] : "var(--gold)";
+  return (
+    <div
+      className={`relative rounded-[10px] p-2 ${fresh ? (out ? "tile-strike" : "tile-take") : ""}`}
+      style={{
+        border: owner ? `2px solid ${OWNER[owner]}` : out ? "2px solid rgba(154,145,125,.45)" : "2px solid rgba(138,106,50,.85)",
+        background: owner ? `rgba(${OWNER_RGB[owner]},.12)` : "var(--surface-2)",
+        opacity: out ? 0.32 : 1,
+      }}
+    >
+      <Thumb src={entry.imageUrl} alt={entry.name}
+        className={`block w-full ${isMap ? "aspect-[16/10] object-cover" : "aspect-square object-contain"} ${out ? "grayscale" : ""}`} />
+      <div
+        className="mt-1 truncate text-center font-sans text-[15px] font-semibold leading-tight"
+        style={{ color: owner ? OWNER[owner] : out ? "var(--muted)" : "var(--foreground)" }}
+      >
+        {entry.name}
+      </div>
+      {owner && (
+        <span className="absolute right-1.5 top-[5px] font-sans text-[14px] font-bold leading-none" style={{ color: OWNER[owner] }}>●</span>
+      )}
+      {out && <span key={`s${stamp}`} className="ovl-slash absolute left-1.5 right-1.5 top-[44%] h-1" style={{ background: "var(--danger)" }} />}
+      {fresh && (
+        <span key={stamp} aria-hidden className="tile-ring pointer-events-none absolute inset-0 rounded-[10px]"
+          style={{ boxShadow: `0 0 0 3px ${ringColour}, 0 0 20px 3px ${ringColour}` }} />
+      )}
     </div>
   );
 }
@@ -420,7 +439,10 @@ function PlayerColumn({
             {hand.map((c) => {
               const spent = used.has(c.id);
               return (
-                <div key={c.id} className="relative">
+                // Mount-time pop is right here: a tile in this grid is new because
+                // the civ is new, and a column that fills itself in on join reads
+                // as the board dealing the hand rather than as a glitch.
+                <div key={c.id} className="ovl-pop relative">
                   <Thumb src={c.imageUrl} alt={c.name}
                     className={`aspect-square w-full rounded-lg bg-surface-2 object-contain ${spent ? "grayscale opacity-35" : ""}`}
                     // Border colour carries ownership, so it has to stay inline.
