@@ -99,7 +99,10 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
       // Only upward: a board taller than the window is not "gone" just because
       // its bottom is off the fold.
       ([e]) => setBoardGone(e.intersectionRatio < 1 / 3 && e.boundingClientRect.top < 0),
-      { threshold: [0, 1 / 3, 1] }
+      // A ladder rather than the one threshold that matters. The observer only
+      // reports on a crossing, and the board changes height as the draft runs —
+      // so a jump that lands between two sparse thresholds can pass unreported.
+      { threshold: [0, 0.1, 0.2, 1 / 3, 0.5, 0.75, 1] }
     );
     io.observe(el);
     boardObserver.current = io;
@@ -589,6 +592,12 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         </>
       )}
       </div>
+
+      {/* Enough travel below the draft for the page to actually finish scrolling
+          the panel to the top. Short of this the scroll stops halfway — the board
+          stays half on screen and the rails never earn their trigger, which is the
+          one combination that leaves you reading neither. */}
+      <div aria-hidden className="h-[55vh]" />
     </div>
   );
 }
@@ -1096,8 +1105,11 @@ function ContextRail({
   return (
     <aside
       aria-hidden
-      className={`fade-in pointer-events-none fixed top-1/2 z-20 hidden max-h-[80vh] w-[148px] -translate-y-1/2 overflow-y-auto rounded-xl border border-border bg-surface/85 p-2.5 backdrop-blur-sm 2xl:block ${
-        left ? "left-4" : "right-4"
+      // A slimmer rail, nearer the edge, so it reaches a smaller window. Past
+      // 1440 it clears the content; a little under, it laps the panel's own
+      // padding, which is invisible on something translucent that takes no clicks.
+      className={`fade-in pointer-events-none fixed top-1/2 z-20 hidden max-h-[80vh] w-[132px] -translate-y-1/2 overflow-y-auto rounded-xl border border-border bg-surface/85 p-2 backdrop-blur-sm min-[1440px]:block ${
+        left ? "left-3" : "right-3"
       }`}
     >
       <div className={`truncate border-b pb-1 font-display text-sm ${own.text} ${own.border}`}>{name}</div>
