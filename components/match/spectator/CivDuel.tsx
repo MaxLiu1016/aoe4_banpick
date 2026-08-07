@@ -10,6 +10,14 @@ type Translate = (k: string, p?: Record<string, string | number>) => string;
 /** How long one card waits for the card before it to turn over. */
 const FLIP_STAGGER_MS = 150;
 
+// The arena's budget on the 1920x1080 canvas, once the columns have stepped aside:
+// half of (canvas − two 280px gutters − the VS column − its gaps), and what is
+// left vertically after the name, the status pill and the secrecy line.
+const SIDE_W = 550;
+const CARDS_H = 470;
+const CARD_GAP = 20;
+const CARD_MAX = 300;
+
 /**
  * The offer and snipe phases, which the civ pool cannot describe: what matters in
  * them is not which civs are left but what each side is holding face-down.
@@ -50,10 +58,17 @@ export function CivDuelPanel({
   const revealTotal = sniping ? cards.player1.length + cards.player2.length : 0;
   const revealIndex = useReveal(revealTotal, state.currentStepIndex);
 
-  // Two cards a side is the common shape and gets the biggest card; past that the
-  // row wraps inside its own half rather than shrinking the whole arena away.
+  // The board hands the whole width over for this phase, so the cards get to be
+  // the size the moment is. Worked out from the space rather than looked up from a
+  // table of counts: a fixed size that happens not to fit wraps into a second row
+  // and then overflows the band upward, over the header. Try one row and two, and
+  // take the biggest card that fits the width AND the height either way.
   const widest = Math.max(cards.player1.length, cards.player2.length, 1);
-  const cardW = widest <= 2 ? 200 : widest <= 6 ? 152 : 112;
+  const fit = (rows: number) => {
+    const perRow = Math.ceil(widest / rows);
+    return Math.min((SIDE_W - (perRow - 1) * CARD_GAP) / perRow, (CARDS_H - (rows - 1) * CARD_GAP) / rows);
+  };
+  const cardW = Math.round(Math.min(CARD_MAX, Math.max(fit(1), fit(2))));
 
   // Both sides in but the step has not turned over yet — the one moment where
   // "nothing to show" is the actual news.
@@ -62,16 +77,16 @@ export function CivDuelPanel({
   return (
     // A fixed band, so the arena sits in the middle of the space the pool grid
     // would have filled instead of hanging off the heading.
-    <div className="mt-6 flex h-[610px] flex-col justify-center">
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-6">
+    <div className="flex h-full flex-col justify-center">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-10">
         <Side
           seat="player1" cards={cards.player1} cardW={cardW} hidden={hidden} sniping={sniping}
           from={0} revealIndex={revealIndex} names={names} state={state} t={t}
         />
         {/* The VS keeps its place whatever happens below it: a mark that jumps when
             the reveal starts reads as a glitch on a stream. */}
-        <div className="w-[140px] text-center">
-          <div className="font-display text-[64px] font-bold leading-none text-gold" style={{ textShadow: "0 3px 14px rgba(0,0,0,.8)" }}>
+        <div className="w-[180px] text-center">
+          <div className="font-display text-[88px] font-bold leading-none text-gold" style={{ textShadow: "0 3px 14px rgba(0,0,0,.8)" }}>
             VS
           </div>
           <div className="h-[76px] pt-4">
@@ -126,9 +141,9 @@ function Side({
   const label = owed > 0 ? t("spec.offering", { n: owed }) : t("spec.offered");
   return (
     <div className="text-center">
-      <div className="truncate font-display text-[28px] font-bold leading-none" style={{ color: OWNER[seat] }}>{names[seat]}</div>
-      <div className="mt-2 font-sans text-[15px] font-semibold tracking-[.18em] text-muted">{label}</div>
-      <div className="mt-3.5 flex flex-wrap items-start justify-center gap-3.5">
+      <div className="truncate font-display text-[40px] font-bold leading-none" style={{ color: OWNER[seat] }}>{names[seat]}</div>
+      <div className="mt-2 font-sans text-[17px] font-semibold tracking-[.18em] text-muted">{label}</div>
+      <div className="mt-4 flex flex-wrap items-start justify-center gap-5">
         {cards.map((civ, i) => (
           <Card
             key={civ?.id ?? `slot-${i}`}
@@ -182,7 +197,8 @@ function Card({ civ, seat, width, kind, glow, turned }: {
       }}
     >
       <Thumb src={civ?.imageUrl} alt={civ?.name ?? ""} className="h-[64%] w-[64%] object-contain" />
-      <div className="mt-1 w-full truncate text-center font-display text-[16px] font-bold leading-tight" style={{ color: OWNER[seat] }}>
+      <div className="mt-1.5 w-full truncate text-center font-display font-bold leading-tight"
+        style={{ color: OWNER[seat], fontSize: Math.max(16, Math.round(width * 0.1)) }}>
         {civ?.name ?? "—"}
       </div>
     </div>
@@ -327,18 +343,18 @@ export function SnipeOutcome({
           const survivor = fielding(seat);
           const node = (
             <div key={seat} className="text-center">
-              <div className="truncate font-display text-[32px] font-bold leading-none" style={{ color: OWNER[seat] }}>{names[seat]}</div>
-              <div className="mt-6 flex flex-wrap items-start justify-center gap-6">
+              <div className="truncate font-display text-[40px] font-bold leading-none" style={{ color: OWNER[seat] }}>{names[seat]}</div>
+              <div className="mt-6 flex flex-wrap items-start justify-center gap-8">
                 {duel.offered[seat].map((id) => {
                   const civ = civById.get(id);
                   const dead = struck.has(id);
                   const alive = id === survivor;
                   return (
-                    <div key={id} className="relative" style={{ width: 210 }}>
+                    <div key={id} className="relative" style={{ width: 280 }}>
                       <div
                         className={`flex flex-col items-center justify-center rounded-[14px] p-3 ${alive ? "ovl-glow" : ""}`}
                         style={{
-                          height: 210,
+                          height: 280,
                           border: `3px solid ${alive ? "var(--gold-bright)" : "rgba(58,51,38,.9)"}`,
                           background: alive ? `rgba(${OWNER_RGB[seat]},.12)` : "var(--surface-2)",
                           filter: dead ? "grayscale(1) brightness(.55)" : undefined,
@@ -346,7 +362,7 @@ export function SnipeOutcome({
                         }}
                       >
                         <Thumb src={civ?.imageUrl} alt={civ?.name ?? ""} className="h-[62%] w-[62%] object-contain" />
-                        <div className="mt-1.5 w-full truncate text-center font-display text-[19px] font-bold leading-tight"
+                        <div className="mt-2 w-full truncate text-center font-display text-[24px] font-bold leading-tight"
                           style={{ color: alive ? "var(--gold-bright)" : "var(--muted)" }}>
                           {civ?.name ?? "—"}
                         </div>
@@ -364,7 +380,7 @@ export function SnipeOutcome({
             </div>
           );
           return i === 0
-            ? [node, <div key="vs" className="pt-10 font-display text-[64px] font-bold leading-none text-gold"
+            ? [node, <div key="vs" className="pt-12 font-display text-[88px] font-bold leading-none text-gold"
                 style={{ textShadow: "0 3px 14px rgba(0,0,0,.8)" }}>VS</div>]
             : node;
         })}

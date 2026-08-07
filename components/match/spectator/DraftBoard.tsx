@@ -10,6 +10,23 @@ import { OWNER, OWNER_RGB, seatNames, type Seat, type SpectatorPayload } from ".
 /** Steps either side of the current one to keep on screen. */
 const STEP_WINDOW = 3;
 
+// The canvas is a fixed 1920x1080, so every band's height is a share of a budget
+// rather than something that can grow. Named here because they have to add up.
+const HEADER_H = 112;
+const STEPBAR_H = 66;
+// Sized down to what it can afford: the two player columns hang off the bottom
+// of this band and a 1080-tall canvas has no more room to give them.
+const HERO_H = 166;
+const CONTENT_TOP = HEADER_H + STEPBAR_H + HERO_H; // 344
+
+// Where the two player columns sit, and therefore how wide the middle is. The
+// duel needs the width far more than the columns do — the pool is not on screen
+// during it, and what is on screen is two hands of cards meant to be read from
+// across a room — so the columns step aside and become a reminder of who holds
+// what rather than a full account of it.
+const COL = { w: 360, inset: 88, centre: 480 };
+const COL_DUEL = { w: 200, inset: 40, centre: 280 };
+
 /**
  * The draft as a broadcast picture: the whole civ pool in the middle as the single
  * source of truth, and each player's own view of it down the sides.
@@ -57,71 +74,103 @@ export function DraftBoard({
       ? t("spec.bothTurn", { step: stepName })
       : t("spec.turnOf", { name: names[state.turn as Seat], step: stepName });
 
-  // Six across reads best, but a full 23-civ pool at that width runs off the
-  // bottom of the canvas. Widen the grid instead of shrinking the whole board.
-  const poolCols = state.civs.length <= 12 ? 6 : state.civs.length <= 24 ? 8 : 10;
-
   // The offer and snipe phases are about what is face-down, which the pool cannot
   // say — so for those steps the middle of the board becomes the duel itself.
   const duel = step?.type === "CIV_OFFER" || step?.type === "CIV_SNIPE_OPPONENT" ? state.civDuel : null;
   // Any other step where both sides act blind: the pool is still the right picture,
   // but it has to be said who is already in. (`pendingBans` is never read.)
   const showLocks = !duel && state.simultaneous;
+  const box = duel ? COL_DUEL : COL;
+
+  // While the maps are being drafted, the middle shows the maps. It used to show
+  // the civ pool throughout — twenty-three flags nothing was happening to, while
+  // the thing being banned appeared only as a thumbnail in a side column.
+  const mapStep = step?.type === "MAP_BAN" || step?.type === "MAP_PICK" || step?.type === "MAP_SELECT";
+  const entries = mapStep ? state.maps : state.civs;
+  // Seven across at this width gives a tile you can read a name under. A small
+  // pool has room to spare and gets a bigger one; maps are wide, so fewer fit.
+  const poolCols = mapStep
+    ? (entries.length <= 6 ? 3 : entries.length <= 12 ? 4 : 5)
+    : (entries.length <= 12 ? 5 : entries.length <= 24 ? 7 : 9);
+  // A map banned during the map draft is banned for everyone, and the pool is the
+  // only place that says so before the columns fill up.
+  const outOfPool = mapStep
+    ? new Set(state.maps.filter((m) => m.state === "banned").map((m) => m.id))
+    : banned;
 
   const from = Math.max(0, Math.min(state.currentStepIndex - STEP_WINDOW, state.stepBar.length - STEP_WINDOW * 2 - 1));
   const steps = state.stepBar.slice(from, from + STEP_WINDOW * 2 + 1);
+  const decided = state.games.filter((g) => g.winner);
 
   return (
     <div
       className="absolute inset-0"
       style={{ background: "radial-gradient(1300px 640px at 50% -12%, rgba(216,178,74,.12), transparent 62%), var(--background)" }}
     >
-      {/* ---- Header ---- */}
+      {/* ---- Header: who, the score, and the series so far ---- */}
       <div
-        className="absolute left-0 right-0 top-0 grid h-[118px] grid-cols-[1fr_auto_1fr] items-center px-12"
+        className="absolute left-0 right-0 top-0 grid grid-cols-[1fr_auto_1fr] items-center px-12"
         style={{
+          height: HEADER_H,
           borderBottom: "2px solid rgba(138,106,50,.6)",
           background: "linear-gradient(180deg, rgba(32,36,45,.9), rgba(15,17,21,.9))",
         }}
       >
         <div className="min-w-0">
           <div className="truncate font-display text-[22px] font-semibold leading-tight text-foreground">{roomName}</div>
-          <div className="mt-1 font-sans text-[15px] font-semibold tracking-[.18em] text-muted">
+          <div className="mt-0.5 font-sans text-[15px] font-semibold tracking-[.18em] text-muted">
             {t("spec.format", { n: state.bestOf, g: state.currentGameIndex + 1 })}
           </div>
+          {/* Games already played. They used to have a strip across the bottom of
+              the board; up here they cost nothing and give the pool its height. */}
+          {decided.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              {decided.map((g) => {
+                const w = g.winner as Seat;
+                return (
+                  <span key={g.gameIndex} className="flex items-center gap-1.5 rounded-md px-2 py-0.5"
+                    style={{ border: "1px solid rgba(58,51,38,.9)", background: "rgba(32,36,45,.5)" }}>
+                    <span className="font-sans text-[13px] font-semibold tracking-[.1em] text-muted">G{g.gameIndex + 1}</span>
+                    <Thumb src={civById.get(w === "player1" ? g.civP1 ?? "" : g.civP2 ?? "")?.imageUrl} alt=""
+                      className="h-[22px] w-[22px] object-contain" />
+                    <span className="max-w-[110px] truncate font-sans text-[13px] font-semibold" style={{ color: OWNER[w] }}>
+                      {names[w]}
+                    </span>
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </div>
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-[26px]">
-          <div className="text-right font-display text-[38px] font-bold leading-none" style={{ color: OWNER.player1 }}>
+          <div className="text-right font-display text-[40px] font-bold leading-none" style={{ color: OWNER.player1 }}>
             {names.player1}
           </div>
           <div className="flex items-baseline gap-3">
-            <span className="font-display text-[50px] font-bold leading-none" style={{ color: OWNER.player1 }}>{state.score.player1}</span>
+            <span className="font-display text-[52px] font-bold leading-none" style={{ color: OWNER.player1 }}>{state.score.player1}</span>
             <span className="font-display text-[30px] font-bold leading-none text-bronze">—</span>
-            <span className="font-display text-[50px] font-bold leading-none" style={{ color: OWNER.player2 }}>{state.score.player2}</span>
+            <span className="font-display text-[52px] font-bold leading-none" style={{ color: OWNER.player2 }}>{state.score.player2}</span>
           </div>
-          <div className="text-left font-display text-[38px] font-bold leading-none" style={{ color: OWNER.player2 }}>
+          <div className="text-left font-display text-[40px] font-bold leading-none" style={{ color: OWNER.player2 }}>
             {names.player2}
           </div>
         </div>
-        <div className="flex items-center justify-end gap-[18px]">
+        <div className="flex items-center justify-end">
           {payload.status === "paused" ? (
-            <span className="font-display text-[40px] font-bold leading-none text-danger">{t("spec.paused")}</span>
+            <span className="font-display text-[34px] font-bold leading-none text-danger">{t("spec.paused")}</span>
           ) : (
-            <>
-              <span className="inline-flex items-center gap-[9px] font-sans text-[16px] font-semibold tracking-[.18em] text-muted">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--urgent)" }} />
-                {t("spec.live")}
-              </span>
-              <Countdown deadlineTs={payload.deadlineTs} clockOffset={clockOffset} />
-            </>
+            <span className="inline-flex items-center gap-[9px] font-sans text-[16px] font-semibold tracking-[.18em] text-muted">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--urgent)" }} />
+              {t("spec.live")}
+            </span>
           )}
         </div>
       </div>
 
       {/* ---- Step bar ---- */}
       <div
-        className="absolute left-0 right-0 top-[118px] flex h-[74px] items-center justify-center gap-2.5 px-12"
-        style={{ borderBottom: "1px solid rgba(58,51,38,.8)" }}
+        className="absolute left-0 right-0 flex items-center justify-center gap-2.5 px-12"
+        style={{ top: HEADER_H, height: STEPBAR_H, borderBottom: "1px solid rgba(58,51,38,.8)" }}
       >
         {steps.map((s, i) => {
           const idx = from + i;
@@ -153,12 +202,32 @@ export function DraftBoard({
         })}
       </div>
 
+      {/* ---- The three things a viewer is actually watching for ---- */}
+      <div
+        className="absolute left-0 right-0 flex items-center justify-center gap-[48px] px-12"
+        style={{ top: HEADER_H + STEPBAR_H, height: HERO_H }}
+      >
+        <HeroMap map={currentMap ? mapById.get(currentMap) : undefined} t={t} />
+        <div className="min-w-0 max-w-[720px] text-center">
+          <div className="truncate font-display text-[42px] font-bold leading-tight text-gold-bright">{heading}</div>
+          <div className="mt-1.5 font-sans text-[17px] font-semibold tracking-[.2em] text-muted">
+            {t("spec.gameNofM", { n: state.currentGameIndex + 1, total: state.bestOf })}
+          </div>
+        </div>
+        {/* The clock used to live in the top-right corner at 40px, which is where
+            you look last. It is the number the whole screen is waiting on. */}
+        <Countdown deadlineTs={payload.status === "paused" ? null : payload.deadlineTs} clockOffset={clockOffset} />
+      </div>
+
       {/* ---- Player columns ---- */}
       {(["player1", "player2"] as Seat[]).map((seat) => (
         <PlayerColumn
           key={seat}
           seat={seat}
           name={names[seat]}
+          compact={Boolean(duel)}
+          width={box.w}
+          inset={box.inset}
           hand={(seat === "player1" ? state.draftedByP1 : state.draftedByP2).map((id) => civById.get(id)).filter(Boolean) as PoolView[]}
           used={usedBy(seat)}
           civBans={state.civBans.filter((b) => b.by === seat).map((b) => civById.get(b.id)).filter(Boolean) as PoolView[]}
@@ -170,93 +239,90 @@ export function DraftBoard({
         />
       ))}
 
-      {/* ---- The pool ---- */}
-      <div className="absolute left-[436px] right-[436px] top-[232px]">
-        <div className="text-center">
-          <div className="truncate font-display text-[40px] font-bold leading-tight text-gold-bright">{heading}</div>
-          <div className="mt-1.5 font-sans text-[16px] font-semibold tracking-[.2em] text-muted">
-            {t("spec.gameMap", {
-              n: state.currentGameIndex + 1,
-              map: (currentMap ? mapById.get(currentMap)?.name ?? "—" : "—").toUpperCase(),
-            })}
-          </div>
-        </div>
+      {/* ---- The middle: the pool, or the duel that replaces it ---- */}
+      <div className="absolute" style={{ top: CONTENT_TOP, left: box.centre, right: box.centre, bottom: 34 }}>
         {showLocks && <LockRow state={state} names={names} t={t} />}
         {duel ? (
           <CivDuelPanel state={state} duel={duel} names={names} civById={civById} t={t} />
         ) : (
-        <>
-        <div className="mt-6 grid gap-3.5" style={{ gridTemplateColumns: `repeat(${poolCols}, minmax(0, 1fr))` }}>
-          {state.civs.map((c) => {
-            const owner: Seat | null = c.state === "drafted" && (c.by === "player1" || c.by === "player2") ? c.by : null;
-            const out = !owner && banned.has(c.id);
-            return (
-              <div
-                key={c.id}
-                className="relative rounded-[10px] p-2"
-                style={{
-                  border: owner ? `2px solid ${OWNER[owner]}` : out ? "2px solid rgba(154,145,125,.45)" : "2px solid rgba(138,106,50,.85)",
-                  background: owner ? `rgba(${OWNER_RGB[owner]},.12)` : "var(--surface-2)",
-                  opacity: out ? 0.32 : 1,
-                }}
-              >
-                <Thumb src={c.imageUrl} alt={c.name} className={`block aspect-square w-full object-contain ${out ? "grayscale" : ""}`} />
-                <div
-                  className="mt-1 truncate text-center font-sans text-[14px] font-semibold leading-tight"
-                  style={{ color: owner ? OWNER[owner] : out ? "var(--muted)" : "var(--foreground)" }}
-                >
-                  {c.name}
-                </div>
-                {owner && (
-                  <span className="absolute right-1.5 top-[5px] font-sans text-[14px] font-bold leading-none" style={{ color: OWNER[owner] }}>●</span>
-                )}
-                {out && <span className="ovl-slash absolute left-1.5 right-1.5 top-[44%] h-1" style={{ background: "var(--danger)" }} />}
-              </div>
-            );
-          })}
-        </div>
-        <div className="mt-[22px] flex items-center justify-center gap-[26px] font-sans text-[15px] font-semibold tracking-[.06em] text-muted">
-          <Legend swatch={{ border: "2px solid var(--bronze)" }} label={t("spec.legendPool")} />
-          <Legend swatch={{ background: "var(--danger)" }} label={t("spec.legendBanned")} />
-          <Legend swatch={{ border: `2px solid ${OWNER.player1}` }} label={t("spec.legendHeld", { name: names.player1 })} />
-          <Legend swatch={{ border: `2px solid ${OWNER.player2}` }} label={t("spec.legendHeld", { name: names.player2 })} />
-        </div>
-        </>
+          <>
+            <div className="grid gap-3.5" style={{ gridTemplateColumns: `repeat(${poolCols}, minmax(0, 1fr))` }}>
+              {entries.map((c) => {
+                const owner: Seat | null = (c.state === "drafted" || c.state === "picked") && (c.by === "player1" || c.by === "player2") ? c.by : null;
+                const out = !owner && outOfPool.has(c.id);
+                return (
+                  <div
+                    key={c.id}
+                    className="relative rounded-[10px] p-2"
+                    style={{
+                      border: owner ? `2px solid ${OWNER[owner]}` : out ? "2px solid rgba(154,145,125,.45)" : "2px solid rgba(138,106,50,.85)",
+                      background: owner ? `rgba(${OWNER_RGB[owner]},.12)` : "var(--surface-2)",
+                      opacity: out ? 0.32 : 1,
+                    }}
+                  >
+                    <Thumb src={c.imageUrl} alt={c.name}
+                      className={`block w-full ${mapStep ? "aspect-[16/10] object-cover" : "aspect-square object-contain"} ${out ? "grayscale" : ""}`} />
+                    <div
+                      className="mt-1 truncate text-center font-sans text-[15px] font-semibold leading-tight"
+                      style={{ color: owner ? OWNER[owner] : out ? "var(--muted)" : "var(--foreground)" }}
+                    >
+                      {c.name}
+                    </div>
+                    {owner && (
+                      <span className="absolute right-1.5 top-[5px] font-sans text-[14px] font-bold leading-none" style={{ color: OWNER[owner] }}>●</span>
+                    )}
+                    {out && <span className="ovl-slash absolute left-1.5 right-1.5 top-[44%] h-1" style={{ background: "var(--danger)" }} />}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-[22px] flex items-center justify-center gap-[26px] font-sans text-[15px] font-semibold tracking-[.06em] text-muted">
+              <Legend swatch={{ border: "2px solid var(--bronze)" }} label={t("spec.legendPool")} />
+              <Legend swatch={{ background: "var(--danger)" }} label={t("spec.legendBanned")} />
+              <Legend swatch={{ border: `2px solid ${OWNER.player1}` }} label={t("spec.legendHeld", { name: names.player1 })} />
+              <Legend swatch={{ border: `2px solid ${OWNER.player2}` }} label={t("spec.legendHeld", { name: names.player2 })} />
+            </div>
+          </>
         )}
       </div>
-
-      {/* ---- Games so far ---- */}
-      <div
-        className="absolute bottom-[34px] left-12 right-12 flex items-center justify-center gap-[34px] pt-[22px]"
-        style={{ borderTop: "2px solid rgba(138,106,50,.5)" }}
-      >
-        {state.games.map((g) => {
-          const live = g.gameIndex === state.currentGameIndex && !g.winner;
-          const m = g.map ? mapById.get(g.map) : undefined;
-          if (!g.winner && !live) return null;
-          const tag = `G${g.gameIndex + 1} ${(m?.name ?? "—").toUpperCase()}`;
-          if (live) {
-            return (
-              <div key={g.gameIndex} className="flex items-center gap-3 rounded-[10px] px-[18px] py-2.5"
-                style={{ border: "1px solid var(--gold)", background: "rgba(216,178,74,.1)" }}>
-                <span className="font-sans text-[15px] font-semibold tracking-[.14em] text-gold-bright">
-                  {tag} · {t("spec.drafting")}
-                </span>
-              </div>
-            );
-          }
-          return (
-            <div key={g.gameIndex} className="flex items-center gap-3 rounded-[10px] px-[18px] py-2.5"
-              style={{ border: "1px solid rgba(58,51,38,.9)" }}>
-              <span className="font-sans text-[15px] font-semibold tracking-[.14em] text-muted">{tag}</span>
-              <GameCiv id={g.civP1} civById={civById} won={g.winner === "player1"} />
-              <span className="font-sans text-[14px] text-muted">vs</span>
-              <GameCiv id={g.civP2} civById={civById} won={g.winner === "player2"} />
-            </div>
-          );
-        })}
-      </div>
     </div>
+  );
+}
+
+/**
+ * The map this game is being drafted for, as a picture.
+ *
+ * It used to be four words of grey uppercase under the heading, which is a strange
+ * way to treat the one fact every civ decision on screen is being made against.
+ */
+function HeroMap({ map, t }: { map?: PoolView; t: (k: string, p?: Record<string, string | number>) => string }) {
+  if (!map) {
+    return (
+      <div className="flex shrink-0 flex-col items-center text-center" style={{ width: 272 }}>
+        <div className="flex items-center justify-center rounded-[10px] font-display text-[42px] font-bold text-bronze"
+          style={{ width: 208, height: 130, border: "2px dashed rgba(138,106,50,.7)" }}>?</div>
+        <div className="mt-1.5 w-full truncate font-sans text-[14px] font-semibold tracking-[.16em] text-muted">{t("spec.mapPending")}</div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex shrink-0 flex-col items-center text-center" style={{ width: 272 }}>
+      <div className="overflow-hidden rounded-[10px]" style={{ width: 208, height: 130, border: "3px solid var(--gold)" }}>
+        <Thumb src={map.imageUrl} alt={map.name} className="h-full w-full object-cover" />
+      </div>
+      <div className="mt-1.5 w-full truncate font-display text-[22px] font-bold leading-tight text-gold-bright">{map.name}</div>
+    </div>
+  );
+}
+
+/** A map's name, laid over the bottom of its own picture — the column has no
+ *  height to spare for a caption underneath, and an unnamed map is a texture. */
+function MapName({ name, dim }: { name: string; dim?: boolean }) {
+  return (
+    <span className={`absolute inset-x-0 bottom-0 truncate rounded-b-md px-1 text-center font-sans text-[12px] font-semibold leading-[16px] ${dim ? "text-gold-bright/70" : "text-gold-bright"}`}
+      style={{ background: "rgba(15,17,21,.78)" }}>
+      {name}
+    </span>
   );
 }
 
@@ -269,24 +335,16 @@ function Legend({ swatch, label }: { swatch: React.CSSProperties; label: string 
   );
 }
 
-/** One side of a finished game in the bottom strip. The crown follows the winner's
- *  civ on both sides, so the eye finds it in the same place either way. */
-function GameCiv({ id, civById, won }: { id?: string; civById: Map<string, PoolView>; won: boolean }) {
-  const c = id ? civById.get(id) : undefined;
-  return (
-    <span className="flex items-center gap-2">
-      <Thumb src={c?.imageUrl} alt={c?.name ?? ""} className={`h-11 w-11 object-contain ${won ? "" : "opacity-50 grayscale"}`} />
-      {won && <span className="font-display text-[17px] font-bold leading-none text-gold-bright">👑</span>}
-    </span>
-  );
-}
-
 /** A player's own side of the draft: what they hold, and what they struck out. */
 function PlayerColumn({
-  seat, name, hand, used, civBans, mapsPicked, playedMaps, mapBans, picking, t,
+  seat, name, compact, width, inset, hand, used, civBans, mapsPicked, playedMaps, mapBans, picking, t,
 }: {
   seat: Seat;
   name: string;
+  /** The duel owns the middle — this side stands down to a reminder of the hand. */
+  compact: boolean;
+  width: number;
+  inset: number;
   hand: PoolView[];
   used: Set<string>;
   civBans: PoolView[];
@@ -302,11 +360,33 @@ function PlayerColumn({
   const heading = (label: string, colour: string) => (
     <div className="mt-6 font-sans text-[15px] font-semibold tracking-[.18em]" style={{ color: colour }}>{label}</div>
   );
+
+  if (compact) {
+    return (
+      <div className="absolute" style={{ top: CONTENT_TOP, width, [right ? "right" : "left"]: inset, textAlign: right ? "right" : "left" }}>
+        <div className="truncate pb-2 font-display text-[26px] font-bold leading-none" style={{ color: OWNER[seat], borderBottom: `3px solid ${OWNER[seat]}` }}>
+          {name}
+        </div>
+        <div className="mt-2.5 font-sans text-[13px] font-semibold tracking-[.18em] text-muted">{t("spec.hand", { n: remaining })}</div>
+        <div className="mt-2.5 grid grid-cols-4 gap-2">
+          {hand.map((c) => (
+            <div key={c.id} className="relative">
+              <Thumb src={c.imageUrl} alt={c.name}
+                className={`aspect-square w-full rounded bg-surface-2 object-contain ${used.has(c.id) ? "grayscale opacity-30" : ""}`} />
+              <span className="pointer-events-none absolute inset-0 rounded"
+                style={{ border: used.has(c.id) ? "2px solid rgba(58,51,38,.9)" : `2px solid ${OWNER[seat]}` }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={`absolute top-[232px] w-[352px] ${right ? "right-12 text-right" : "left-12"}`}>
+    <div className="absolute" style={{ top: CONTENT_TOP, width, [right ? "right" : "left"]: inset, textAlign: right ? "right" : "left" }}>
       <div className={`flex items-center gap-3 pb-3 ${right ? "justify-end" : ""}`} style={{ borderBottom: `3px solid ${OWNER[seat]}` }}>
         {right && <span className="font-sans text-[15px] font-semibold tracking-[.14em] text-muted">P2</span>}
-        <span className="truncate font-display text-[34px] font-bold leading-none" style={{ color: OWNER[seat] }}>{name}</span>
+        <span className="truncate font-display text-[38px] font-bold leading-none" style={{ color: OWNER[seat] }}>{name}</span>
         {!right && <span className="font-sans text-[15px] font-semibold tracking-[.14em] text-muted">P1</span>}
       </div>
 
@@ -344,8 +424,8 @@ function PlayerColumn({
           {heading(t("spec.civsBanned"), "var(--danger)")}
           <div className={`mt-3 flex flex-wrap gap-3 ${right ? "justify-end" : ""}`}>
             {civBans.map((c) => (
-              <div key={c.id} className="relative h-[70px] w-[70px]">
-                <Thumb src={c.imageUrl} alt={c.name} className="h-[70px] w-[70px] rounded border border-[rgba(154,145,125,.45)] bg-surface-2 object-contain grayscale brightness-[.55]" />
+              <div key={c.id} className="relative h-[78px] w-[78px]">
+                <Thumb src={c.imageUrl} alt={c.name} className="h-[78px] w-[78px] rounded border border-[rgba(154,145,125,.45)] bg-surface-2 object-contain grayscale" />
                 <span className="ovl-slash absolute left-0 right-0 top-1/2 h-1" style={{ background: "var(--danger)" }} />
               </div>
             ))}
@@ -360,11 +440,12 @@ function PlayerColumn({
             {mapsPicked.map((m) => {
               const spent = playedMaps.has(m.id);
               return (
-                <div key={m.id} className="relative w-[112px]">
+                <div key={m.id} className="relative" style={{ width: 118 }}>
                   <Thumb src={m.imageUrl} alt={m.name}
-                    className={`h-[70px] w-[112px] rounded-md object-cover ${spent ? "grayscale opacity-40" : ""}`} />
+                    className={`h-[74px] w-[118px] rounded-md object-cover ${spent ? "grayscale opacity-40" : ""}`} />
                   <span className="pointer-events-none absolute inset-0 rounded-md"
                     style={{ border: spent ? "2px solid rgba(58,51,38,.9)" : `2px solid ${OWNER[seat]}` }} />
+                  <MapName name={m.name} />
                   {spent && <span className="absolute right-1 top-0.5 font-sans text-[12px] font-semibold text-muted">{t("spec.used")}</span>}
                 </div>
               );
@@ -378,9 +459,10 @@ function PlayerColumn({
           {heading(t("spec.mapsBanned"), "var(--muted)")}
           <div className={`mt-3 flex flex-wrap gap-3 ${right ? "justify-end" : ""}`}>
             {mapBans.map((m) => (
-              <div key={m.id} className="relative w-[112px]">
-                <Thumb src={m.imageUrl} alt={m.name} className="h-[70px] w-[112px] rounded-md border border-[rgba(154,145,125,.45)] bg-surface-2 object-cover grayscale brightness-50" />
+              <div key={m.id} className="relative" style={{ width: 118 }}>
+                <Thumb src={m.imageUrl} alt={m.name} className="h-[74px] w-[118px] rounded-md border border-[rgba(154,145,125,.45)] bg-surface-2 object-cover grayscale" />
                 <span className="ovl-slash-lg absolute left-0 right-0 top-[44%] h-1" style={{ background: "var(--danger)" }} />
+                <MapName name={m.name} dim />
               </div>
             ))}
           </div>
@@ -398,12 +480,12 @@ function Countdown({ deadlineTs, clockOffset }: { deadlineTs: number | null; clo
     const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
   }, [deadlineTs]);
-  if (!deadlineTs) return <span className="font-display text-[40px] font-bold leading-none text-muted">—</span>;
+  if (!deadlineTs) return <span className="shrink-0 font-display text-[60px] font-bold leading-none text-muted">—</span>;
   const remain = Math.max(0, Math.ceil((deadlineTs - (now + clockOffset)) / 1000));
   const urgent = remain <= 10;
   return (
     <span
-      className={`font-display text-[40px] font-bold leading-none tabular-nums ${urgent ? "ovl-pulse" : ""}`}
+      className={`shrink-0 font-display text-[60px] font-bold leading-none tabular-nums ${urgent ? "ovl-pulse" : ""}`}
       style={{ color: urgent ? undefined : "var(--gold-bright)" }}
     >
       {Math.floor(remain / 60)}:{String(remain % 60).padStart(2, "0")}

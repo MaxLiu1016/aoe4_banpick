@@ -302,6 +302,9 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "spec.turnOf": { en: "{name} · {step}", zh: "{name} · {step}", ja: "{name} · {step}" },
   "spec.bothTurn": { en: "Both players · {step}", zh: "雙方 · {step}", ja: "両者 · {step}" },
   "spec.gameMap": { en: "GAME {n} · {map}", zh: "第 {n} 局 · {map}", ja: "第 {n} ゲーム · {map}" },
+  // The broadcast board's hero band: the map is a picture now, not a line of text.
+  "spec.mapPending": { en: "MAP NOT DRAWN YET", zh: "地圖尚未抽出", ja: "マップ未決定" },
+  "spec.gameNofM": { en: "GAME {n} OF {total}", zh: "第 {n} 局 / 共 {total} 局", ja: "第 {n} / {total} ゲーム" },
   "spec.drafting": { en: "DRAFTING", zh: "抽選中", ja: "ドラフト中" },
   "spec.draftOf": { en: "{name} · DRAFT", zh: "{name} · 抽選", ja: "{name} · ドラフト" },
   "spec.banned": { en: "BANNED", zh: "已禁用", ja: "禁止" },

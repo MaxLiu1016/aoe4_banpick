@@ -75,7 +75,7 @@ export function GameResultCard({ payload }: { payload: SpectatorPayload }) {
           <div className="font-display text-[96px] font-bold leading-none text-gold" style={{ textShadow: "0 3px 14px rgba(0,0,0,.8)" }}>VS</div>
           {map && (
             <Thumb src={map.imageUrl} alt={map.name}
-              className="mx-auto mt-[26px] h-[176px] w-[280px] rounded-xl border-[3px] border-bronze object-cover" />
+              className="mx-auto mt-[26px] h-[176px] w-[280px] rounded-xl border-[3px] border-gold object-cover" />
           )}
           <div className="mt-3 font-display text-[30px] font-bold leading-tight text-foreground">{map?.name ?? "—"}</div>
           <div className="mt-[26px] flex items-baseline justify-center gap-4">
