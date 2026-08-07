@@ -237,6 +237,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "offer.oppChoosing": { en: "Opponent · choosing…", zh: "對手 · 選擇中…", ja: "相手 · 選択中…" },
   "offer.oppReady": { en: "Opponent · ready ✓", zh: "對手 · 已就緒 ✓", ja: "相手 · 準備完了 ✓" },
   "offer.chooseHand": { en: "Your hand — choose {n}:", zh: "你的手牌——選 {n} 張：", ja: "あなたの手札——{n} つ選択：" },
+  "offer.yourHand": { en: "Your hand", zh: "你的手牌", ja: "あなたの手札" },
   "offer.picked": { en: "Chosen", zh: "已選", ja: "選択済み" },
   "offer.lockedWait": { en: "Offer locked. Waiting for opponent to reveal…", zh: "出牌已鎖定，等待對手亮牌…", ja: "提示をロックしました。相手の公開を待っています…" },
   "offer.secret": { en: "Both players are secretly offering civs…", zh: "雙方正在秘密出牌…", ja: "両プレイヤーが秘密裏に文明を提示中…" },

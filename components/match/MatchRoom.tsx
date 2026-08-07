@@ -966,7 +966,7 @@ function EmptySlot({ h, w }: { h: number; w: number }) {
  * kind that asks for two civs one at a time) left a chosen civ looking exactly
  * like a fresh one you could still click.
  */
-function OfferHand({ hand, count, offered, used, onOffer, t }: {
+function OfferHand({ hand, count, offered, used, onOffer, disabled, t }: {
   hand: PoolView[];
   count: number;
   /** Civs you have already put up for this game. */
@@ -974,17 +974,19 @@ function OfferHand({ hand, count, offered, used, onOffer, t }: {
   /** Civs already played in an earlier game, when the format forbids repeats. */
   used: Set<string>;
   onOffer: (id: string) => void;
+  /** Not your turn. The hand stays on screen — see the panel's own note. */
+  disabled?: boolean;
   t: TFn;
 }) {
   return (
-    <div className="mt-4">
-      <div className="mb-2 text-xs text-muted">{t("offer.chooseHand", { n: count })}</div>
+    <div className={`mt-4 ${disabled ? "pointer-events-none opacity-45" : ""}`}>
+      <div className="mb-2 text-xs text-muted">{disabled ? t("offer.yourHand") : t("offer.chooseHand", { n: count })}</div>
       <div className="grid gap-2" style={GRID_CIV}>
         {hand.map((c) => {
           const isUsed = used.has(c.id);
           const isOffered = offered.has(c.id);
           return (
-            <button key={c.id} disabled={isUsed || isOffered} onClick={() => onOffer(c.id)}
+            <button key={c.id} disabled={disabled || isUsed || isOffered} onClick={() => onOffer(c.id)}
               className={`relative flex flex-col items-center rounded-lg border-2 p-2 transition ${
                 // Chosen keeps its colour and its brightness: it is in play, not
                 // spent. Used is the one that gets drained.
@@ -1189,23 +1191,22 @@ function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed
   // own name — hiding the opponent's would leave you drafting against nothing.
   if (!duel.offerHidden) {
     return (
-      <section className="aoe-panel rounded-xl p-5">
+      <section className={DUEL_BLOCK}>
         <h3 className="font-display text-lg aoe-gold-text text-center">{t("offer.titleOpen", { n: duel.offerCount })}</h3>
         <div className="aoe-rule my-3" />
         <div className="grid grid-cols-2 gap-4">
           <OpenOfferSide name={p1Name} ids={duel.offered.player1} target={duel.offerTarget.player1} tone="sky" civById={civById} />
           <OpenOfferSide name={p2Name} ids={duel.offered.player2} target={duel.offerTarget.player2} tone="rose" civById={civById} />
         </div>
-        {canAct && (
-          <OfferHand hand={hand} count={duel.offerCount} offered={offeredSet}
-            used={excludeUsed ? usedSet : EMPTY_IDS} onOffer={onOffer} t={t} />
-        )}
+        <OfferHand hand={hand} count={duel.offerCount} offered={offeredSet} disabled={!canAct}
+          used={excludeUsed ? usedSet : EMPTY_IDS} onOffer={onOffer} t={t} />
+        <DuelNote>{canAct ? null : youPlayer ? t("offer.oppChoosing") : t("offer.secret")}</DuelNote>
       </section>
     );
   }
 
   return (
-    <section className="aoe-panel rounded-xl p-5">
+    <section className={DUEL_BLOCK}>
       <h3 className="font-display text-lg aoe-gold-text text-center">{t("offer.title", { n: duel.offerCount })}</h3>
       <div className="aoe-rule my-3" />
       <div className="grid grid-cols-2 gap-4">
@@ -1224,15 +1225,38 @@ function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed
         </div>
       </div>
 
-      {canAct ? (
-        <OfferHand hand={hand} count={duel.offerCount} offered={offeredSet}
-          used={excludeUsed ? usedSet : EMPTY_IDS} onOffer={onOffer} t={t} />
-      ) : youPlayer ? (
-        <p className="mt-4 text-center text-sm text-gold-bright">{t("offer.lockedWait")}</p>
-      ) : (
-        <p className="mt-4 text-center text-sm text-muted">{t("offer.secret")}</p>
-      )}
+      <OfferHand hand={hand} count={duel.offerCount} offered={offeredSet} disabled={!canAct}
+        used={excludeUsed ? usedSet : EMPTY_IDS} onOffer={onOffer} t={t} />
+      <DuelNote gold={Boolean(youPlayer)}>
+        {canAct ? null : youPlayer ? t("offer.lockedWait") : t("offer.secret")}
+      </DuelNote>
     </section>
+  );
+}
+
+/**
+ * The line under a duel panel that says why you cannot act.
+ *
+ * A fixed row, empty or not. The panel used to swap the whole hand grid for one
+ * sentence every time the turn passed, so a three-step offer resized the page
+ * three times — and the pool you were reading moved each time with it.
+ */
+/**
+ * The floor the offer and the snipe both stand on.
+ *
+ * They are consecutive steps in one exchange, and they were two panels of
+ * different heights — so the page resized underneath the player between them, and
+ * again inside each of them. Every state of both is a known shape, so the block
+ * claims the tallest of them up front and only grows past it for a hand longer
+ * than any format has yet asked for.
+ */
+const DUEL_BLOCK = "aoe-panel flex min-h-[520px] flex-col justify-center rounded-xl p-5";
+
+function DuelNote({ gold, children }: { gold?: boolean; children?: React.ReactNode }) {
+  return (
+    <div className={`mt-3 flex h-6 items-center justify-center text-sm ${gold ? "text-gold-bright" : "text-muted"}`}>
+      {children}
+    </div>
   );
 }
 
@@ -1306,7 +1330,7 @@ function SnipePhase({ duel, youPlayer, opp, canAct, onSnipe, civById, deadlineTs
 
   if (!youPlayer) {
     return (
-      <section className="aoe-panel rounded-xl p-5">
+      <section className={DUEL_BLOCK}>
         <h3 className="text-center font-display text-lg aoe-gold-text">{t("snipe.title", { n: need })}</h3>
         <div className="aoe-rule my-3" />
         <div className="grid grid-cols-2 gap-4">
@@ -1327,7 +1351,7 @@ function SnipePhase({ duel, youPlayer, opp, canAct, onSnipe, civById, deadlineTs
   const oppTone = opp ? OWNER[opp] : OWNER.player2;
   const locked = !canAct;
   return (
-    <section className="aoe-panel rounded-xl p-5">
+    <section className={DUEL_BLOCK}>
       <h3 className="text-center font-display text-lg aoe-gold-text">{t("snipe.title", { n: need })}</h3>
       <p className="mt-1 text-center text-xs text-muted">{locked ? t("snipe.hint") : t("snipe.pickThenConfirm")}</p>
       <div className="aoe-rule my-4" />
@@ -1366,19 +1390,23 @@ function SnipePhase({ duel, youPlayer, opp, canAct, onSnipe, civById, deadlineTs
         })}
       </div>
 
-      {locked ? (
-        <p className="mt-4 text-center text-sm text-gold-bright">{t("snipe.lockedWait")}</p>
-      ) : (
-        <div className="mt-4 flex flex-col items-center gap-1">
-          <button onClick={send} disabled={staged.length < need}
-            className={`aoe-btn rounded px-5 py-2 font-display disabled:opacity-40 ${urgent ? "ovl-pulse" : ""}`}>
-            {t("snipe.confirm", { n: staged.length, total: need })}
-          </button>
-          <span className={`text-[11px] ${urgent ? "font-semibold text-danger" : "text-muted"}`}>
-            {urgent ? t("snipe.autoSend") : t("snipe.noUndo")}
-          </span>
-        </div>
-      )}
+      {/* Fixed height, so committing does not collapse the panel under the cards
+          you are still looking at. */}
+      <div className="mt-4 flex h-[68px] flex-col items-center justify-center gap-1">
+        {locked ? (
+          <p className="text-center text-sm text-gold-bright">{t("snipe.lockedWait")}</p>
+        ) : (
+          <>
+            <button onClick={send} disabled={staged.length < need}
+              className={`aoe-btn rounded px-5 py-2 font-display disabled:opacity-40 ${urgent ? "ovl-pulse" : ""}`}>
+              {t("snipe.confirm", { n: staged.length, total: need })}
+            </button>
+            <span className={`text-[11px] ${urgent ? "font-semibold text-danger" : "text-muted"}`}>
+              {urgent ? t("snipe.autoSend") : t("snipe.noUndo")}
+            </span>
+          </>
+        )}
+      </div>
 
       {/* What you put up, so the whole trade is readable from one place. */}
       <div className="mt-5 flex flex-col items-center gap-1.5 border-t border-border/60 pt-3">
