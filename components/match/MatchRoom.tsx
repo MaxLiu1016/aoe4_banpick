@@ -593,11 +593,13 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
       )}
       </div>
 
-      {/* Enough travel below the draft for the page to actually finish scrolling
-          the panel to the top. Short of this the scroll stops halfway — the board
-          stays half on screen and the rails never earn their trigger, which is the
-          one combination that leaves you reading neither. */}
-      <div aria-hidden className="h-[55vh]" />
+      {/* Travel below the draft, so the page can finish scrolling the panel to the
+          top rather than stopping halfway — halfway leaves the board half on
+          screen, which is too little to read and too much for the rails to take
+          over from. Two hundred is what the panels here actually need; a full
+          screen of it would guarantee the worst case at the cost of a screen of
+          nothing under every draft. */}
+      <div aria-hidden className="h-[200px]" />
     </div>
   );
 }
