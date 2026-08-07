@@ -217,6 +217,12 @@ button:disabled { cursor: not-allowed; }
   pointer-events: none;
   z-index: 10;
   animation: turn-glow 2.2s ease-in-out infinite;
+  /* Fades out downward. Fixed to the viewport, it otherwise runs the full height
+     whatever is behind it — so scrolled to the foot of a draft you get two
+     coloured columns standing over empty page, which reads as a rendering fault
+     rather than as light. Light comes from somewhere; this one comes from up. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 92%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 92%);
 }
 
 /* ---- Ban / pick ---------------------------------------------------------- */
