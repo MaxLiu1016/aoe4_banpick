@@ -38,6 +38,8 @@ const GRID_CIV = { gridTemplateColumns: "repeat(auto-fit, minmax(112px, 1fr))" }
 // Maps sit smaller in the choosing grid than they do once picked or banned: the
 // grid is a menu you scan, the strips below the score are the record you keep
 // coming back to.
+/** Shared empty set, so callers don't allocate one per render. */
+const EMPTY_IDS: Set<string> = new Set();
 const GRID_MAP = { gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" };
 
 type Seat = { id: string; name?: string; ready?: boolean; guest?: boolean; bot?: boolean } | null;
@@ -406,7 +408,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
             the eye already is. */}
         {step && !state.finished && (
           <div className="flex items-center justify-center gap-4">
-            {currentMap && (
+            {currentMap && step.type !== "GAME_RESULT" && (
               <div className="flex w-[146px] shrink-0 flex-col items-center">
                 <Thumb src={mapById(currentMap)?.imageUrl} alt={currentMapName ?? ""}
                   className="h-[91px] w-[146px] rounded-md border-2 border-gold bg-surface-2 object-cover" />
@@ -891,6 +893,55 @@ function EmptySlot({ h, w }: { h: number; w: number }) {
   return <div className="shrink-0 rounded border-2 border-dashed border-border bg-surface-2/35" style={{ width: w, height: h }} aria-hidden />;
 }
 
+/**
+ * Your hand, during an offer. One component for both kinds of offer — the open
+ * one and the hidden one — because when they were two copies only the hidden one
+ * learned to mark what you had already put up, and the open one (which is the
+ * kind that asks for two civs one at a time) left a chosen civ looking exactly
+ * like a fresh one you could still click.
+ */
+function OfferHand({ hand, count, offered, used, onOffer, t }: {
+  hand: PoolView[];
+  count: number;
+  /** Civs you have already put up for this game. */
+  offered: Set<string>;
+  /** Civs already played in an earlier game, when the format forbids repeats. */
+  used: Set<string>;
+  onOffer: (id: string) => void;
+  t: TFn;
+}) {
+  return (
+    <div className="mt-4">
+      <div className="mb-2 text-xs text-muted">{t("offer.chooseHand", { n: count })}</div>
+      <div className="grid gap-2" style={GRID_CIV}>
+        {hand.map((c) => {
+          const isUsed = used.has(c.id);
+          const isOffered = offered.has(c.id);
+          return (
+            <button key={c.id} disabled={isUsed || isOffered} onClick={() => onOffer(c.id)}
+              className={`relative flex flex-col items-center rounded-lg border-2 p-2 transition ${
+                // Chosen keeps its colour and its brightness: it is in play, not
+                // spent. Used is the one that gets drained.
+                isOffered ? "border-gold bg-gold/10 ring-2 ring-gold"
+                  : isUsed ? "border-border opacity-30 saturate-0"
+                  : "cursor-pointer border-bronze hover:border-gold hover:bg-surface-2"}`}
+              title={c.name}>
+              <Thumb src={c.imageUrl} alt={c.name} className="aspect-square w-full object-contain" />
+              <span className={`mt-1.5 w-full truncate text-xs leading-tight ${isOffered ? "font-semibold text-gold-bright" : "text-foreground"}`}>{c.name}</span>
+              {isOffered && (
+                <span className="absolute right-1 top-1 rounded bg-surface/85 px-1 text-[9px] font-semibold text-gold-bright">
+                  ✓ {t("offer.picked")}
+                </span>
+              )}
+              {isUsed && <span className="absolute right-1 top-1 text-[9px] text-muted">{t("match.used")}</span>}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /** Handed in, not yet turned over. */
 function MysterySlot({ h, w }: { h: number; w: number }) {
   return (
@@ -997,24 +1048,8 @@ function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed
           <OpenOfferSide name={p2Name} ids={duel.offered.player2} target={duel.offerTarget.player2} tone="rose" civById={civById} />
         </div>
         {canAct && (
-          <div className="mt-4">
-            <div className="mb-2 text-xs text-muted">{t("offer.chooseHand", { n: duel.offerCount })}</div>
-            <div className="grid gap-2" style={GRID_CIV}>
-              {hand.map((c) => {
-                const used = excludeUsed && usedSet.has(c.id);
-                return (
-                  <button key={c.id} disabled={used} onClick={() => onOffer(c.id)}
-                    className={`relative flex flex-col items-center rounded-lg border-2 p-2 transition ${
-                      used ? "border-border opacity-30 saturate-0" : "border-bronze hover:border-gold hover:bg-surface-2 cursor-pointer"}`}
-                    title={c.name}>
-                    <Thumb src={c.imageUrl} alt={c.name} className="aspect-square w-full object-contain" />
-                    <span className="mt-1.5 w-full truncate text-xs leading-tight text-foreground">{c.name}</span>
-                    {used && <span className="absolute right-1 top-1 text-[9px] text-muted">{t("match.used")}</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <OfferHand hand={hand} count={duel.offerCount} offered={offeredSet}
+            used={excludeUsed ? usedSet : EMPTY_IDS} onOffer={onOffer} t={t} />
         )}
       </section>
     );
@@ -1041,26 +1076,8 @@ function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed
       </div>
 
       {canAct ? (
-        <div className="mt-4">
-          <div className="mb-2 text-xs text-muted">{t("offer.chooseHand", { n: duel.offerCount })}</div>
-          <div className="grid gap-2" style={GRID_CIV}>
-            {hand.map((c) => {
-              const used = excludeUsed && usedSet.has(c.id);
-              const offered = offeredSet.has(c.id);
-              const disabled = used || offered;
-              return (
-                <button key={c.id} disabled={disabled} onClick={() => onOffer(c.id)}
-                  className={`relative flex flex-col items-center rounded-lg border-2 p-2 transition ${
-                    offered ? "border-gold bg-surface-2 ring-2 ring-gold" : used ? "border-border opacity-30 saturate-0" : "border-bronze hover:border-gold hover:bg-surface-2 cursor-pointer"}`}
-                  title={c.name}>
-                  <Thumb src={c.imageUrl} alt={c.name} className="aspect-square w-full object-contain" />
-                  <span className="mt-1.5 w-full truncate text-xs leading-tight text-foreground">{c.name}</span>
-                  {used && <span className="absolute right-1 top-1 text-[9px] text-muted">{t("match.used")}</span>}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <OfferHand hand={hand} count={duel.offerCount} offered={offeredSet}
+          used={excludeUsed ? usedSet : EMPTY_IDS} onOffer={onOffer} t={t} />
       ) : youPlayer ? (
         <p className="mt-4 text-center text-sm text-gold-bright">{t("offer.lockedWait")}</p>
       ) : (
@@ -1849,8 +1866,11 @@ function VersusBanner({ game, p1Name, p2Name, civById, mapById }: {
         <Side name={p1Name} civ={c1} tone="sky" won={game?.winner === "player1"} />
         <div className="flex flex-col items-center">
           <div className="font-display text-3xl aoe-gold-text drop-shadow">VS</div>
-          {map && <Thumb src={map.imageUrl} alt={map.name} className="mt-2 h-20 w-20 object-contain" />}
-          <div className="mt-1 text-xs text-muted">{map?.name ?? ""}</div>
+          {map && (
+            <Thumb src={map.imageUrl} alt={map.name}
+              className="mt-2 h-[86px] w-[138px] rounded-md border-2 border-gold bg-surface-2 object-cover" />
+          )}
+          <div className="mt-1 font-display text-sm text-gold-bright">{map?.name ?? ""}</div>
         </div>
         <Side name={p2Name} civ={c2} tone="rose" won={game?.winner === "player2"} />
       </div>
