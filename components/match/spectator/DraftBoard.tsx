@@ -91,7 +91,7 @@ export function DraftBoard({
   // pool has room to spare and gets a bigger one; maps are wide, so fewer fit.
   const poolCols = mapStep
     ? (entries.length <= 6 ? 3 : entries.length <= 12 ? 4 : 5)
-    : (entries.length <= 12 ? 5 : entries.length <= 24 ? 7 : 9);
+    : (entries.length <= 12 ? 6 : entries.length <= 24 ? 8 : 10);
   // A map banned during the map draft is banned for everyone, and the pool is the
   // only place that says so before the columns fill up.
   const outOfPool = mapStep
@@ -250,7 +250,11 @@ export function DraftBoard({
 
       {/* ---- The middle: the pool, or the duel that replaces it ---- */}
       <div className="absolute" style={{ top: CONTENT_TOP, left: box.centre, right: box.centre, bottom: 34 }}>
-        {showLocks && <LockRow state={state} names={names} t={t} />}
+        {showLocks && (
+          <div className="mb-7">
+            <LockRow state={state} names={names} t={t} />
+          </div>
+        )}
         {duel ? (
           <CivDuelPanel state={state} duel={duel} names={names} civById={civById} t={t} />
         ) : (
@@ -333,7 +337,7 @@ function HeroMap({ map, t }: { map?: PoolView; t: (k: string, p?: Record<string,
 function MapName({ name, dim }: { name: string; dim?: boolean }) {
   return (
     <span className={`absolute bottom-[2px] left-[2px] right-[2px] truncate rounded-b-[5px] px-1 text-center font-sans text-[12px] font-semibold leading-[16px] ${dim ? "text-gold-bright/70" : "text-gold-bright"}`}
-      style={{ background: "rgba(15,17,21,.78)" }}>
+      style={{ background: "rgba(15,17,21,.42)", backdropFilter: "blur(7px)", WebkitBackdropFilter: "blur(7px)" }}>
       {name}
     </span>
   );

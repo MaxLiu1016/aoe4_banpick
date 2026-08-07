@@ -869,7 +869,7 @@ function MapLabel({ name, size = 11, dim }: { name?: string; size?: number; dim?
   return (
     <span
       className={`pointer-events-none absolute bottom-[2px] left-[2px] right-[2px] truncate rounded-b px-1 text-center font-semibold ${dim ? "text-gold-bright/60" : "text-gold-bright"}`}
-      style={{ background: "rgba(15,17,21,.78)", fontSize: size, lineHeight: `${Math.round(size * 1.4)}px` }}
+      style={{ background: "rgba(15,17,21,.42)", backdropFilter: "blur(7px)", WebkitBackdropFilter: "blur(7px)", fontSize: size, lineHeight: `${Math.round(size * 1.4)}px` }}
     >
       {name}
     </span>

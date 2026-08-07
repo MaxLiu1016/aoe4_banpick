@@ -185,7 +185,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "match.civs": { en: "Civilizations", zh: "文明", ja: "文明" },
   // Pool legend. Four states, and the third one only exists because a ban can be
   // aimed at one player: the civ stays live for whoever banned it.
-  "match.legendAvailable": { en: "Open", zh: "還能選", ja: "選択可能" },
+  "match.legendAvailable": { en: "Available", zh: "可用", ja: "選択可能" },
   "match.legendBanned": { en: "Banned", zh: "已禁用", ja: "禁止済み" },
   "match.legendBlocked": { en: "Closed to you", zh: "對你封鎖", ja: "あなたには禁止" },
   "match.legendTaken": { en: "Taken", zh: "已被選走", ja: "取得済み" },
@@ -296,7 +296,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "spec.mapsPicked": { en: "MAPS PICKED", zh: "選的地圖", ja: "選んだマップ" },
   "spec.mapsBanned": { en: "MAPS BANNED", zh: "已禁用的地圖", ja: "禁止したマップ" },
   "spec.used": { en: "used", zh: "已用", ja: "使用済" },
-  "spec.legendPool": { en: "In the pool", zh: "還在池子裡", ja: "プールに残っている" },
+  "spec.legendPool": { en: "Available", zh: "可用", ja: "選択可能" },
   "spec.legendBanned": { en: "Banned", zh: "已被禁用", ja: "禁止済み" },
   "spec.legendHeld": { en: "{name} holds", zh: "{name} 持有", ja: "{name} が保持" },
   "spec.turnOf": { en: "{name} · {step}", zh: "{name} · {step}", ja: "{name} · {step}" },
@@ -325,7 +325,6 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "spec.snipeChoosing": { en: "{name} IS SNIPING…", zh: "{name} 狙擊中…", ja: "{name} がスナイプ中…" },
   "spec.snipeLocked": { en: "{name} HAS SNIPED", zh: "{name} 已狙擊", ja: "{name} スナイプ済み" },
   "spec.hiddenOffer": { en: "Neither offer is shown until both are in", zh: "雙方都交出來之前，兩邊的出牌都不公開", ja: "両者が提示するまで、どちらの内容も公開されません" },
-  "spec.banHidden": { en: "Neither ban is shown until both are in", zh: "雙方都禁用完之前，兩邊禁用了什麼都不公開", ja: "両者が禁止し終えるまで、内容は公開されません" },
   // preset editor — step types
   "step.MAP_BAN": { en: "Ban map", zh: "禁用地圖", ja: "マップを禁止" },
   "step.MAP_PICK": { en: "Pick map (into pool)", zh: "選地圖進池", ja: "マップを PICK（プールへ）" },

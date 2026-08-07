@@ -287,25 +287,22 @@ function useReveal(total: number, key: number): number {
  * Who has locked in during a phase that hides what was locked in — a simultaneous
  * ban, or both players confirming. `pendingBans` is never read: what was banned is
  * the opponent's information until the step closes, and "they are in" is the whole
- * story a spectator gets.
+ * story a spectator gets — which two "choosing / locked in" pills tell without a
+ * sentence underneath explaining that a hidden thing is hidden.
  */
 export function LockRow({ state, names, t }: { state: DerivedState; names: Record<Seat, string>; t: Translate }) {
-  const isBan = state.currentStep?.type === "MAP_BAN" || state.currentStep?.type === "CIV_BAN";
   return (
-    <>
-      <div className="mt-5 flex items-center justify-center gap-[26px]">
-        {(["player1", "player2"] as Seat[]).map((seat) => {
-          const live = state.awaiting[seat];
-          return (
-            <span key={seat} className="flex items-center gap-2.5">
-              <span className="font-display text-[20px] font-bold leading-none" style={{ color: OWNER[seat] }}>{names[seat]}</span>
-              <Status live={live} text={live ? `… ${t("spec.choosing")}` : `✓ ${t("spec.locked")}`} />
-            </span>
-          );
-        })}
-      </div>
-      {isBan && <div className="mt-2.5 text-center font-sans text-[15px] text-muted">{t("spec.banHidden")}</div>}
-    </>
+    <div className="mt-5 flex items-center justify-center gap-[26px]">
+      {(["player1", "player2"] as Seat[]).map((seat) => {
+        const live = state.awaiting[seat];
+        return (
+          <span key={seat} className="flex items-center gap-2.5">
+            <span className="font-display text-[20px] font-bold leading-none" style={{ color: OWNER[seat] }}>{names[seat]}</span>
+            <Status live={live} text={live ? `… ${t("spec.choosing")}` : `✓ ${t("spec.locked")}`} />
+          </span>
+        );
+      })}
+    </div>
   );
 }
 

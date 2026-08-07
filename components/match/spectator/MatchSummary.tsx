@@ -111,11 +111,14 @@ export function MatchSummary({ payload, roomName }: { payload: SpectatorPayload;
                 background: "rgba(24,27,34,.85)",
               }}
             >
+              {/* Contained, not cropped. The map art is a diamond with its own
+                  name plate along the bottom, and a full-bleed cover shot cut
+                  that plate in half on every card. */}
               {m && (
                 <Thumb
                   src={m.imageUrl}
                   alt={m.name}
-                  className={`block w-full object-cover ${compact ? "h-[110px]" : "h-[206px]"}`}
+                  className={`block w-full bg-surface-2 object-contain ${compact ? "h-[110px]" : "h-[196px]"}`}
                 />
               )}
               <div className={compact ? "p-3.5" : "p-[18px]"}>
@@ -156,10 +159,24 @@ export function MatchSummary({ payload, roomName }: { payload: SpectatorPayload;
                     ))}
                   </div>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="mb-2 font-sans text-[14px] font-semibold tracking-[.14em] text-muted">{t("spec.mapsBanned")}</div>
-                  <div className="font-display text-[18px] font-semibold leading-[1.4] text-foreground">
-                    {b.maps.map((m) => m.name).join(" · ") || "—"}
+                  {/* Pictures, like everything else on this page. A run of map
+                      names in a row of thumbnails was the one place the summary
+                      asked you to read instead of look. */}
+                  <div className={`flex flex-wrap gap-2.5 ${right ? "flex-row-reverse" : ""}`}>
+                    {b.maps.length === 0 && <span className="font-sans text-[16px] text-muted">—</span>}
+                    {b.maps.map((m) => (
+                      <div key={m.id} className="relative shrink-0" style={{ width: 84, height: 52 }}>
+                        <Thumb src={m.imageUrl} alt={m.name}
+                          className="h-full w-full rounded border border-[rgba(154,145,125,.45)] bg-surface-2 object-cover grayscale" />
+                        <span className="ovl-slash absolute left-0 right-0 top-[42%] h-[3px]" style={{ background: "var(--danger)" }} />
+                        <span className="pointer-events-none absolute bottom-[1px] left-[1px] right-[1px] truncate rounded-b px-1 text-center font-sans text-[10px] font-semibold leading-[14px] text-gold-bright/70"
+                          style={{ background: "rgba(15,17,21,.42)", backdropFilter: "blur(7px)", WebkitBackdropFilter: "blur(7px)" }}>
+                          {m.name}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
