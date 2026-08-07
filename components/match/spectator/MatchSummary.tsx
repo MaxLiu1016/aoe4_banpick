@@ -20,6 +20,9 @@ export function MatchSummary({ payload, roomName }: { payload: SpectatorPayload;
   const map = byId(state.maps);
 
   const played = state.games.filter((g) => g.winner);
+  /** Each side's drafted hand — the roster, plainly. */
+  const pool = (seat: Seat) =>
+    (seat === "player1" ? state.draftedByP1 : state.draftedByP2).map((id) => civ.get(id)).filter(Boolean) as PoolView[];
   const seriesWinner: Seat | null =
     state.score.player1 === state.score.player2 ? null : state.score.player1 > state.score.player2 ? "player1" : "player2";
 
@@ -28,6 +31,11 @@ export function MatchSummary({ payload, roomName }: { payload: SpectatorPayload;
   // spilling off the bottom. Every game still gets a card.
   const cols = Math.min(Math.max(played.length, 1), 5);
   const compact = played.length > 5;
+
+  // What the other side took off them, per game. Only past games carry this —
+  // the engine leaves the live one blank so a spectator can't read a secret.
+  const snipedFrom = (g: (typeof played)[number], seat: Seat) =>
+    ((seat === "player1" ? g.snipedByP2 : g.snipedByP1) ?? []).map((id) => civ.get(id)).filter(Boolean) as PoolView[];
 
   const bans = (seat: Seat) => ({
     civs: state.civBans.filter((b) => b.by === seat).map((b) => civ.get(b.id)).filter(Boolean) as PoolView[],
@@ -74,6 +82,7 @@ export function MatchSummary({ payload, roomName }: { payload: SpectatorPayload;
             const c = seat === "player1" ? g.civP1 : g.civP2;
             const entry = c ? civ.get(c) : undefined;
             const won = winner === seat;
+            const lost = snipedFrom(g, seat);
             return (
               <div className={`flex items-center gap-3 ${won ? "" : "opacity-45"}`}>
                 <Thumb
@@ -81,6 +90,20 @@ export function MatchSummary({ payload, roomName }: { payload: SpectatorPayload;
                   alt={entry?.name ?? ""}
                   className={`${compact ? "h-[50px] w-[50px]" : "h-[66px] w-[66px]"} shrink-0 object-contain ${won ? "" : "grayscale"}`}
                 />
+                {/* What they offered and never got to play, small, right beside what they
+                    did. Half of a two-pool game happens here and the card used to
+                    record only the survivor. */}
+                {lost.length > 0 && (
+                  <span className="flex shrink-0 gap-1.5">
+                    {lost.map((c) => (
+                      <span key={c.id} className="relative" title={c.name}>
+                        <Thumb src={c.imageUrl} alt={c.name}
+                          className={`${compact ? "h-[24px] w-[24px]" : "h-[30px] w-[30px]"} rounded object-contain grayscale opacity-70`} />
+                        <span className="absolute left-0 right-0 top-1/2 h-[2px] -translate-y-1/2" style={{ background: "var(--danger)" }} />
+                      </span>
+                    ))}
+                  </span>
+                )}
                 <div className="min-w-0">
                   <div
                     className={`truncate font-display leading-tight ${
@@ -118,7 +141,7 @@ export function MatchSummary({ payload, roomName }: { payload: SpectatorPayload;
                 <Thumb
                   src={m.imageUrl}
                   alt={m.name}
-                  className={`block w-full bg-surface-2 object-contain ${compact ? "h-[110px]" : "h-[196px]"}`}
+                  className={`block w-full object-contain ${compact ? "h-[110px]" : "h-[196px]"}`}
                 />
               )}
               <div className={compact ? "p-3.5" : "p-[18px]"}>
@@ -145,10 +168,27 @@ export function MatchSummary({ payload, roomName }: { payload: SpectatorPayload;
           const right = seat === "player2";
           return (
             <div key={seat} className={right ? "text-right" : ""}>
-              <div className="font-sans text-[16px] font-semibold tracking-[.18em]" style={{ color: OWNER[seat] }}>
-                {t("spec.draftOf", { name: names[seat] })}
+              {/* The name and the hand they built read as one line: the hand is
+                  what the whole civ draft was for, and the summary knew everything
+                  about the series except what either player was holding. What they
+                  struck out is the line under it — an account of what they stopped,
+                  not of what they had. */}
+              <div className={`flex items-center gap-5 ${right ? "flex-row-reverse" : ""}`}>
+                <div className="shrink-0 font-sans text-[16px] font-semibold tracking-[.18em]" style={{ color: OWNER[seat] }}>
+                  {t("spec.draftOf", { name: names[seat] })}
+                </div>
+                <div className="min-w-0">
+                  <div className={`flex flex-wrap gap-2 ${right ? "flex-row-reverse" : ""}`}>
+                    {pool(seat).length === 0 && <span className="font-sans text-[16px] text-muted">—</span>}
+                    {pool(seat).map((c) => (
+                      <Thumb key={c.id} src={c.imageUrl} alt={c.name}
+                        className="h-[46px] w-[46px] shrink-0 rounded object-contain" />
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className={`mt-3.5 flex items-center gap-[26px] ${right ? "flex-row-reverse" : ""}`}>
+
+              <div className={`mt-4 flex items-end gap-[26px] ${right ? "flex-row-reverse" : ""}`}>
                 <div>
                   <div className="mb-2 font-sans text-[14px] font-semibold tracking-[.14em] text-danger">{t("spec.banned")}</div>
                   <div className={`flex gap-2.5 ${right ? "flex-row-reverse" : ""}`}>

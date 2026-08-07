@@ -31,6 +31,18 @@ export interface GameRec {
   civP1?: string;
   civP2?: string;
   winner?: "player1" | "player2" | null;
+  /**
+   * What each side put up, and what the other took off them.
+   *
+   * Only ever filled in for games that are already behind us. The live game's
+   * offers and snipes are secret until both players have submitted, and that
+   * secret is kept by the socket layer redacting `civDuel` — a per-game record
+   * carrying the same information would walk straight around it.
+   */
+  offeredP1?: string[];
+  offeredP2?: string[];
+  snipedByP1?: string[];
+  snipedByP2?: string[];
 }
 
 export type EntryState = "available" | "banned" | "picked" | "drafted";
@@ -323,6 +335,18 @@ export function deriveState(
   const currentStep = currentStepIndex < steps.length ? steps[currentStepIndex] : null;
   const currentGameIndex = currentStep ? gameOf[currentStepIndex] : totalGames;
   const cg = currentGameIndex;
+
+  // Games that are behind us have nothing left to hide: their offers were revealed
+  // when the step closed and their snipes when the next one opened. The current
+  // game is left blank on purpose — see GameRec.
+  for (let g = 0; g < cg && g < totalGames; g++) {
+    if (offerP1[g].length || offerP2[g].length) {
+      games[g].offeredP1 = [...offerP1[g]];
+      games[g].offeredP2 = [...offerP2[g]];
+      games[g].snipedByP1 = [...snipeByP1[g]];
+      games[g].snipedByP2 = [...snipeByP2[g]];
+    }
+  }
 
   let p1 = 0, p2 = 0;
   for (const gme of games) {

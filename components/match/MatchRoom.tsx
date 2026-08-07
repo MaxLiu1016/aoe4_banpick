@@ -1205,7 +1205,8 @@ function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed
   // own name — hiding the opponent's would leave you drafting against nothing.
   if (!duel.offerHidden) {
     return (
-      <section className={DUEL_BLOCK}>
+      <div className={DUEL_SLOT}>
+        <section className={DUEL_BLOCK}>
         <h3 className="font-display text-lg aoe-gold-text text-center">{t("offer.titleOpen", { n: duel.offerCount })}</h3>
         <div className="aoe-rule my-3" />
         <div className="grid grid-cols-2 gap-4">
@@ -1216,11 +1217,13 @@ function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed
           used={excludeUsed ? usedSet : EMPTY_IDS} onOffer={onOffer} t={t} />
         <DuelNote>{canAct ? null : youPlayer ? t("offer.oppChoosing") : t("offer.secret")}</DuelNote>
       </section>
+      </div>
     );
   }
 
   return (
-    <section className={DUEL_BLOCK}>
+    <div className={DUEL_SLOT}>
+      <section className={DUEL_BLOCK}>
       <h3 className="font-display text-lg aoe-gold-text text-center">{t("offer.title", { n: duel.offerCount })}</h3>
       <div className="aoe-rule my-3" />
       <div className="grid grid-cols-2 gap-4">
@@ -1245,6 +1248,7 @@ function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed
         {canAct ? null : youPlayer ? t("offer.lockedWait") : t("offer.secret")}
       </DuelNote>
     </section>
+    </div>
   );
 }
 
@@ -1260,11 +1264,16 @@ function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed
  *
  * They are consecutive steps in one exchange, and they were two panels of
  * different heights — so the page resized underneath the player between them, and
- * again inside each of them. Every state of both is a known shape, so the block
+ * again inside each of them. Every state of both is a known shape, so the space
  * claims the tallest of them up front and only grows past it for a hand longer
  * than any format has yet asked for.
+ *
+ * The floor belongs to the space, not to the panel. On the panel it painted the
+ * slack in panel colours — a slab of grey under a short offer with nothing in it,
+ * which is the page holding still at the price of looking broken.
  */
-const DUEL_BLOCK = "aoe-panel flex min-h-[520px] flex-col justify-center rounded-xl p-5";
+const DUEL_SLOT = "min-h-[520px]";
+const DUEL_BLOCK = "aoe-panel rounded-xl p-5";
 
 function DuelNote({ gold, children }: { gold?: boolean; children?: React.ReactNode }) {
   return (
@@ -1344,7 +1353,8 @@ function SnipePhase({ duel, youPlayer, opp, canAct, onSnipe, civById, deadlineTs
 
   if (!youPlayer) {
     return (
-      <section className={DUEL_BLOCK}>
+      <div className={DUEL_SLOT}>
+        <section className={DUEL_BLOCK}>
         <h3 className="text-center font-display text-lg aoe-gold-text">{t("snipe.title", { n: need })}</h3>
         <div className="aoe-rule my-3" />
         <div className="grid grid-cols-2 gap-4">
@@ -1359,13 +1369,15 @@ function SnipePhase({ duel, youPlayer, opp, canAct, onSnipe, civById, deadlineTs
           <p className="col-span-2 text-center text-xs text-muted">{t("snipe.secret")}</p>
         </div>
       </section>
+      </div>
     );
   }
 
   const oppTone = opp ? OWNER[opp] : OWNER.player2;
   const locked = !canAct;
   return (
-    <section className={DUEL_BLOCK}>
+    <div className={DUEL_SLOT}>
+      <section className={DUEL_BLOCK}>
       <h3 className="text-center font-display text-lg aoe-gold-text">{t("snipe.title", { n: need })}</h3>
       <p className="mt-1 text-center text-xs text-muted">{locked ? t("snipe.hint") : t("snipe.pickThenConfirm")}</p>
       <div className="aoe-rule my-4" />
@@ -1433,6 +1445,7 @@ function SnipePhase({ duel, youPlayer, opp, canAct, onSnipe, civById, deadlineTs
         </div>
       </div>
     </section>
+    </div>
   );
 }
 
