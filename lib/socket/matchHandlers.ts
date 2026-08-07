@@ -384,6 +384,11 @@ async function scheduleBot(io: Server, matchId: string) {
   // acknowledges too, or the draft would sit there waiting for a machine to nod.
   const ack = await awaitingAckInfo(matchId, state);
   const owesAck = ack ? !ack.by[seat] : false;
+  // The bot nods in about three seconds; a human reads the result first. Between
+  // those two moments the gate is still up, and only asking "do I owe an ack?"
+  // let the bot answer no and go start the next step — so the draft moved on
+  // underneath a player who was still looking at who won the last game.
+  if (ack && !owesAck) { clearBot(matchId); return; }
   if (!owesAck && !botTargetFor(state, seat)) { clearBot(matchId); return; }
 
   const token = owesAck ? `ack:${ack!.gameIndex}` : `${state.currentStepIndex}:${state.currentStepProgress}`;
@@ -410,6 +415,11 @@ async function botAct(io: Server, matchId: string, token: string) {
       await broadcast(io, matchId);
       return;
     }
+
+    // The gate holds everyone, not just whoever has yet to press it. Checked here
+    // as well as when the move was queued because the queue is three seconds long
+    // and a game can be called inside it.
+    if (await awaitingAckInfo(matchId, ctx.state)) return;
 
     // A step can owe the same seat several submissions (offer 2, ban 2). Deliver
     // them all for this step, then stop — the next step gets its own delay so the
