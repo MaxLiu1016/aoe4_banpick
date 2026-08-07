@@ -399,11 +399,24 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           thing to click — and that is what the page should bring to you when the
           step changes, not a caption about it. */}
       <div ref={actionRef} className="scroll-mt-28 space-y-5">
-        {/* One line of instruction, sitting on the panel it is about. */}
+        {/* What you are about to do, and the map you are about to do it for.
+            The strip at the top of the window carries the same map small, for when
+            this has scrolled away; here it gets to be a picture, right beside the
+            instruction and directly above the pool being clicked — which is where
+            the eye already is. */}
         {step && !state.finished && (
-          <p className="text-center font-display text-xl aoe-gold-text">
-            {step.type === "GAME_RESULT" ? t("match.gameN", { n: state.currentGameIndex + 1 }) : (step.label || step.type)}
-          </p>
+          <div className="flex items-center justify-center gap-4">
+            {currentMap && (
+              <div className="flex w-[146px] shrink-0 flex-col items-center">
+                <Thumb src={mapById(currentMap)?.imageUrl} alt={currentMapName ?? ""}
+                  className="h-[91px] w-[146px] rounded-md border-2 border-gold bg-surface-2 object-cover" />
+                <span className="w-full truncate text-center font-display text-sm leading-tight text-gold-bright">{currentMapName}</span>
+              </div>
+            )}
+            <p className={`font-display text-xl aoe-gold-text ${currentMap ? "text-left" : "text-center"}`}>
+              {step.type === "GAME_RESULT" ? t("match.gameN", { n: state.currentGameIndex + 1 }) : (step.label || step.type)}
+            </p>
+          </div>
         )}
 
       {/* Simultaneous ban: show your own held bans and whether the opponent is done */}
@@ -624,7 +637,7 @@ function OverviewBand({
                 slots={reserved("MAP_PICK", s)} played={played} mapById={mapById} focus={focus} />
             ))}
             {neutral.map((id) => (
-              <BandTile key={id} entry={mapById(id)} kind="map" ring="border-bronze" h={focus ? 36 : 44} w={focus ? 58 : 70} />
+              <BandTile key={id} entry={mapById(id)} kind="map" ring="border-bronze" h={focus ? 46 : 55} w={focus ? 74 : 88} />
             ))}
           </>
         )}
@@ -667,7 +680,7 @@ function OverviewBand({
               </TileRow>
               <TileRow align={left ? "right" : "left"}>
                 {state.maps.filter((m) => m.state === "banned" && m.by === s).map((m) => (
-                  <BandTile key={m.id} entry={m} kind="map" ring="border-[rgba(154,145,125,.45)]" h={44} w={70} struck />
+                  <BandTile key={m.id} entry={m} kind="map" ring="border-[rgba(154,145,125,.45)]" h={46} w={74} struck />
                 ))}
               </TileRow>
             </div>
@@ -759,9 +772,9 @@ function TurnStrip({ state, payload, p1Name, p2Name, map, mapName, clockOffsetRe
       {/* The map this is all for. Big, because a civ pick made against the wrong
           map is the one mistake this whole screen exists to prevent. */}
       {map && (
-        <div className="flex items-center gap-2">
-          <Thumb src={map.imageUrl} alt={map.name} className="h-[48px] w-[77px] rounded border-2 border-gold bg-surface-2 object-cover" />
-          <span className="hidden max-w-[20ch] truncate font-display text-base text-gold-bright sm:inline">{mapName}</span>
+        <div className="flex w-[104px] shrink-0 flex-col items-center">
+          <Thumb src={map.imageUrl} alt={map.name} className="h-[46px] w-[74px] rounded border-2 border-gold bg-surface-2 object-cover" />
+          <span className="w-full truncate text-center text-[11px] leading-tight text-gold-bright">{mapName}</span>
         </div>
       )}
 
@@ -807,12 +820,13 @@ function GameCell({ game, current, map, names, focus, t }: {
         <Thumb src={map?.imageUrl} alt={map?.name ?? ""} className="h-full w-full object-cover" />
         {won && <span className="absolute right-0.5 top-0 text-[11px] leading-tight">👑</span>}
       </div>
+      {/* The map is named at every size, focused or not. */}
+      <span className="w-full truncate text-center text-[11px] leading-tight text-gold-bright">{map?.name}</span>
       <span className={`w-full truncate text-center text-[10px] leading-tight ${
         won ? tone!.text : current ? "text-gold-bright" : "text-muted"
       }`}>
         G{game.gameIndex + 1}{won ? ` · ${names[won]}` : ""}
       </span>
-      {!focus && map && <span className="w-full truncate text-center text-[10px] text-muted">{map.name}</span>}
     </div>
   );
 }
@@ -824,9 +838,9 @@ function MapPoolSeg({ seat, ids, slots, played, mapById, focus }: {
 }) {
   const total = Math.max(slots, ids.length);
   if (total === 0) return null;
-  const h = focus ? 36 : 44, w = focus ? 58 : 70;
+  const h = focus ? 46 : 55, w = focus ? 74 : 88;
   return (
-    <div className="flex gap-1">
+    <div className="flex items-start gap-1">
       {Array.from({ length: total }, (_, i) => {
         const id = ids[i];
         return id
@@ -845,13 +859,29 @@ function BandTile({ entry, kind, ring, h, w, dim, struck, pop, title }: {
   entry?: PoolView; kind: "civ" | "map"; ring: string; h: number; w: number;
   dim?: boolean; struck?: boolean; pop?: boolean; title?: string;
 }) {
-  return (
-    <div className="relative shrink-0" style={{ width: w, height: h }} title={title ?? entry?.name}>
+  const img = (
+    <div className="relative w-full" style={{ height: h }}>
       <Thumb src={entry?.imageUrl} alt={entry?.name ?? ""}
         className={`h-full w-full rounded border-2 bg-surface-2 ${ring} ${kind === "civ" ? "object-contain" : "object-cover"} ${
           struck ? "grayscale" : dim ? "opacity-40 grayscale" : ""
         } ${pop ? "civ-pop" : ""}`} />
       {struck && <span className="absolute left-0 right-0 top-1/2 h-0.5 -translate-y-1/2 bg-danger" />}
+    </div>
+  );
+  // Every map says its name. Civ flags are their own labels — you know Mongols by
+  // the blue — but a top-down screenshot of terrain is not, and at these sizes an
+  // unlabelled map is a texture. Scaled to the tile so a 36px ban and a 48px pick
+  // are both readable rather than both 11px.
+  if (kind === "civ") {
+    return <div className="relative shrink-0" style={{ width: w, height: h }} title={title ?? entry?.name}>{img}</div>;
+  }
+  return (
+    <div className="flex shrink-0 flex-col items-center" style={{ width: w }} title={title ?? entry?.name}>
+      {img}
+      <span className={`w-full truncate text-center leading-tight ${struck || dim ? "text-gold-bright/55" : "text-gold-bright"}`}
+        style={{ fontSize: Math.max(9, Math.round(h * 0.24)) }}>
+        {entry?.name}
+      </span>
     </div>
   );
 }
@@ -1795,8 +1825,10 @@ function VersusBanner({ game, p1Name, p2Name, civById, mapById }: {
   const map = mapById(game?.map);
   const Side = ({ name, civ, tone, won }: { name?: string; civ?: PoolView; tone: "sky" | "rose"; won?: boolean }) => (
     <div className="flex flex-col items-center text-center">
+      {/* The name, and only the name. Which seat they are in is already said by
+          the colour, and by the side of the screen they are standing on. */}
       <div className={`text-xs uppercase tracking-wide ${tone === "sky" ? "text-sky-400" : "text-rose-400"}`}>
-        {tone === "sky" ? t("match.p1") : t("match.p2")}{name ? ` · ${name}` : ""}
+        {name || (tone === "sky" ? t("match.p1") : t("match.p2"))}
       </div>
       <div className="relative mt-2">
         {won && <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-2xl leading-none">👑</span>}
