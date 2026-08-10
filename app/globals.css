@@ -236,6 +236,16 @@ button:disabled { cursor: not-allowed; }
 }
 .badge-pop { animation: badge-pop .28s cubic-bezier(.22,1,.36,1); }
 
+/* A banned map leaving the spectator's pool. It holds still long enough for the
+   strike to be read, then goes — a map nobody can play is not part of "what is
+   still on the table", and it is already recorded in the column of whoever
+   struck it. */
+@keyframes tile-leave {
+  0%, 66% { opacity: 1; transform: scale(1); }
+  100%    { opacity: 0; transform: scale(.92); }
+}
+.tile-leave { animation: tile-leave .9s ease-in both; }
+
 
 /* A hidden offer turning face up: the card back rotates away and the civ arrives
    in its place. Cards are released one at a time by the view, 150ms apart, so the
@@ -315,7 +325,7 @@ button:disabled { cursor: not-allowed; }
   .route-enter, .fade-in, .skeleton, .spinner, .civ-pop, .civ-pop-glow,
   .ovl-pop, .ovl-slash, .ovl-slash-lg, .ovl-pulse, .ovl-glow, .ovl-flip, .turn-glow,
   .ovl-sweep, .animate-pulse, .tile-take, .tile-strike, .tile-ring,
-  .strike-draw, .badge-pop, .slot-wait-pick, .slot-wait-ban {
+  .strike-draw, .badge-pop, .tile-leave, .slot-wait-pick, .slot-wait-ban {
     animation: none !important;
   }
 }

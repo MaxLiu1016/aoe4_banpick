@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Thumb } from "@/components/Thumb";
 import { useI18n } from "@/lib/i18n";
 import type { DerivedState, PoolView } from "@/lib/draft/engine";
@@ -11,6 +11,38 @@ import { OWNER, OWNER_RGB, other, seatNames, type Seat, type SpectatorPayload } 
 
 /** Steps either side of the current one to keep on screen. */
 const STEP_WINDOW = 3;
+
+/** How long a banned map stays to be watched leaving. */
+const LINGER_MS = 900;
+
+/**
+ * The ids that have just gone, for as long as it takes to see them go.
+ *
+ * Dropping a tile on the same frame it is banned swallows the only event
+ * feedback this screen has — the flinch and the red line — and a viewer would
+ * see a grid quietly get shorter with no idea where. So a departing tile is held
+ * for a beat first.
+ *
+ * Departures are worked out during render rather than in an effect: an effect
+ * runs a frame after the state that caused it, and that frame is the one the
+ * animation starts on.
+ */
+function useDeparting(present: string[], ms = LINGER_MS): Set<string> {
+  const key = present.join(",");
+  const [held, setHeld] = useState<{ key: string; ids: string[] }>({ key, ids: [] });
+  if (held.key !== key) {
+    const now = new Set(present);
+    const gone = held.key ? held.key.split(",").filter((id) => id && !now.has(id)) : [];
+    setHeld({ key, ids: gone.length ? [...new Set([...held.ids, ...gone])] : held.ids });
+  }
+  useEffect(() => {
+    if (held.ids.length === 0) return;
+    // Inside a timeout, so this is not a synchronous set during the effect.
+    const timer = setTimeout(() => setHeld((h) => (h.ids.length ? { ...h, ids: [] } : h)), ms);
+    return () => clearTimeout(timer);
+  }, [held.ids, ms]);
+  return useMemo(() => new Set(held.ids), [held.ids]);
+}
 
 /**
  * Which slots of a row the step in progress is about to fill.
@@ -158,11 +190,21 @@ export function DraftBoard({
     ? new Set(state.maps.filter((m) => m.state === "banned").map((m) => m.id))
     : banned;
 
-  // Every entry stays. A claimed tile is MARKED — the owner's tick, or the ban's
-  // line — rather than removed: the grid is the one place on this canvas where a
-  // civ keeps the same position for the whole draft, and a viewer looking for
-  // one should find it where they last saw it. Taking tiles out also made the
-  // rows re-flow, which moves everything else out from under the eye.
+  // A CIV stays wherever it was. A claimed one is marked — the owner's tick, or
+  // the ban's line — rather than removed: the grid is the one place on this
+  // canvas where a civ keeps its position for the whole draft, and a viewer
+  // hunting for one should find it where they last saw it. It also matters that
+  // an opponent-scoped ban leaves the civ live for the player who cast it.
+  //
+  // A banned MAP is different in both respects: a map ban is global, so nobody
+  // is playing it again, and it is already recorded in the column of whoever
+  // struck it. It leaves — after a beat, so the strike can be read on the way
+  // out rather than the grid just getting shorter.
+  const alive = mapStep ? entries.filter((m) => m.state !== "banned").map((m) => m.id) : [];
+  const leaving = useDeparting(alive);
+  const shown = mapStep
+    ? entries.filter((m) => m.state !== "banned" || leaving.has(m.id))
+    : entries;
 
   const from = Math.max(0, Math.min(state.currentStepIndex - STEP_WINDOW, state.stepBar.length - STEP_WINDOW * 2 - 1));
   const steps = state.stepBar.slice(from, from + STEP_WINDOW * 2 + 1);
@@ -347,8 +389,8 @@ export function DraftBoard({
              fixed canvas spent on a key nobody watching a stream has time to
              cross-reference. */
           <div className="grid gap-3.5" style={{ gridTemplateColumns: `repeat(${poolCols}, minmax(0, 1fr))` }}>
-            {entries.map((c) => (
-              <PoolCell key={c.id} entry={c} isMap={mapStep}
+            {shown.map((c) => (
+              <PoolCell key={c.id} entry={c} isMap={mapStep} leaving={leaving.has(c.id)}
                 closed={!mapStep && (chooser ? Boolean(closedTo.get(c.id)?.has(chooser)) : Boolean(closedTo.get(c.id)?.size))}
                 out={!(c.state === "drafted" || c.state === "picked") && outOfPool.has(c.id)} />
             ))}
@@ -397,8 +439,10 @@ function HeroMap({ map, t }: { map?: PoolView; t: (k: string, p?: Record<string,
  * once. Now the tile flinches or takes the claim as it happens, throws a ring in
  * the colour of what happened, and does nothing at all for history.
  */
-function PoolCell({ entry, isMap, out, closed }: {
+function PoolCell({ entry, isMap, out, closed, leaving }: {
   entry: PoolView; isMap: boolean; out: boolean;
+  /** On its way off the board, and this is the beat it gets to be seen going. */
+  leaving?: boolean;
   /** Closed to whoever is choosing right now. The civ is still live for the
       other player, which is why it is marked rather than struck. */
   closed?: boolean;
@@ -410,7 +454,7 @@ function PoolCell({ entry, isMap, out, closed }: {
   const ringColour = out ? "var(--danger)" : owner ? OWNER[owner] : "var(--gold)";
   return (
     <div
-      className={`relative overflow-hidden rounded-[10px] ${fresh ? (out ? "tile-strike" : "tile-take") : ""}`}
+      className={`relative overflow-hidden rounded-[10px] ${fresh ? (out ? "tile-strike" : "tile-take") : ""} ${leaving ? "tile-leave" : ""}`}
       style={{
         border: owner ? `2px solid ${OWNER[owner]}` : out ? "2px solid rgba(154,145,125,.45)" : "2px solid rgba(138,106,50,.85)",
         background: owner ? `rgba(${OWNER_RGB[owner]},.12)` : "var(--surface-2)",
