@@ -36,8 +36,10 @@ devlog.txt
 !.env.example
 
 # Raw community feedback: verbatim quotes + handles from private Discord channels.
-# Kept locally, never published.
+# Kept locally, never published. The specs written FROM that feedback quote it,
+# so they stay local too — a commit cannot be taken back out of the history.
 /docs/feedback-*.md
+/docs/spec-*.md
 
 # vercel
 .vercel
