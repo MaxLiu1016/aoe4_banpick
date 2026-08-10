@@ -686,9 +686,10 @@ function Countdown({ deadlineTs, limitSec, clockOffset }: { deadlineTs: number |
   }, [deadlineTs]);
   // Fixed width, because Cinzel has no tabular figures and a 1 is narrower than
   // a 4 — without it the heading and the map beside the clock shuffle sideways on
-  // every tick, which on a stream reads as the page glitching.
+  // every tick, which on a stream reads as the page glitching. Narrower now that
+  // it is a plain number.
   const box = "inline-block shrink-0 text-center font-display text-[60px] font-bold leading-none";
-  if (!deadlineTs) return <span className={`${box} text-muted`} style={{ width: 168 }}>—</span>;
+  if (!deadlineTs) return <span className={`${box} text-muted`} style={{ width: 108 }}>—</span>;
   // Never more than the step was given: the offset is measured a round trip
   // before it is used, so rounding up can land a second past the limit.
   const raw = Math.ceil((deadlineTs - (now + clockOffset)) / 1000);
@@ -697,9 +698,11 @@ function Countdown({ deadlineTs, limitSec, clockOffset }: { deadlineTs: number |
   return (
     <span
       className={`${box} ${urgent ? "ovl-pulse" : ""}`}
-      style={{ width: 168, color: urgent ? undefined : "var(--gold-bright)" }}
+      style={{ width: 108, color: urgent ? undefined : "var(--gold-bright)" }}
     >
-      {Math.floor(remain / 60)}:{String(remain % 60).padStart(2, "0")}
+      {/* Seconds, not m:ss. No step in any format runs to a minute, so the
+          leading "0:" was a zero that never changed sitting in 60px type. */}
+      {remain}
     </span>
   );
 }

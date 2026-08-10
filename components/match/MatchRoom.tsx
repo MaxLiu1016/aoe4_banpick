@@ -1112,27 +1112,35 @@ function SlotRow({ align, ids, slots, active, pending, preview, entry, kind, rin
   const hovered = preview ? entry(preview) : undefined;
   const ghost = hovered?.state === "available" ? hovered : undefined;
   const landing = ghost && active ? Math.max(active.from, filled.length) : -1;
+  const cells = Array.from({ length: total }, (_, n) => {
+    const id = filled[n];
+    if (!id) {
+      return (
+        <EmptySlot key={`e${n}`} h={h} w={w} intent={struck ? "ban" : "pick"} kind={kind}
+          preview={n === landing ? ghost : undefined}
+          active={Boolean(active) && n >= active!.from && n < active!.to} />
+      );
+    }
+    const spent = Boolean(dim?.has(id));
+    // Gold for one you are holding — the same gold the pool tile's padlock
+    // and the waiting slot wear. It is yours and it is not out yet.
+    return (
+      <BandTile key={id} entry={entry(id)} kind={kind} ring={secret.has(id) ? "border-gold" : ring}
+        h={h} w={w} dim={spent} dimLabel={spent ? dimTitle : undefined} struck={struck} pop={pop}
+        title={spent && dimTitle ? `${entry(id)?.name} (${dimTitle})` : undefined} />
+    );
+  });
+  // Both sides grow away from the middle, oldest first. The left-hand row is
+  // packed against the midline, so laying it out in draft order put the FIRST
+  // pick furthest away and pushed the whole row outwards on every pick — the two
+  // sides read in opposite directions and nothing stayed where you last saw it.
+  // Reversing the left row's markup makes the midline the start line for both.
+  const mirrored = align === "right";
   return (
     <TileRow align={align}>
-      {Array.from({ length: total }, (_, n) => {
-        const id = filled[n];
-        if (!id) {
-          return (
-            <EmptySlot key={`e${n}`} h={h} w={w} intent={struck ? "ban" : "pick"} kind={kind}
-              preview={n === landing ? ghost : undefined}
-              active={Boolean(active) && n >= active!.from && n < active!.to} />
-          );
-        }
-        const spent = Boolean(dim?.has(id));
-        // Gold for one you are holding — the same gold the pool tile's padlock
-        // and the waiting slot wear. It is yours and it is not out yet.
-        return (
-          <BandTile key={id} entry={entry(id)} kind={kind} ring={secret.has(id) ? "border-gold" : ring}
-            h={h} w={w} dim={spent} dimLabel={spent ? dimTitle : undefined} struck={struck} pop={pop}
-            title={spent && dimTitle ? `${entry(id)?.name} (${dimTitle})` : undefined} />
-        );
-      })}
-      {after}
+      {mirrored ? after : null}
+      {mirrored ? [...cells].reverse() : cells}
+      {mirrored ? null : after}
     </TileRow>
   );
 }
@@ -2115,10 +2123,16 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
   // rules with one consequence — you cannot have it — and the consequence is the
   // only thing anybody would filter on. Offering them separately made the reader
   // work out which rule applied before they could pick a checkbox.
+  //
+  // Civs only. On a MAP_SELECT step the maps you may choose are the ones already
+  // PICKED into a pool, so "only what you can take" tested for the wrong state
+  // and emptied the grid — it was not merely useless once a match was under way,
+  // it was wrong. The search box stays: a forty-map pool is worth searching.
   const [onlyOpen, setOnlyOpen] = useState(false);
+  const canFilterState = !isMap;
   const needle = q.trim().toLowerCase();
   const shown = entries.filter((e) => {
-    if (onlyOpen && (e.state !== "available" || blocked.has(e.id))) return false;
+    if (canFilterState && onlyOpen && (e.state !== "available" || blocked.has(e.id))) return false;
     return !needle || e.name.toLowerCase().includes(needle);
   });
   const filtered = shown.length !== entries.length;
@@ -2149,7 +2163,9 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
               placeholder={t("match.filterSearch")}
               className="w-48 rounded border border-border bg-surface-2 px-2 py-1 text-foreground outline-none focus:border-gold"
             />
-            <FilterChip on={onlyOpen} onClick={() => setOnlyOpen(!onlyOpen)} label={t("match.filterOnly")} />
+            {canFilterState && (
+              <FilterChip on={onlyOpen} onClick={() => setOnlyOpen(!onlyOpen)} label={t("match.filterOnly")} />
+            )}
             {filtered && (
               <>
                 <span className="text-muted">{t("match.filterCount", { n: shown.length, total: entries.length })}</span>
