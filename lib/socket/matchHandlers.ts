@@ -694,16 +694,27 @@ export function registerMatchHandlers(io: Server) {
     // useless: flipping anonymity would retroactively expose names spectators
     // had been shown, and flipping playAll would move the finish line under a
     // player who is already one game from taking the series.
-    socket.on(C2S.SET_OPTIONS, async ({ matchId, anonymous, publicHover, playAll }: { matchId: string; anonymous?: boolean; publicHover?: boolean; playAll?: boolean }) => {
+    socket.on(C2S.SET_OPTIONS, async ({ matchId, anonymous, publicHover, playAll, headStart }: {
+      matchId: string; anonymous?: boolean; publicHover?: boolean; playAll?: boolean;
+      headStart?: { player1?: number; player2?: number };
+    }) => {
       try {
         if (!socket.data.isHost || socket.data.matchId !== matchId) return;
         await dbConnect();
         const m = await Match.findById(matchId);
         if (!m || m.status !== "lobby") return;
-        const set: Record<string, boolean> = {};
+        const set: Record<string, unknown> = {};
         if (typeof anonymous === "boolean") set["config.options.anonymous"] = anonymous;
         if (typeof publicHover === "boolean") set["config.options.publicHover"] = publicHover;
         if (typeof playAll === "boolean") set["config.options.playAll"] = playAll;
+        if (headStart) {
+          // Bounded here as well as in the engine. The engine clamps what it
+          // reads so an old or hand-edited config cannot break a draft; this
+          // stops a junk value being stored in the first place.
+          const target = Math.floor(Number(m.config?.options?.bestOf ?? 1) / 2) + 1;
+          const cap = (n: unknown) => Math.max(0, Math.min(target - 1, Math.floor(Number(n) || 0)));
+          set["config.options.headStart"] = { player1: cap(headStart.player1), player2: cap(headStart.player2) };
+        }
         if (!Object.keys(set).length) return;
         // config is a Mixed field, so a dotted $set is the way to touch one key
         // without rewriting (and racing on) the whole snapshot.

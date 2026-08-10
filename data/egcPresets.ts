@@ -129,7 +129,13 @@ function series(bestOf: number): Omit<Step, "id">[] {
   for (let g = 0; g < bestOf; g++) {
     // Game 1's map came out of the draw at the end of the map draft.
     // 5.2.3.4 after that it is the loser's pick, from either player's maps.
-    if (g > 0) out.push(mk({ type: "MAP_SELECT", actor: "LOSER", pool: "map", mapScope: "shared" }));
+    if (g > 0) {
+      out.push(mk({ type: "MAP_SELECT", actor: "LOSER", pool: "map", mapScope: "shared" }));
+      // The other side sees the map before anybody starts picking civs for it.
+      // Only the winner is asked — the loser just chose it, and making them
+      // confirm their own choice is a click that means nothing.
+      out.push(mk({ type: "SYNC_CONFIRM", actor: "WINNER", pool: "map", count: 1 }));
+    }
     const first: Seat = g % 2 === 0 ? "PLAYER1" : "PLAYER2";
     const offer = (actor: Seat, count: number) =>
       // 5.3.2.3 a civ already PLAYED is out; one that was only sniped comes back.
@@ -188,7 +194,7 @@ const STAGES: EgcStage[] = [
   {
     key: "egc-main-bo9",
     name: "EGC Main Event Bo9 (Grand Final)",
-    description: "EGC Masters Fall S2 — grand final. 11-map pool, 10-civ hands. The upper bracket player's one-map head start is not modelled — start the series 1-0 by hand. Main Event map draft is reconstructed; EGC had not published it.",
+    description: "EGC Masters Fall S2 — grand final. 11-map pool, 10-civ hands. Set the upper bracket player's one-map head start with the room's Head start control. Main Event map draft is reconstructed; EGC had not published it.",
     bestOf: 9, mapPool: MAIN_EVENT_MAPS, snake: 4, tail: true,
   },
 ];
@@ -226,7 +232,7 @@ function build(stage: EgcStage): PresetConfig {
 }
 
 /** Bump a preset's version to make the seed overwrite the copy in the database. */
-export const EGC_PRESET_VERSION = 2;
+export const EGC_PRESET_VERSION = 4;
 
 export const EGC_PRESETS = STAGES.map((s, i) => ({
   key: s.key,

@@ -31,7 +31,7 @@ export const StepTypeSchema = z.enum([
   "CIV_BAN",
   "CIV_PICK", // build each player's persistent civ pool ("hand")
   "MAP_SELECT", // choose the map actually played this game
-  "SYNC_CONFIRM", // a synchronized gate: both players must press confirm before the draft proceeds (custom copy via the step label)
+  "SYNC_CONFIRM", // a gate: press confirm before the draft proceeds. Both players by default; name an actor and only that side is asked (custom copy via the step label)
   // --- Two-pool duel: simultaneous hidden offer, then simultaneous hidden counter-snipe ---
   "CIV_OFFER", // both players secretly offer N civs from their hand for this game, then reveal
   "CIV_SNIPE_OPPONENT", // both players secretly ban M of the opponent's offer (this game only), then reveal
@@ -77,11 +77,15 @@ export type Step = z.infer<typeof StepSchema>;
  * existed have no flag at all and must keep the hidden double-blind offer they
  * were built around. Ask this rather than reading `simultaneous` directly.
  */
-export function isSimultaneousStep(s: Pick<Step, "type" | "simultaneous">): boolean {
+export function isSimultaneousStep(s: Pick<Step, "type" | "simultaneous" | "actor">): boolean {
   switch (s.type) {
     case "CIV_SNIPE_OPPONENT":
-    case "SYNC_CONFIRM":
       return true;
+    // A confirm gate is simultaneous only when it is asking everybody. Name a
+    // side — "the winner acknowledges the map the loser just picked" — and it
+    // becomes that player's turn like any other step.
+    case "SYNC_CONFIRM":
+      return !(s.actor === "PLAYER1" || s.actor === "PLAYER2" || s.actor === "LOSER" || s.actor === "WINNER");
     case "CIV_OFFER":
       return s.simultaneous !== false;
     case "MAP_BAN":
@@ -119,6 +123,15 @@ export const PresetOptionsSchema = z.object({
   // rather than defaulted because it is set per match in the lobby, not authored
   // into a preset, and a default would make it required on every stored config.
   playAll: z.boolean().optional(),
+  // A series that does not start level. The grand final of a double-elimination
+  // bracket is the case: the side arriving from the winners' bracket is already
+  // a game up before anybody picks anything. Set per match in the lobby, like
+  // playAll, so it is optional rather than defaulted — a stored preset should
+  // not carry a handicap.
+  headStart: z.object({
+    player1: z.number().int().min(0).max(20),
+    player2: z.number().int().min(0).max(20),
+  }).optional(),
 });
 export type PresetOptions = z.infer<typeof PresetOptionsSchema>;
 

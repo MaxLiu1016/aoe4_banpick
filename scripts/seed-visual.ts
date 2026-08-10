@@ -13,6 +13,7 @@ import { Preset } from "../lib/models/Preset";
 import { Match } from "../lib/models/Match";
 import { User } from "../lib/models/User";
 import { buildDefaultConfig } from "../lib/draft/defaultPreset";
+import { DEFAULT_MAPS } from "../data/maps";
 import { C2S, S2C } from "../lib/socket/events";
 import { signTicket } from "../lib/socket/ticket";
 import type { DerivedState } from "../lib/draft/engine";
@@ -56,9 +57,13 @@ async function main() {
     User.create({ username: `vis_a_${sfx}`, email: `vis_a_${sfx}@t.co`, passwordHash: "x" }),
     User.create({ username: `vis_b_${sfx}`, email: `vis_b_${sfx}@t.co`, passwordHash: "x" }),
   ]);
-  const preset = await Preset.create({ ownerId: alice._id, name: "Visual check Bo3", config: buildDefaultConfig(3) });
+  // buildDefaultConfig ships an empty map pool on purpose — a new preset is
+  // meant to fail validation until a human picks the season's maps. Nobody is
+  // here to pick, so take the catalogue.
+  const config = { ...buildDefaultConfig(3), maps: DEFAULT_MAPS };
+  const preset = await Preset.create({ ownerId: alice._id, name: "Visual check Bo3", config });
   const match = await Match.create({
-    presetId: preset._id, hostId: alice._id, config: preset.config, status: "lobby",
+    presetId: preset._id, hostId: alice._id, config, status: "lobby",
     player1Id: alice._id, player1Name: "Alice", shareCode: `v${sfx}`,
   });
   const matchId = String(match._id);
@@ -72,42 +77,64 @@ async function main() {
   P2.emit(C2S.READY, { matchId, ready: true });
   await waitUntil(P1, (p) => p.status === "running");
 
-  const taken = (p: Payload, t: string) =>
-    p.state.maps.some((x) => x.id === t && x.state !== "available") ||
-    p.state.civs.some((x) => x.id === t && x.state !== "available") ||
-    p.state.civBans.some((b) => b.id === t) ||
-    p.state.draftedByP1.includes(t) || p.state.draftedByP2.includes(t);
-
-  async function act(s: S, target: string) {
-    const role = s.latest?.you;
-    await waitUntil(s, (p) => !!p.state.currentStep && p.state.turn === role);
-    s.emit(C2S.ACTION, { matchId, target });
-    await waitUntil(s, (p) => taken(p, target));
+  /** Whatever the rules will accept right now, for whoever is being asked. */
+  function legal(p: Payload, role: "player1" | "player2"): string | null {
+    const st = p.state;
+    const step = st.currentStep;
+    if (!step) return null;
+    const free = (xs: { id: string; state: string }[]) => xs.filter((x) => x.state === "available").map((x) => x.id);
+    switch (step.type) {
+      case "MAP_BAN":
+      case "MAP_PICK": return free(st.maps)[0] ?? null;
+      case "MAP_SELECT": return st.selectableMapIds[0] ?? null;
+      case "CIV_BAN": {
+        const mine = new Set([...st.civBans.filter((b) => b.by === role).map((b) => b.id), ...st.pendingBans[role]]);
+        return free(st.civs).find((id) => !mine.has(id)) ?? null;
+      }
+      case "CIV_PICK": return st.civPickableIds[0] ?? null;
+      case "CIV_OFFER": {
+        const hand = role === "player1" ? st.offerableP1 : st.offerableP2;
+        const out = new Set(st.civDuel?.offered[role] ?? []);
+        return hand.find((id) => !out.has(id)) ?? null;
+      }
+      case "CIV_SNIPE_OPPONENT": {
+        const opp = role === "player1" ? "player2" : "player1";
+        const seen = new Set(st.civDuel?.snipedBy[role] ?? []);
+        return (st.civDuel?.offered[opp] ?? []).find((id) => !seen.has(id)) ?? null;
+      }
+      case "SYNC_CONFIRM": return "confirm";
+      default: return null;
+    }
   }
-  async function offer(s: S, role: "player1" | "player2", civ: string) {
-    s.emit(C2S.ACTION, { matchId, target: civ });
-    await waitUntil(s, (p) => Boolean(p.state.civDuel?.offered[role].includes(civ)));
-  }
 
-  const stop = (phase: string) => { if (PHASE === phase) throw { done: true }; };
+  /**
+   * Walk the draft forward until it reaches `PHASE`, always playing whatever is
+   * legal at the moment rather than a script of ids. The ids in a preset change
+   * — maps get renamed, pools get edited — and a hard-coded walk breaks silently
+   * the next time somebody touches the data.
+   */
   try {
-    stop("mapban");                                  // P1 about to ban a map
-    await act(P1, "dry-arabia");
-    await act(P2, "lipany");
-    stop("mappick");                                 // P1 about to pick maps into own pool
-    await act(P1, "high-view"); await act(P1, "mongolian-heights");
-    await act(P2, "french-pass"); await act(P2, "danube-river");
-    stop("civban");                                  // P1 about to ban a civ
-    await act(P1, "english");
-    await act(P2, "french");
-    stop("civpick");                                 // P1 about to draft a hand
-    for (const c of ["mongols", "rus", "abbasid-dynasty", "ottomans"]) await act(P1, c);
-    for (const c of ["chinese", "malians", "byzantines", "japanese"]) await act(P2, c);
-    await waitUntil(P1, (p) => p.state.currentStep?.type === "CIV_OFFER");
-    stop("offer");                                   // simultaneous hidden offer
-    await offer(P1, "player1", "mongols"); await offer(P1, "player1", "rus");
-    await offer(P2, "player2", "chinese"); await offer(P2, "player2", "byzantines");
-    await waitUntil(P2, (p) => p.state.currentStep?.type === "CIV_SNIPE_OPPONENT");
+    const PHASE_STEP: Record<string, string> = {
+      mapban: "MAP_BAN", mappick: "MAP_PICK", civban: "CIV_BAN",
+      civpick: "CIV_PICK", offer: "CIV_OFFER", snipe: "CIV_SNIPE_OPPONENT",
+    };
+    const want = PHASE_STEP[PHASE] ?? "CIV_PICK";
+    for (let guard = 0; guard < 400; guard++) {
+      const p = P1.latest;
+      const step = p?.state?.currentStep;
+      if (!step) { await sleep(200); continue; }
+      if (step.type === want) break;
+      let moved = false;
+      for (const [s, role] of [[P1, "player1"], [P2, "player2"]] as const) {
+        if (!s.latest?.state?.awaiting[role]) continue;
+        const target = legal(s.latest, role);
+        if (!target) continue;
+        s.emit(C2S.ACTION, { matchId, target });
+        moved = true;
+        await sleep(140);
+      }
+      if (!moved) await sleep(200);
+    }
   } catch (e) {
     if (!(e as { done?: boolean })?.done) throw e;
   }

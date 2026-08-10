@@ -104,6 +104,8 @@ export interface DerivedState {
   /** Series runs to the last game rather than stopping once it's decided. */
   playAll: boolean;
   score: { player1: number; player2: number };
+  /** The score the series opened at, before anybody played a game. */
+  headStart: { player1: number; player2: number };
   maps: PoolView[];
   civs: PoolView[];
   draftedCivIds: string[];
@@ -119,6 +121,9 @@ export interface DerivedState {
   /** Per-player map pools (maps each player picked). Loser selects from their own. */
   mapsByP1: string[];
   mapsByP2: string[];
+  /** Each side's map bans, in the order they were cast. */
+  mapBansByP1: string[];
+  mapBansByP2: string[];
   selectableMapIds: string[];
   civDuel: CivDuel | null;
   games: GameRec[];
@@ -174,6 +179,19 @@ export function deriveState(
   // SYNC_CONFIRM: whether each player has pressed confirm, keyed by step index.
   const confirmedByStep = new Map<number, { player1: boolean; player2: boolean }>();
   const pendingBans: { player1: string[]; player2: string[] } = { player1: [], player2: [] };
+  // The order each player took things in. The pool state alone can't answer this
+  // — reading a hand back off the pool returns it in POOL order, so every pick
+  // inserted itself wherever that civ happened to sit in the catalogue and the
+  // row on screen reshuffled under the player's hand mid-draft.
+  const pickOrder = {
+    civ: { player1: [] as string[], player2: [] as string[] },
+    map: { player1: [] as string[], player2: [] as string[] },
+  };
+  // Map bans need the same treatment for the same reason. Civ bans already have
+  // it for free — `civBans` is a list built in replay order — but a map ban is
+  // recorded on the map itself, and reading them back off the pool returns them
+  // in catalogue order.
+  const mapBanOrder = { player1: [] as string[], player2: [] as string[] };
 
   // --- Pass 1 -------------------------------------------------------------
   // A simultaneous ban step must not reveal either player's bans until BOTH
@@ -212,6 +230,7 @@ export function deriveState(
         }
         if (a.pool === "map") {
           mapSt.set(a.target, { state: "banned", by: a.actor });
+          if (a.actor === "player1" || a.actor === "player2") mapBanOrder[a.actor].push(a.target);
         } else {
           const scope = a.scope ?? "pool";
           civBans.push({ id: a.target, by: a.actor, scope });
@@ -219,10 +238,13 @@ export function deriveState(
           if (scope === "pool") civSt.set(a.target, { state: "banned", by: a.actor });
         }
         break;
-      case "pick":
+      case "pick": {
         if (a.pool === "map") mapSt.set(a.target, { state: "picked", by: a.actor });
         else civSt.set(a.target, { state: "drafted", by: a.actor });
+        const seat = a.actor === "player1" || a.actor === "player2" ? a.actor : null;
+        if (seat) pickOrder[a.pool === "map" ? "map" : "civ"][seat].push(a.target);
         break;
+      }
       case "select":
         if (games[g]) games[g].map = a.target;
         playedMaps.add(a.target);
@@ -318,6 +340,8 @@ export function deriveState(
       }
       case "SYNC_CONFIRM": {
         const c = confirmedByStep.get(i);
+        const only = isSimultaneousStep(s) ? null : resolveActor(s, g, games);
+        if (only === "player1" || only === "player2") return !!c?.[only];
         return !!c?.player1 && !!c?.player2;
       }
       default:
@@ -348,18 +372,33 @@ export function deriveState(
     }
   }
 
-  let p1 = 0, p2 = 0;
+  const target = Math.floor(config.options.bestOf / 2) + 1;
+  // A head start is part of the SCORE, not a note beside it. Everything that
+  // decides whether the series is over — `finished`, the winner, how many games
+  // are still reachable — reads the score, so a handicap kept anywhere else
+  // would have to be remembered separately in each of those places.
+  // Clamped below the target: a head start that has already won the series would
+  // finish a draft that never started.
+  const cap = (n: unknown) => Math.max(0, Math.min(target - 1, Math.floor(Number(n) || 0)));
+  const headStart = {
+    player1: cap(config.options.headStart?.player1),
+    player2: cap(config.options.headStart?.player2),
+  };
+  let p1 = headStart.player1, p2 = headStart.player2;
   for (const gme of games) {
     if (gme.winner === "player1") p1++;
     else if (gme.winner === "player2") p2++;
   }
-  const target = Math.floor(config.options.bestOf / 2) + 1;
 
   const maps: PoolView[] = config.maps.map((m) => ({ ...m, ...(mapSt.get(m.id) ?? { state: "available" as const }) }));
   const civs: PoolView[] = config.civs.map((c) => ({ ...c, ...(civSt.get(c.id) ?? { state: "available" as const }) }));
   const draftedCivIds = civs.filter((c) => c.state === "drafted").map((c) => c.id);
-  const draftedByP1 = civs.filter((c) => c.state === "drafted" && c.by === "player1").map((c) => c.id);
-  const draftedByP2 = civs.filter((c) => c.state === "drafted" && c.by === "player2").map((c) => c.id);
+  // In the order they were taken, not the order the catalogue lists them.
+  // `pickOrder` is the record; the pool state is the filter, so anything a later
+  // action undid drops out.
+  const stillDrafted = new Set(draftedCivIds);
+  const draftedByP1 = pickOrder.civ.player1.filter((id) => stillDrafted.has(id));
+  const draftedByP2 = pickOrder.civ.player2.filter((id) => stillDrafted.has(id));
   // What each player may OFFER from this game: normally their drafted hand, but
   // when no hand was drafted (the "easy" flow) the whole available civ pool is
   // open, so both players simultaneously pick any civ each game.
@@ -387,8 +426,12 @@ export function deriveState(
   };
 
   // Per-player map pools (maps each player PICKed into the pool).
-  const mapsByP1 = maps.filter((m) => m.state === "picked" && m.by === "player1").map((m) => m.id);
-  const mapsByP2 = maps.filter((m) => m.state === "picked" && m.by === "player2").map((m) => m.id);
+  const claimedMaps = new Set(maps.filter((m) => m.state === "picked").map((m) => m.id));
+  const mapsByP1 = pickOrder.map.player1.filter((id) => claimedMaps.has(id));
+  const mapsByP2 = pickOrder.map.player2.filter((id) => claimedMaps.has(id));
+  const struckMaps = new Set(maps.filter((m) => m.state === "banned").map((m) => m.id));
+  const mapBansByP1 = mapBanOrder.player1.filter((id) => struckMaps.has(id));
+  const mapBansByP2 = mapBanOrder.player2.filter((id) => struckMaps.has(id));
 
   // turn / simultaneous / awaiting
   let turn: SeatRole | null = null;
@@ -412,10 +455,20 @@ export function deriveState(
       awaiting.player1 = snipeByP1[cg].length < need;
       awaiting.player2 = snipeByP2[cg].length < need;
     } else if (currentStep.type === "SYNC_CONFIRM") {
-      simultaneous = true;
       const c = confirmedByStep.get(currentStepIndex);
-      awaiting.player1 = !c?.player1;
-      awaiting.player2 = !c?.player2;
+      const only = isSimultaneousStep(currentStep) ? null : resolveActor(currentStep, cg, games);
+      if (only === "player1" || only === "player2") {
+        // One side's gate. `turn` is what the whole UI reads to say whose move
+        // it is, so it has to be set here too — leaving it null would light up
+        // nobody while the draft waited on somebody.
+        turn = only;
+        awaiting.player1 = only === "player1" && !c?.player1;
+        awaiting.player2 = only === "player2" && !c?.player2;
+      } else {
+        simultaneous = true;
+        awaiting.player1 = !c?.player1;
+        awaiting.player2 = !c?.player2;
+      }
     } else if (isSimulBan(currentStepIndex)) {
       simultaneous = true;
       const e = perStepByActor.get(currentStepIndex) ?? { player1: 0, player2: 0 };
@@ -513,6 +566,7 @@ export function deriveState(
     target,
     playAll,
     score: { player1: p1, player2: p2 },
+    headStart,
     maps,
     civs,
     draftedCivIds,
@@ -524,6 +578,8 @@ export function deriveState(
     civPickableIds,
     mapsByP1,
     mapsByP2,
+    mapBansByP1,
+    mapBansByP2,
     selectableMapIds,
     civDuel,
     games,

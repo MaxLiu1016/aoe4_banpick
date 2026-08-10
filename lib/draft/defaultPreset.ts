@@ -41,6 +41,11 @@ export function buildDefaultConfig(bestOf = 5): PresetConfig {
   for (let g = 0; g < bestOf; g++) {
     const mapActor = g === 0 ? "HOST_DRAW" : "LOSER";
     steps.push(mk({ type: "MAP_SELECT", actor: mapActor, pool: "map", count: 1, timeLimitSec: 30, showCurrentMap: false, excludeUsedCivs: false, pausable: false, label: `Game ${g + 1}: select map` }));
+    // The other side acknowledges the map before the civs for it are chosen.
+    // Game 1's map comes out of a draw, so there is nothing to acknowledge.
+    if (g > 0) {
+      steps.push(mk({ type: "SYNC_CONFIRM", actor: "WINNER", pool: "map", count: 1, timeLimitSec: 60, showCurrentMap: true, excludeUsedCivs: false, pausable: false, label: `Game ${g + 1}: confirm map` }));
+    }
     steps.push(mk({ type: "CIV_OFFER", actor: "PLAYER1", pool: "drafted_civ", count: 2, timeLimitSec: 45, showCurrentMap: true, excludeUsedCivs: true, pausable: false, label: `Game ${g + 1}: offer 2 (both players)` }));
     steps.push(mk({ type: "CIV_SNIPE_OPPONENT", actor: "PLAYER1", pool: "drafted_civ", count: 1, timeLimitSec: 30, showCurrentMap: true, excludeUsedCivs: false, pausable: false, label: `Game ${g + 1}: snipe opponent (both players)` }));
     steps.push(mk({ type: "GAME_RESULT", actor: "HOST_DRAW", pool: "map", count: 1, timeLimitSec: 0, showCurrentMap: true, excludeUsedCivs: false, pausable: false, label: `Game ${g + 1}: result` }));

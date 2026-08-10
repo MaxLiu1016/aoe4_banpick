@@ -29,7 +29,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
   {
     "key": "bcc-bo3",
     "order": 20,
-    "version": 3,
+    "version": 5,
     "name": "Bo3 Draft(BCC)",
     "description": "For Border Conquest Cup, Standard Bo3 — map BP, hand draft, simultaneous offer & snipe.",
     "config": {
@@ -524,58 +524,6 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "label": "P2 · Pick civ into pool"
         },
         {
-          "id": "46c7d40a-424a-4837-87f9-6b18e6311783",
-          "type": "CIV_PICK",
-          "actor": "PLAYER1",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "banScope": "opponent",
-          "pausable": false,
-          "label": "P1 · Pick civ into pool"
-        },
-        {
-          "id": "f269608a-8832-4265-9221-aa7bec06a0c5",
-          "type": "CIV_PICK",
-          "actor": "PLAYER2",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Pick civ into pool"
-        },
-        {
-          "id": "ae23d3b4-d48c-41e4-8e60-cefe78776a17",
-          "type": "CIV_PICK",
-          "actor": "PLAYER1",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "banScope": "opponent",
-          "pausable": false,
-          "label": "P1 · Pick civ into pool"
-        },
-        {
-          "id": "021508ad-653d-482e-b892-d261c4530da8",
-          "type": "CIV_PICK",
-          "actor": "PLAYER2",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Pick civ into pool"
-        },
-        {
           "id": "290851bf-ab32-46fe-af40-718362ffd725",
           "type": "CIV_OFFER",
           "actor": "PLAYER1",
@@ -588,33 +536,9 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "label": "Pick civ to field (simultaneous)"
         },
         {
-          "id": "7e426b6f-2150-4a06-afe4-ea8f0f30a526",
-          "type": "CIV_OFFER",
-          "actor": "PLAYER2",
-          "pool": "civ",
-          "count": 2,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
-        },
-        {
           "id": "3ca7bedf-64f7-4be6-b26b-af60e93b8ec0",
           "type": "CIV_SNIPE_OPPONENT",
           "actor": "PLAYER1",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Snipe opponent (simultaneous)"
-        },
-        {
-          "id": "9edda4e6-ee1e-4eb2-9212-02c428ed55e3",
-          "type": "CIV_SNIPE_OPPONENT",
-          "actor": "PLAYER2",
           "pool": "civ",
           "count": 1,
           "timeLimitSec": 30,
@@ -649,6 +573,18 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "label": "Loser · Select map"
         },
         {
+          "id": "confirm-map-9",
+          "type": "SYNC_CONFIRM",
+          "actor": "WINNER",
+          "pool": "map",
+          "count": 1,
+          "timeLimitSec": 60,
+          "showCurrentMap": true,
+          "excludeUsedCivs": false,
+          "pausable": true,
+          "label": "Confirm the map"
+        },
+        {
           "id": "0ef8a39e-9851-425a-b508-1bddb69a94d3",
           "type": "CIV_OFFER",
           "actor": "PLAYER1",
@@ -661,33 +597,9 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "label": "Pick civ to field (simultaneous)"
         },
         {
-          "id": "1d01b4c0-123c-4bfe-a8d6-235356b4c334",
-          "type": "CIV_OFFER",
-          "actor": "PLAYER2",
-          "pool": "civ",
-          "count": 2,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
-        },
-        {
           "id": "99cfa415-92f7-4d88-9219-1875c6cc7a23",
           "type": "CIV_SNIPE_OPPONENT",
           "actor": "PLAYER1",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Snipe opponent (simultaneous)"
-        },
-        {
-          "id": "915e464c-ac1e-4adc-9005-8d9ba94b891c",
-          "type": "CIV_SNIPE_OPPONENT",
-          "actor": "PLAYER2",
           "pool": "civ",
           "count": 1,
           "timeLimitSec": 30,
@@ -722,6 +634,18 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "label": "Loser · Select map"
         },
         {
+          "id": "confirm-map-8",
+          "type": "SYNC_CONFIRM",
+          "actor": "WINNER",
+          "pool": "map",
+          "count": 1,
+          "timeLimitSec": 60,
+          "showCurrentMap": true,
+          "excludeUsedCivs": false,
+          "pausable": true,
+          "label": "Confirm the map"
+        },
+        {
           "id": "8bc85816-cb99-44cd-aaf5-8ab41f21109e",
           "type": "CIV_OFFER",
           "actor": "PLAYER1",
@@ -734,33 +658,9 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "label": "Pick civ to field (simultaneous)"
         },
         {
-          "id": "dc57d221-466f-4a51-ae09-1bbbddda80fe",
-          "type": "CIV_OFFER",
-          "actor": "PLAYER2",
-          "pool": "civ",
-          "count": 2,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
-        },
-        {
           "id": "444fd235-26be-4166-84c9-d7ed7f796d9b",
           "type": "CIV_SNIPE_OPPONENT",
           "actor": "PLAYER1",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Snipe opponent (simultaneous)"
-        },
-        {
-          "id": "29d28028-1b2a-4971-8e9c-81c2a55fe382",
-          "type": "CIV_SNIPE_OPPONENT",
-          "actor": "PLAYER2",
           "pool": "civ",
           "count": 1,
           "timeLimitSec": 30,
@@ -795,7 +695,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
   {
     "key": "bcc-bo5",
     "order": 21,
-    "version": 4,
+    "version": 5,
     "name": "Bo5 Draft(BCC)",
     "description": "For Border Conquest Cup, Standard Bo5 — map BP, hand draft, simultaneous offer & snipe.",
     "config": {
@@ -1389,6 +1289,18 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "label": "Loser · Select map"
         },
         {
+          "id": "confirm-map-7",
+          "type": "SYNC_CONFIRM",
+          "actor": "WINNER",
+          "pool": "map",
+          "count": 1,
+          "timeLimitSec": 60,
+          "showCurrentMap": true,
+          "excludeUsedCivs": false,
+          "pausable": true,
+          "label": "Confirm the map"
+        },
+        {
           "id": "08a58288-f36a-4d7f-89d8-fecbd7b5d7c2",
           "type": "CIV_OFFER",
           "actor": "PLAYER1",
@@ -1436,6 +1348,18 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "excludeUsedCivs": true,
           "pausable": false,
           "label": "Loser · Select map"
+        },
+        {
+          "id": "confirm-map-6",
+          "type": "SYNC_CONFIRM",
+          "actor": "WINNER",
+          "pool": "map",
+          "count": 1,
+          "timeLimitSec": 60,
+          "showCurrentMap": true,
+          "excludeUsedCivs": false,
+          "pausable": true,
+          "label": "Confirm the map"
         },
         {
           "id": "01c1425d-0e39-4a13-8c06-09f197694bbb",
@@ -1487,6 +1411,18 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "label": "Loser · Select map"
         },
         {
+          "id": "confirm-map-5",
+          "type": "SYNC_CONFIRM",
+          "actor": "WINNER",
+          "pool": "map",
+          "count": 1,
+          "timeLimitSec": 60,
+          "showCurrentMap": true,
+          "excludeUsedCivs": false,
+          "pausable": true,
+          "label": "Confirm the map"
+        },
+        {
           "id": "4e7a6606-35ae-44b1-bfeb-96448cd8c3fc",
           "type": "CIV_OFFER",
           "actor": "PLAYER1",
@@ -1534,6 +1470,18 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "excludeUsedCivs": true,
           "pausable": false,
           "label": "Loser · Select map"
+        },
+        {
+          "id": "confirm-map-4",
+          "type": "SYNC_CONFIRM",
+          "actor": "WINNER",
+          "pool": "map",
+          "count": 1,
+          "timeLimitSec": 60,
+          "showCurrentMap": true,
+          "excludeUsedCivs": false,
+          "pausable": true,
+          "label": "Confirm the map"
         },
         {
           "id": "7c2f8a8a-bf6b-4e78-a009-3cd76dcc1dc8",
@@ -1585,7 +1533,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
   {
     "key": "standard-bo3",
     "order": 30,
-    "version": 2,
+    "version": 3,
     "name": "Bo3 Draft",
     "description": "Standard Bo3 — map BP, hand draft, simultaneous offer & snipe.",
     "config": {
@@ -2077,6 +2025,18 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "label": "Loser · Select map"
         },
         {
+          "id": "confirm-map-3",
+          "type": "SYNC_CONFIRM",
+          "actor": "WINNER",
+          "pool": "map",
+          "count": 1,
+          "timeLimitSec": 60,
+          "showCurrentMap": true,
+          "excludeUsedCivs": false,
+          "pausable": true,
+          "label": "Confirm the map"
+        },
+        {
           "id": "9a97ffbb-e9f5-4691-aef6-0d80fe6e75eb",
           "type": "CIV_OFFER",
           "actor": "PLAYER1",
@@ -2148,6 +2108,18 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "excludeUsedCivs": true,
           "pausable": true,
           "label": "Loser · Select map"
+        },
+        {
+          "id": "confirm-map-2",
+          "type": "SYNC_CONFIRM",
+          "actor": "WINNER",
+          "pool": "map",
+          "count": 1,
+          "timeLimitSec": 60,
+          "showCurrentMap": true,
+          "excludeUsedCivs": false,
+          "pausable": true,
+          "label": "Confirm the map"
         },
         {
           "id": "0f1e6f22-d17f-49d1-b2f3-44efa5bffd83",
@@ -2223,7 +2195,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
   {
     "key": "easy-bo3",
     "order": 31,
-    "version": 2,
+    "version": 4,
     "name": "easy Bo3 Draft",
     "description": "Simplified Bo3 demo.",
     "config": {
@@ -2480,18 +2452,6 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "label": "Pick civ to field (simultaneous)"
         },
         {
-          "id": "39cfea76-31ba-4531-81b2-690a80a32587",
-          "type": "CIV_OFFER",
-          "actor": "PLAYER2",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Pick civ to field (simultaneous)"
-        },
-        {
           "id": "0c08202d-531b-4eea-8b38-421f99bc9ab9",
           "type": "GAME_RESULT",
           "actor": "WINNER",
@@ -2517,21 +2477,21 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "label": "Loser · Select map"
         },
         {
+          "id": "confirm-map-1",
+          "type": "SYNC_CONFIRM",
+          "actor": "WINNER",
+          "pool": "map",
+          "count": 1,
+          "timeLimitSec": 60,
+          "showCurrentMap": true,
+          "excludeUsedCivs": false,
+          "pausable": true,
+          "label": "Confirm the map"
+        },
+        {
           "id": "9a97ffbb-e9f5-4691-aef6-0d80fe6e75eb",
           "type": "CIV_OFFER",
           "actor": "PLAYER1",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
-        },
-        {
-          "id": "ca70f74c-df03-4748-9e4c-be9a518ad350",
-          "type": "CIV_OFFER",
-          "actor": "PLAYER2",
           "pool": "civ",
           "count": 1,
           "timeLimitSec": 30,
@@ -2566,21 +2526,21 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "label": "Loser · Select map"
         },
         {
+          "id": "confirm-map-0",
+          "type": "SYNC_CONFIRM",
+          "actor": "WINNER",
+          "pool": "map",
+          "count": 1,
+          "timeLimitSec": 60,
+          "showCurrentMap": true,
+          "excludeUsedCivs": false,
+          "pausable": true,
+          "label": "Confirm the map"
+        },
+        {
           "id": "0f1e6f22-d17f-49d1-b2f3-44efa5bffd83",
           "type": "CIV_OFFER",
           "actor": "PLAYER1",
-          "pool": "civ",
-          "count": 1,
-          "timeLimitSec": 30,
-          "showCurrentMap": false,
-          "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
-        },
-        {
-          "id": "28c4e603-7562-49be-a0fc-d16b56158026",
-          "type": "CIV_OFFER",
-          "actor": "PLAYER2",
           "pool": "civ",
           "count": 1,
           "timeLimitSec": 30,
