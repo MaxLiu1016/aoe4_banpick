@@ -81,32 +81,17 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const [inviteUrl, setInviteUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const ticketRef = useRef<string | undefined>(undefined);
-  // The panel the player acts on, and the step it was last scrolled for.
-  const actionRef = useRef<HTMLDivElement>(null);
-  const lastStepRef = useRef<number | null>(null);
-  // How much of the board is still on screen. The rails in the margins take over
-  // once two-thirds of it has gone — late enough that they are not repeating a
-  // board you can still read, early enough to be there before you need them.
-  const [boardGone, setBoardGone] = useState(false);
-  const boardObserver = useRef<IntersectionObserver | null>(null);
-  // A ref callback rather than an effect: the board doesn't exist until the draft
-  // is running, and an effect that ran once in the lobby would never see it.
-  const watchBoard = useCallback((el: HTMLDivElement | null) => {
-    boardObserver.current?.disconnect();
-    boardObserver.current = null;
-    if (!el) { setBoardGone(false); return; }
-    const io = new IntersectionObserver(
-      // Only upward: a board taller than the window is not "gone" just because
-      // its bottom is off the fold.
-      ([e]) => setBoardGone(e.intersectionRatio < 1 / 3 && e.boundingClientRect.top < 0),
-      // A ladder rather than the one threshold that matters. The observer only
-      // reports on a crossing, and the board changes height as the draft runs —
-      // so a jump that lands between two sparse thresholds can pass unreported.
-      { threshold: [0, 0.1, 0.2, 1 / 3, 0.5, 0.75, 1] }
-    );
-    io.observe(el);
-    boardObserver.current = io;
-  }, []);
+  // Whether the board is folded down to a strip.
+  //
+  // Two players, independently, asked the page to stop moving: the draft used to
+  // scroll itself to whatever you had to click next, which is a fix for a page
+  // taller than a window. Folding the board is the other fix — it makes the page
+  // shorter than the window instead, and then nothing has to move at all.
+  //
+  // null = follow the draft (folded while you are working a pool, open when
+  // nothing is waiting on a click). A number is a manual choice, and it sticks
+  // until the draft is over.
+  const [foldChoice, setFoldChoice] = useState<boolean | null>(null);
   // Estimated server-minus-client clock offset (ms). Set from each payload's
   // serverNow so the countdown tracks the server's real deadline, not the local
   // (possibly skewed) clock. Slightly conservative by the one-way network delay,
@@ -122,32 +107,6 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   useEffect(() => {
     setInviteUrl(`${window.location.origin}/match/${matchId}`);
   }, [matchId]);
-
-  // Bring the turn to the player. A draft grows downward — scoreboard, map board,
-  // both hands — so by the time the maps are done the thing you actually click is
-  // off the bottom of the screen, and the page doesn't move on its own when the
-  // step changes. You end up hunting for your own turn.
-  //
-  // Only on a step change, only when the step is YOURS, and only when the prompt
-  // isn't already sitting near the top — a page that jumps while you're reading
-  // is worse than one that doesn't move.
-  useEffect(() => {
-    const st = payload?.state;
-    const seat = payload?.you === "player1" || payload?.you === "player2" ? payload.you : null;
-    if (!st || payload?.status !== "running") return;
-    const idx = st.currentStepIndex;
-    if (lastStepRef.current === idx) return;
-    const firstSight = lastStepRef.current === null;
-    lastStepRef.current = idx;
-    // Never on arrival: landing mid-draft shouldn't yank you somewhere you didn't ask for.
-    if (firstSight || spectator || !seat || !st.awaiting[seat] || payload.awaitingAck) return;
-    const el = actionRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    if (rect.top >= 0 && rect.top < window.innerHeight * 0.4) return; // already in view, leave it
-    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
-  }, [payload, spectator]);
 
   useEffect(() => {
     const socket = getSocket();
@@ -281,6 +240,10 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   // series) are moments to look up, and the board can have the room.
   const poolStep = !state.finished && !ackPending && Boolean(step)
     && step!.type !== "GAME_RESULT" && step!.type !== "SYNC_CONFIRM";
+  // Folded by default while somebody is working a pool — that is when the height
+  // is worth more to the grid than to the board — and open the rest of the time,
+  // when nothing is waiting on a click and the board IS the screen.
+  const folded = foldChoice ?? poolStep;
 
   // Duel helpers
   const youPlayer: "player1" | "player2" | null = you === "player1" || you === "player2" ? you : null;
@@ -359,7 +322,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           about, which is also what the page scrolls to — so by the time the board
           has gone, everything the strip was carrying is already in front of you. */}
       <div className="sticky top-0 z-30 -mx-4 bg-background/95 backdrop-blur">
-        {SHOW_TURN_STRIP && boardGone && !state.finished && payload!.status === "running" && (
+        {SHOW_TURN_STRIP && folded && !state.finished && payload!.status === "running" && (
           <TurnStrip
             state={state} payload={payload!} p1Name={p1Name} p2Name={p2Name}
             map={mapById(currentMap)} mapName={currentMapName} clockOffsetRef={clockOffsetRef}
@@ -372,9 +335,8 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
 
       {error && <div className="rounded border border-danger/60 bg-danger/10 px-4 py-2 text-sm text-danger">{error}</div>}
 
-      <div ref={watchBoard}>
       <OverviewBand
-        state={state} payload={payload!} focus={poolStep} you={you}
+        state={state} payload={payload!} folded={folded} onFold={setFoldChoice} you={you}
         youAwaiting={!spectator && !!youPlayer && state.awaiting[youPlayer] && payload!.status === "running" && !ackPending && !inGame}
         p1Name={p1Name} p2Name={p2Name} civById={civById} mapById={mapById}
         clockOffsetRef={clockOffsetRef} outcomeLabel={outcomeLabel}
@@ -386,7 +348,6 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         onPause={() => emit(C2S.PAUSE, { matchId, paused: payload!.status !== "paused" })}
         t={t}
       />
-      </div>
 
       {/* Between-games gate: hold the clock until both players acknowledge the result */}
       {payload!.awaitingAck && !state.finished && (
@@ -422,14 +383,13 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           document.body
         )}
 
-      {/* Portalled to <body> on purpose. The page wrapper animates on every route
-          change with fill-mode both, so it keeps a transform after the animation
-          ends — and a transformed ancestor becomes the containing block for
-          position:fixed, which pinned these to the middle of the whole document
-          instead of the middle of the window.
-          Mounting only once the board has gone also keeps the server render empty,
-          so there is no hydration mismatch from touching `document` here. */}
-      {boardGone && !state.finished &&
+      {/* The hands and the strikes, in the margins, for as long as the board is
+          folded away from them. Portalled to <body> on purpose: the page wrapper
+          animates on every route change with fill-mode both, so it keeps a
+          transform afterwards — and a transformed ancestor becomes the containing
+          block for position:fixed, which pinned these to the middle of the whole
+          document instead of the middle of the window. */}
+      {folded && !state.finished &&
         createPortal(
           <>
             <ContextRail side="player1" name={p1Name} hand={p1Hand} handLeft={p1Hand.filter((h) => !h.used).length}
@@ -444,7 +404,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           whose turn it is and how long is left, so what is left down here is the
           thing to click — and that is what the page should bring to you when the
           step changes, not a caption about it. */}
-      <div ref={actionRef} className="scroll-mt-28 space-y-5">
+      <div className="space-y-5">
         {/* What you are about to do, and the map you are about to do it for.
             The strip at the top of the window carries the same map small, for when
             this has scrolled away; here it gets to be a picture, right beside the
@@ -593,13 +553,6 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
       )}
       </div>
 
-      {/* Travel below the draft, so the page can finish scrolling the panel to the
-          top rather than stopping halfway — halfway leaves the board half on
-          screen, which is too little to read and too much for the rails to take
-          over from. Two hundred is what the panels here actually need; a full
-          screen of it would guarantee the worst case at the cost of a screen of
-          nothing under every draft. */}
-      <div aria-hidden className="h-[200px]" />
     </div>
   );
 }
@@ -613,18 +566,20 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
  * comes from a wireframe a player drew: maps across the top, both hands converging
  * on the clock in the middle, bans underneath.
  *
- * Two heights. `focus` is on for every step where somebody is working a pool, and
- * it squeezes the board to roughly 150px so the grid being clicked stays on screen;
- * off it — calling a game, the confirm gate, the end of the series — nothing is
- * waiting on a click and the board can have the room.
+ * Two states. Folded, it is a strip: the score and the maps of the series, and
+ * nothing else — the hands and the strikes move out to the rails, and the page
+ * becomes short enough to fit a window, which is the whole point. Open, it is the
+ * board, and it is worth the height when nothing is waiting on a click.
  */
 function OverviewBand({
-  state, payload, focus, you, youAwaiting, p1Name, p2Name, civById, mapById,
+  state, payload, folded, onFold, you, youAwaiting, p1Name, p2Name, civById, mapById,
   clockOffsetRef, outcomeLabel, canTake, needsName, onTake, canPause, onPause, t,
 }: {
   state: DerivedState;
   payload: Payload;
-  focus: boolean;
+  /** Down to a strip, so the page fits a window and never has to move. */
+  folded: boolean;
+  onFold: (v: boolean | null) => void;
   you: SeatRole | "spectator";
   /** The viewer owes an input right now (their turn, or their half of a simultaneous step). */
   youAwaiting: boolean;
@@ -681,7 +636,7 @@ function OverviewBand({
   const mystery = (seat: "player1" | "player2") =>
     hidden && duel!.offered[seat].length === 0 && !state.awaiting[seat] ? duel!.offerTarget[seat] : 0;
 
-  const size = focus ? 56 : 76;
+  const size = 76;
   const names = { player1: p1Name, player2: p2Name };
 
   return (
@@ -716,33 +671,67 @@ function OverviewBand({
             {payload.status === "paused" ? `▶ ${t("match.resume")}` : `⏸ ${t("match.pause")}`}
           </button>
         )}
+        {/* Folding is a choice, and once made it is kept — a board that refolded
+            itself every step would be the scrolling problem in another costume. */}
+        <button onClick={() => onFold(!folded)}
+          className="rounded border border-bronze px-2 py-0.5 font-sans text-[11px] text-gold-bright hover:brightness-125">
+          {folded ? `⤢ ${t("match.expand")}` : `▭ ${t("match.minimize")}`}
+        </button>
       </div>
 
       {/* Maps: the games, then what is left to play them on */}
       <div className="mt-2 flex flex-wrap items-end justify-center gap-1.5">
         {state.games.slice(0, shownGames).map((g) => (
           <GameCell key={g.gameIndex} game={g} current={!state.finished && g.gameIndex === state.currentGameIndex}
-            map={mapById(g.map)} names={names} focus={focus} t={t} />
+            map={mapById(g.map)} names={names} compact={folded} t={t} />
         ))}
         {(state.mapsByP1.length > 0 || state.mapsByP2.length > 0 || neutral.length > 0 || mapPhase) && (
           <>
             <span className="mx-1.5 h-10 w-px self-center bg-bronze" aria-hidden />
             {seats.map((s) => (
               <MapPoolSeg key={s} seat={s} ids={s === "player1" ? state.mapsByP1 : state.mapsByP2}
-                slots={reserved("MAP_PICK", s)} played={played} mapById={mapById} focus={focus} />
+                slots={reserved("MAP_PICK", s)} played={played} mapById={mapById} compact={folded} />
             ))}
             {neutral.map((id) => (
-              <BandTile key={id} entry={mapById(id)} kind="map" ring="border-bronze" h={focus ? 58 : 70} w={focus ? 93 : 112} />
+              <BandTile key={id} entry={mapById(id)} kind="map" ring="border-bronze" h={folded ? 58 : 70} w={folded ? 93 : 112} />
             ))}
           </>
         )}
       </div>
 
-      <div className="aoe-rule my-2.5" />
+      {!folded && <div className="aoe-rule my-2.5" />}
+
+      {/* Folded, the hands go to the rails — but only where there are margins to
+          put a rail in. Narrower than that, they stay here in miniature: the
+          information has to live somewhere, and this costs a row rather than a
+          board. Pure CSS on both sides, so the two never disagree. */}
+      {folded && (
+        <div className="mt-2 grid items-start gap-4 min-[1440px]:hidden" style={{ gridTemplateColumns: "1fr 1fr" }}>
+          {seats.map((s, i) => {
+            const left = i === 0;
+            const ids = s === "player1" ? state.draftedByP1 : state.draftedByP2;
+            const usedIds = new Set(state.games.map((g) => (s === "player1" ? g.civP1 : g.civP2)).filter(Boolean) as string[]);
+            return (
+              <div key={s} className={`${left ? "items-end pr-4" : "items-start border-l border-bronze/40 pl-4"} flex min-w-0 flex-col gap-1`}>
+                <span className={`truncate font-display text-sm ${OWNER[s].text}`}>{names[s]}</span>
+                <TileRow align={left ? "right" : "left"}>
+                  {ids.map((id) => (
+                    <BandTile key={id} entry={civById(id)} kind="civ" ring={OWNER[s].border} h={34} w={34} dim={usedIds.has(id)} />
+                  ))}
+                  {state.civBans.filter((b) => b.by === s).map((b) => (
+                    <BandTile key={b.id} entry={civById(b.id)} kind="civ" ring="border-[rgba(154,145,125,.45)]" h={34} w={34} struck />
+                  ))}
+                </TileRow>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* The two hands, converging. The clock used to sit between them and it has
           gone down to the panel it is running against, so there is nothing left
-          in the middle to hold them apart. */}
+          in the middle to hold them apart. Folded away, they are in the rails. */}
+      {!folded && (
       <div className="grid items-stretch" style={{ gridTemplateColumns: "1fr 1fr" }}>
         {seats.map((s, i) => {
           const left = i === 0;
@@ -787,6 +776,7 @@ function OverviewBand({
         })}
 
       </div>
+      )}
     </div>
   );
 }
@@ -862,12 +852,12 @@ function TurnStrip({ state, payload, p1Name, p2Name, map, mapName, clockOffsetRe
 }
 
 /** One game of the series: the map it was played on, and who took it. */
-function GameCell({ game, current, map, names, focus, t }: {
+function GameCell({ game, current, map, names, compact, t }: {
   game: GameRec; current: boolean; map?: PoolView;
-  names: { player1: string; player2: string }; focus: boolean; t: TFn;
+  names: { player1: string; player2: string }; compact: boolean; t: TFn;
 }) {
   const won = game.winner ?? null;
-  const w = focus ? (current ? 100 : 78) : 150;
+  const w = compact ? (current ? 100 : 78) : 150;
   const h = Math.round(w * 0.62);
   // No map yet is the normal state for every game but the first: the loser of the
   // previous one picks it, and that has not happened. A dashed box says "not yet"
@@ -886,7 +876,7 @@ function GameCell({ game, current, map, names, focus, t }: {
         won ? tone!.border : current ? "border-gold ovl-glow" : "border-border"
       }`} style={{ width: w, height: h, opacity: won ? 0.75 : 1 }}>
         <Thumb src={map?.imageUrl} alt={map?.name ?? ""} className="h-full w-full object-cover" />
-        <MapLabel name={map?.name} size={focus ? 10 : 12} dim={Boolean(won)} />
+        <MapLabel name={map?.name} size={compact ? 10 : 12} dim={Boolean(won)} />
         {won && <span className="absolute right-0.5 top-0 text-[11px] leading-tight">👑</span>}
       </div>
       <span className={`w-full truncate text-center text-[10px] leading-tight ${
@@ -899,13 +889,13 @@ function GameCell({ game, current, map, names, focus, t }: {
 }
 
 /** The maps one player put on the table, with the ones they still owe drawn empty. */
-function MapPoolSeg({ seat, ids, slots, played, mapById, focus }: {
+function MapPoolSeg({ seat, ids, slots, played, mapById, compact }: {
   seat: "player1" | "player2"; ids: string[]; slots: number;
-  played: Set<string>; mapById: (id?: string) => PoolView | undefined; focus: boolean;
+  played: Set<string>; mapById: (id?: string) => PoolView | undefined; compact: boolean;
 }) {
   const total = Math.max(slots, ids.length);
   if (total === 0) return null;
-  const h = focus ? 58 : 70, w = focus ? 93 : 112;
+  const h = compact ? 58 : 70, w = compact ? 93 : 112;
   return (
     <div className="flex items-start gap-1">
       {Array.from({ length: total }, (_, i) => {
@@ -1944,8 +1934,10 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
     else has.open = true;
   }
   return (
-    <section className="aoe-panel rounded-xl p-4">
-      <h3 className="mb-3 font-display text-sm uppercase tracking-wide text-muted">{title}</h3>
+    // No heading. The line directly above this panel already says which pool it
+    // is and what to do with it — "P1 · Ban map" over a heading reading "Maps" is
+    // a row of height spent saying it twice.
+    <section className="aoe-panel rounded-xl p-4" aria-label={title}>
       <div className="grid gap-2" style={isMap ? GRID_MAP : GRID_CIV}>
         {entries.map((e) => (
           <PoolTile
