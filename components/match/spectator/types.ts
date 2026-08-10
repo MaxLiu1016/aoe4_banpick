@@ -25,7 +25,7 @@ export type Seat = "player1" | "player2";
 /** Ownership colour. Everything on this screen is coloured by whose it is. */
 export const OWNER: Record<Seat, string> = { player1: "var(--p1)", player2: "var(--p2)" };
 /** Same two colours as rgb triples, for the translucent fills. */
-export const OWNER_RGB: Record<Seat, string> = { player1: "56,189,248", player2: "251,113,133" };
+export const OWNER_RGB: Record<Seat, string> = { player1: "92,201,221", player2: "196,138,208" };
 
 export const other = (s: Seat): Seat => (s === "player1" ? "player2" : "player1");
 

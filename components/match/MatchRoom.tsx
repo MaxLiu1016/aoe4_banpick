@@ -7,6 +7,7 @@ import { GUEST_ACCESS } from "@/lib/features";
 import { getGuestToken, guestName, setGuestName } from "@/lib/guest";
 import { Thumb } from "@/components/Thumb";
 import { useChangeStamp } from "./useChangeStamp";
+import { StrikeBar, TileBadge } from "./TileMark";
 import { getSocket } from "@/lib/socket/client";
 import { C2S, S2C } from "@/lib/socket/events";
 import { useI18n } from "@/lib/i18n";
@@ -25,23 +26,71 @@ const MAP_IMG = new Map(DEFAULT_MAPS.map((m) => [m.id, m.imageUrl]));
 // tint as "it's my turn". Gold is reserved for "you are the one acting now".
 type OwnerTone = { text: string; border: string; borderL: string; ring: string; bg: string };
 const OWNER: Record<"player1" | "player2", OwnerTone> = {
-  player1: { text: "text-sky-400", border: "border-sky-400", borderL: "border-l-sky-400", ring: "ring-sky-400", bg: "bg-sky-400/10" },
-  player2: { text: "text-rose-400", border: "border-rose-400", borderL: "border-l-rose-400", ring: "ring-rose-400", bg: "bg-rose-400/10" },
+  player1: { text: "text-p1", border: "border-p1", borderL: "border-l-p1", ring: "ring-p1", bg: "bg-p1/10" },
+  player2: { text: "text-p2", border: "border-p2", borderL: "border-l-p2", ring: "ring-p2", bg: "bg-p2/10" },
 };
 function ownerOf(by?: string) {
   return by === "player1" ? OWNER.player1 : by === "player2" ? OWNER.player2 : null;
 }
 
-// Pool grid sizing. auto-fit + a minimum cell keeps every entry on one screen at
+// Pool grid sizing. auto-fill + a minimum cell keeps every entry on one screen at
 // 1200px while making each icon far bigger than the old fixed 48px — the pool is
 // scanned at a glance during a draft, so "see them all" beats "see them huge".
-const GRID_CIV = { gridTemplateColumns: "repeat(auto-fit, minmax(112px, 1fr))" };
+// 100, not 112, and the page is 1360 wide rather than 1200. The two numbers go
+// together. auto-fill takes as many columns as `n*min + (n-1)*gap` fits, so at a
+// 1328 content box: 112 gives 11 columns, 100 gives 12 — and 12 is the column
+// that puts twenty-three civs on two rows instead of three. A row is the unit
+// this page runs out of, so it is worth the width. The tiles still come out
+// ~103px, because the last column's slack is shared back by `1fr`.
+const GRID_CIV = { gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))" };
+/**
+ * Three rows of civ tiles, as a floor.
+ *
+ * Filtering the pool down to four used to shrink the panel and pull everything
+ * under it up the page — then put it all back the moment you cleared the filter.
+ * The page moving is the thing this whole layout exists to stop, and a filter
+ * that rearranges the screen is a filter people stop using.
+ *
+ * Three because that is what an unfiltered pool of twenty-three sits at on a
+ * narrower window, so the panel is the same height whether or not the filter is
+ * doing anything, at any width.
+ *
+ * Measured at the grid's own minimum column (100px wide, 16:10 tall) plus the
+ * gaps, so it is a floor and never a ceiling: at the real column width the rows
+ * are taller than this and the content wins.
+ */
+const CIV_POOL_ROWS = 3;
+const CIV_POOL_FLOOR = CIV_POOL_ROWS * Math.round(100 * 0.625) + (CIV_POOL_ROWS - 1) * 8;
+/**
+ * The hand you choose from during an offer.
+ *
+ * Capped, and centred rather than stretched. `GRID_CIV` maxes each track at
+ * `1fr`, and auto-fit collapses the tracks nothing lands in — so a five-card
+ * hand spread those five across the whole panel and each flag came out nearly
+ * three times the size of a pool tile. The cards you are picking BETWEEN do not
+ * need to be the biggest thing on the screen.
+ */
+const GRID_HAND: React.CSSProperties = {
+  gridTemplateColumns: "repeat(auto-fit, minmax(84px, 104px))",
+  justifyContent: "center",
+};
 // Maps sit smaller in the choosing grid than they do once picked or banned: the
 // grid is a menu you scan, the strips below the score are the record you keep
 // coming back to.
 /** Shared empty set, so callers don't allocate one per render. */
 const EMPTY_IDS: Set<string> = new Set();
-const GRID_MAP = { gridTemplateColumns: "repeat(auto-fit, minmax(176px, 1fr))" };
+/**
+ * The map grid, sized to put the pool on one row when it can.
+ *
+ * A fixed 176px minimum wrapped a nine-map tournament pool onto two rows and a
+ * full pool onto seven, and rows are what the page runs out of — one row of
+ * slightly smaller maps costs nothing you were reading. The calc is the exact
+ * width of one column out of `n`; the max() floor is what lets a narrow window
+ * out of it, because auto-fill will then place fewer columns and wrap.
+ */
+const gridMap = (n: number): React.CSSProperties => ({
+  gridTemplateColumns: `repeat(auto-fill, minmax(max(120px, calc((100% - ${(n - 1) * 8}px) / ${Math.max(n, 1)})), 1fr))`,
+});
 
 /** Frosted plate for a name laid over artwork: the picture stays a picture. */
 const GLASS: React.CSSProperties = {
@@ -78,6 +127,9 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const [payload, setPayload] = useState<Payload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [oppHover, setOppHover] = useState<string | null>(null);
+  // What YOU are hovering. It already went out over the wire for the opponent's
+  // benefit; keeping it here is what lets the slot it would land in show it.
+  const [myHover, setMyHover] = useState<string | null>(null);
   const [inviteUrl, setInviteUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const ticketRef = useRef<string | undefined>(undefined);
@@ -88,10 +140,11 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   // taller than a window. Folding the board is the other fix — it makes the page
   // shorter than the window instead, and then nothing has to move at all.
   //
-  // null = follow the draft (folded while you are working a pool, open when
-  // nothing is waiting on a click). A number is a manual choice, and it sticks
-  // until the draft is over.
+  // null = follow the draft. Anything else is a manual choice, and it sticks —
+  // right up until the series ends, which is the one moment the board stops
+  // being a thing you fold out of the way and becomes the result.
   const [foldChoice, setFoldChoice] = useState<boolean | null>(null);
+  const [sawFinish, setSawFinish] = useState(false);
   // Estimated server-minus-client clock offset (ms). Set from each payload's
   // serverNow so the countdown tracks the server's real deadline, not the local
   // (possibly skewed) clock. Slightly conservative by the one-way network delay,
@@ -177,7 +230,9 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   function voteResult(gameIndex: number, winner: "player1" | "player2") { emit(C2S.RESULT_CLICK, { matchId, gameIndex, winner }); }
   function rename(name: string) { emit(C2S.RENAME, { matchId, name }); }
   function forceStart() { emit(C2S.START, { matchId }); }
-  function setOptions(p: { anonymous?: boolean; publicHover?: boolean; playAll?: boolean }) { emit(C2S.SET_OPTIONS, { matchId, ...p }); }
+  function setOptions(p: { anonymous?: boolean; publicHover?: boolean; playAll?: boolean; headStart?: { player1: number; player2: number } }) {
+    emit(C2S.SET_OPTIONS, { matchId, ...p });
+  }
   function copyInvite() {
     navigator.clipboard?.writeText(inviteUrl).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); });
   }
@@ -206,6 +261,8 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         anonymous={Boolean(payload!.anonymous)}
         publicHover={Boolean(payload!.publicHover)}
         playAll={Boolean(state.playAll)}
+        target={state.target}
+        headStart={state.headStart ?? { player1: 0, player2: 0 }}
         onCopy={copyInvite}
         onTake={takeSeat}
         onAddBot={addBot}
@@ -234,16 +291,23 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const showSnipeOpp = step?.type === "CIV_SNIPE_OPPONENT";
   const showConfirm = step?.type === "SYNC_CONFIRM";
   const showResult = step?.type === "GAME_RESULT";
-  // Whether the step is one where the player is working a pool. Those are the
-  // steps where the board should get out of the way and give the height to what
-  // is being clicked; the rest (calling a game, the confirm gate, the end of the
-  // series) are moments to look up, and the board can have the room.
-  const poolStep = !state.finished && !ackPending && Boolean(step)
-    && step!.type !== "GAME_RESULT" && step!.type !== "SYNC_CONFIRM";
-  // Folded by default while somebody is working a pool — that is when the height
-  // is worth more to the grid than to the board — and open the rest of the time,
-  // when nothing is waiting on a click and the board IS the screen.
-  const folded = foldChoice ?? poolStep;
+  // Folded by default. The height is worth more to the thing being clicked than
+  // to a board restating what the step bar and the prompt already say, and the
+  // whole point of the fold is that the page then fits a window.
+  //
+  // Somebody winning throws the fold away and opens the board. Not merely
+  // "default to open" — a player who collapsed it an hour ago would otherwise
+  // reach the end of the series and be shown a strip. Dropping the choice rather
+  // than overriding it means the button still works afterwards, so it opens
+  // once and they can shut it again if they want.
+  // Detected here rather than in an effect: an effect would paint the folded
+  // frame first and then open it, which is the page jumping at exactly the
+  // moment everybody is looking at it.
+  if (state.finished !== sawFinish) {
+    setSawFinish(state.finished);
+    if (state.finished && foldChoice !== null) setFoldChoice(null);
+  }
+  const folded = foldChoice ?? !state.finished;
 
   // Duel helpers
   const youPlayer: "player1" | "player2" | null = you === "player1" || you === "player2" ? you : null;
@@ -287,16 +351,6 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
 
   const civById = (id?: string) => civsView.find((c) => c.id === id);
   const mapById = (id?: string) => mapsView.find((m) => m.id === id);
-  // What the rails carry once the board is gone: each side's hand, and what they
-  // struck out. Everything else about a side is on the board or on the panel.
-  const usedP1 = new Set(state.games.map((g) => g.civP1).filter(Boolean) as string[]);
-  const usedP2 = new Set(state.games.map((g) => g.civP2).filter(Boolean) as string[]);
-  const p1Hand = state.draftedByP1.map((id) => ({ key: id, civ: civById(id), used: usedP1.has(id) }));
-  const p2Hand = state.draftedByP2.map((id) => ({ key: id, civ: civById(id), used: usedP2.has(id) }));
-  const p1Banned = state.civBans.filter((b) => b.by === "player1").map((b) => ({ key: b.id, civ: civById(b.id) }));
-  const p2Banned = state.civBans.filter((b) => b.by === "player2").map((b) => ({ key: b.id, civ: civById(b.id) }));
-  const p1MapBans = mapsView.filter((m) => m.state === "banned" && m.by === "player1").map((m) => ({ key: m.id, civ: m }));
-  const p2MapBans = mapsView.filter((m) => m.state === "banned" && m.by === "player2").map((m) => ({ key: m.id, civ: m }));
   // Civs the opponent closed off against YOU specifically. A ban with "opponent"
   // scope never changes the civ's global state — it is still the banner's to take —
   // so the pool grid had no way of knowing it was dead to you, and drew it exactly
@@ -311,25 +365,17 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const p2Name = payload!.seats.player2?.name || t("match.p2");
   // Playing every game makes a level series reachable (an even best-of ending all
   // square), so "whoever isn't player 1" stops being a safe read of the winner.
-  const seriesWinner = state.score.player1 === state.score.player2
+  const seriesWinnerSeat: "player1" | "player2" | null = state.score.player1 === state.score.player2
     ? null
-    : state.score.player1 > state.score.player2 ? p1Name : p2Name;
-  const outcomeLabel = seriesWinner ? t("match.winner", { name: seriesWinner }) : t("match.drawn");
+    : state.score.player1 > state.score.player2 ? "player1" : "player2";
+  const seriesWinner = seriesWinnerSeat === "player1" ? p1Name : seriesWinnerSeat === "player2" ? p2Name : null;
 
   return (
     <div className="space-y-5">
-      {/* Off for now. The clock and the map moved down to the panel they are
-          about, which is also what the page scrolls to — so by the time the board
-          has gone, everything the strip was carrying is already in front of you. */}
-      <div className="sticky top-0 z-30 -mx-4 bg-background/95 backdrop-blur">
-        {SHOW_TURN_STRIP && folded && !state.finished && payload!.status === "running" && (
-          <TurnStrip
-            state={state} payload={payload!} p1Name={p1Name} p2Name={p2Name}
-            map={mapById(currentMap)} mapName={currentMapName} clockOffsetRef={clockOffsetRef}
-            youAwaiting={!spectator && !!youPlayer && state.awaiting[youPlayer] && !ackPending && !inGame}
-            t={t}
-          />
-        )}
+      {/* Not pinned any more. Sticking it to the ceiling was insurance against a
+          page that scrolled; the page doesn't scroll, so the insurance was just a
+          band taking height off the top of every screen. */}
+      <div className="-mx-4">
         <StepBar steps={state.stepBar} currentIndex={state.currentStepIndex} finished={state.finished} />
       </div>
 
@@ -337,9 +383,9 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
 
       <OverviewBand
         state={state} payload={payload!} folded={folded} onFold={setFoldChoice} you={you}
-        youAwaiting={!spectator && !!youPlayer && state.awaiting[youPlayer] && payload!.status === "running" && !ackPending && !inGame}
         p1Name={p1Name} p2Name={p2Name} civById={civById} mapById={mapById}
-        clockOffsetRef={clockOffsetRef} outcomeLabel={outcomeLabel}
+        preview={myTurn || canActDuel ? myHover : null}
+        outcome={{ seat: seriesWinnerSeat, name: seriesWinner ?? "" }}
         canTake={!spectator && you === "spectator" && canPlay}
         needsName={!session?.user}
         onTake={takeSeat}
@@ -374,37 +420,24 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
               .map((seat) => (
                 <div key={seat} aria-hidden className={`turn-glow fixed inset-y-0 z-10 w-[220px] ${seat === "player1" ? "left-0" : "right-0"}`}
                   style={{
-                    background: `linear-gradient(to ${seat === "player1" ? "right" : "left"}, rgba(${
-                      seat === "player1" ? "56,189,248" : "251,113,133"
-                    },.4), transparent)`,
+                    // Straight off the ownership token. The glow used to carry its
+                    // own rgb triple, which is how a colour change quietly leaves
+                    // one surface behind.
+                    background: `linear-gradient(to ${seat === "player1" ? "right" : "left"}, color-mix(in srgb, var(--${
+                      seat === "player1" ? "p1" : "p2"
+                    }) 40%, transparent), transparent)`,
                   }} />
               ))}
           </>,
           document.body
         )}
 
-      {/* The hands and the strikes, in the margins, for as long as the board is
-          folded away from them. Portalled to <body> on purpose: the page wrapper
-          animates on every route change with fill-mode both, so it keeps a
-          transform afterwards — and a transformed ancestor becomes the containing
-          block for position:fixed, which pinned these to the middle of the whole
-          document instead of the middle of the window. */}
-      {folded && !state.finished &&
-        createPortal(
-          <>
-            <ContextRail side="player1" name={p1Name} hand={p1Hand} handLeft={p1Hand.filter((h) => !h.used).length}
-              bans={p1Banned} mapBans={p1MapBans} t={t} />
-            <ContextRail side="player2" name={p2Name} hand={p2Hand} handLeft={p2Hand.filter((h) => !h.used).length}
-              bans={p2Banned} mapBans={p2MapBans} t={t} />
-          </>,
-          document.body
-        )}
 
       {/* Everything you actually act on, under one anchor. The board above carries
           whose turn it is and how long is left, so what is left down here is the
           thing to click — and that is what the page should bring to you when the
           step changes, not a caption about it. */}
-      <div className="space-y-5">
+      <div className="space-y-4">
         {/* What you are about to do, and the map you are about to do it for.
             The strip at the top of the window carries the same map small, for when
             this has scrolled away; here it gets to be a picture, right beside the
@@ -413,34 +446,41 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         {step && !state.finished && (
           <div className="flex items-center justify-center gap-5">
             {currentMap && step.type !== "GAME_RESULT" && (
-              <div className="relative shrink-0" style={{ width: 176, height: 110 }}>
+              <div className="relative shrink-0" style={{ width: 112, height: 70 }}>
                 <Thumb src={mapById(currentMap)?.imageUrl} alt={currentMapName ?? ""}
                   className="h-full w-full rounded-md border-2 border-gold bg-surface-2 object-cover" />
-                <MapLabel name={currentMapName} size={14} />
+                <MapLabel name={currentMapName} size={11} />
               </div>
             )}
             <div className={currentMap ? "min-w-0 text-left" : "text-center"}>
-              <p className="font-display text-xl aoe-gold-text">
+              <p className="font-display text-lg aoe-gold-text">
                 {step.type === "GAME_RESULT" ? t("match.gameN", { n: state.currentGameIndex + 1 }) : (step.label || step.type)}
               </p>
               {/* Whose move and how long is left, on the thing they are about. */}
               {!inGame && (
-                <div className={`mt-1.5 flex items-center gap-4 ${currentMap ? "" : "justify-center"}`}>
+                <div className={`mt-1 flex items-center gap-4 ${currentMap ? "" : "justify-center"}`}>
+                  {/* Whose move, said the same way whether it is yours or theirs:
+                      the name, in that player's colour. Yours used to read "Your
+                      move." — a different sentence in a different colour for the
+                      same fact, so the one line that answers "who now?" was the
+                      one line that changed shape depending on the answer. It is
+                      louder when it is you; the words are the same. */}
                   <span className={myPrompt ? "font-display text-lg text-gold-bright" : "text-[13px] font-semibold text-gold-bright"}>
-                    {myPrompt ? t("match.yourMove")
-                      : state.simultaneous ? t("turn.simultaneous")
-                      : state.turn === "player1" || state.turn === "player2" ? (
+                    {state.simultaneous && !myPrompt ? t("turn.simultaneous")
+                      : myPrompt || state.turn === "player1" || state.turn === "player2" ? (
                         <>
                           {t("turn.now")}{" "}
-                          <span className={`font-display text-[15px] ${OWNER[state.turn].text}`}>
-                            {state.turn === "player1" ? p1Name : p2Name}
+                          <span className={`font-display ${myPrompt ? "text-lg" : "text-[15px]"} ${
+                            OWNER[myPrompt && youPlayer ? youPlayer : (state.turn as "player1" | "player2")].text
+                          }`}>
+                            {(myPrompt && youPlayer ? youPlayer : state.turn) === "player1" ? p1Name : p2Name}
                           </span>
                         </>
                       ) : state.turn === "host" ? t("turn.randomDraw") : t("turn.awaitResult")}
                   </span>
                   {payload!.status !== "paused" && (
                     <BigCountdown deadlineTs={payload!.deadlineTs} limitSec={payload!.limitSec}
-                      clockOffsetRef={clockOffsetRef} size={44} live={myPrompt} />
+                      clockOffsetRef={clockOffsetRef} size={34} live={myPrompt} />
                   )}
                 </div>
               )}
@@ -448,23 +488,15 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           </div>
         )}
 
-      {/* Simultaneous ban: show your own held bans and whether the opponent is done */}
-      {simulBan && step && (
-        <SimulBanStatus
-          count={step.count}
-          mine={myPendingBans}
-          youAwaited={youPlayer ? state.awaiting[youPlayer] : false}
-          oppAwaited={opp ? state.awaiting[opp] : true}
-          isPlayer={!!youPlayer && !spectator}
-          entryById={step.type === "MAP_BAN" ? mapById : civById}
-        />
-      )}
-
+      {/* A simultaneous ban used to get a panel of its own here, restating what
+          the pool and the board already say: the tiles you have locked wear a
+          gold padlock, the slots you still owe are the ones breathing gold, and
+          the turn glow on each side goes out as that player commits. */}
       {/* Pools — hover tints red for a ban step, gold for a pick step */}
       {(showMaps) && (
         <Pool title={t("match.maps")} entries={mapsView} clickable={clickable} onPick={act} kind="map"
           pendingIds={simulBan ? myPendingBans : undefined}
-          oppHover={oppHover} onHover={(id) => sendHover("map", id)}
+          oppHover={oppHover} onHover={(id) => { setMyHover(id); sendHover("map", id); }}
           tone={step?.type === "MAP_BAN" ? "ban" : step?.type === "MAP_PICK" ? "pick" : "neutral"}
           highlightSelectable={step?.type === "MAP_SELECT" ? state.selectableMapIds : undefined} />
       )}
@@ -472,7 +504,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         <Pool title={t("match.civs")} entries={civsView} clickable={clickable} onPick={act}
           pendingIds={simulBan ? myPendingBans : undefined}
           blockedIds={blockedForMe}
-          oppHover={oppHover} onHover={(id) => sendHover("civ", id)}
+          oppHover={oppHover} onHover={(id) => { setMyHover(id); sendHover("civ", id); }}
           tone={step?.type === "CIV_BAN" ? "ban" : "pick"} />
       )}
       {/* Two-pool duel: simultaneous hidden offer */}
@@ -572,8 +604,8 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
  * board, and it is worth the height when nothing is waiting on a click.
  */
 function OverviewBand({
-  state, payload, folded, onFold, you, youAwaiting, p1Name, p2Name, civById, mapById,
-  clockOffsetRef, outcomeLabel, canTake, needsName, onTake, canPause, onPause, t,
+  state, payload, folded, onFold, you, p1Name, p2Name, civById, mapById,
+  preview, outcome, canTake, needsName, onTake, canPause, onPause, t,
 }: {
   state: DerivedState;
   payload: Payload;
@@ -581,14 +613,14 @@ function OverviewBand({
   folded: boolean;
   onFold: (v: boolean | null) => void;
   you: SeatRole | "spectator";
-  /** The viewer owes an input right now (their turn, or their half of a simultaneous step). */
-  youAwaiting: boolean;
   p1Name: string;
   p2Name: string;
   civById: (id?: string) => PoolView | undefined;
   mapById: (id?: string) => PoolView | undefined;
-  clockOffsetRef: React.RefObject<number>;
-  outcomeLabel: string;
+  /** What the viewer is hovering in the pool, while they are the one acting. */
+  preview: string | null;
+  /** Who took the series, so the line that says so can wear their colour. */
+  outcome: { seat: "player1" | "player2" | null; name: string };
   canTake: boolean;
   needsName: boolean;
   onTake: (seat: "player1" | "player2", name?: string) => void;
@@ -610,8 +642,34 @@ function OverviewBand({
   // How many entries a seat will be asked for across the whole draft. This is what
   // lets the pick band draw its empty slots up front instead of growing a tile at a
   // time and shoving the pool down the page mid-reach.
+  // A simultaneous step has no actor because both sides are the actor, so it
+  // counts towards each of them.
+  const mine = (s: DerivedState["stepBar"][number], seat: "player1" | "player2") =>
+    s.actor === null || s.actor === seat;
   const reserved = (type: string, seat: "player1" | "player2") =>
-    state.stepBar.filter((s) => s.type === type && s.actor === seat).reduce((n, s) => n + s.count, 0);
+    state.stepBar.filter((s) => s.type === type && mine(s, seat)).reduce((n, s) => n + s.count, 0);
+
+  /**
+   * Which slots of a row the step in progress is about to fill.
+   *
+   * Counted off the step list rather than off the actions taken, because steps
+   * finish in order: everything of this type before the current step is done, so
+   * the live step starts where those left off. Returns null when the current
+   * step isn't filling this row at all.
+   */
+  const active = (type: string, seat: "player1" | "player2") => {
+    let before = 0;
+    for (let i = 0; i < state.stepBar.length; i++) {
+      const s = state.stepBar[i];
+      if (s.type !== type || !mine(s, seat)) continue;
+      if (i === state.currentStepIndex) return { from: before, to: before + s.count };
+      if (i > state.currentStepIndex) break;
+      before += s.count;
+    }
+    return null;
+  };
+  const live = payload.status === "running" && !state.finished && !payload.awaitingAck;
+  const at = (type: string, seat: "player1" | "player2") => (live ? active(type, seat) : null);
 
   // Only draw the games the series can still reach. A Bo9 decided at 5-0 never
   // plays games 6 to 9, and four empty boxes claiming otherwise is a worse lie
@@ -624,10 +682,6 @@ function OverviewBand({
 
   const played = new Set(state.games.map((g) => g.map).filter(Boolean) as string[]);
   const mapPhase = step?.type === "MAP_BAN" || step?.type === "MAP_PICK" || step?.type === "MAP_SELECT";
-  // The unclaimed maps are worth showing once the map grid is gone — that grid is
-  // where they live while it's up, and repeating it here would just be the same
-  // pictures twice, one of them too small to use.
-  const neutral = mapPhase ? [] : state.maps.filter((m) => m.state === "available").map((m) => m.id);
 
   const duel = state.civDuel;
   const hidden = step?.type === "CIV_OFFER" && duel?.offerHidden;
@@ -639,10 +693,57 @@ function OverviewBand({
   const size = 76;
   const names = { player1: p1Name, player2: p2Name };
 
+  // "{name} wins!" with the name in that player's colour. Built by splitting the
+  // translated sentence on a placeholder rather than by assuming the name comes
+  // first — it does in all three locales today, and that is exactly the kind of
+  // thing a fourth locale breaks.
+  const MARK = "\u0000";
+  const outcomeLine = outcome.seat
+    ? t("match.winner", { name: MARK }).split(MARK).flatMap((part, i) =>
+        i === 0
+          ? [part]
+          : [<span key="n" className={OWNER[outcome.seat as "player1" | "player2"].text}>{outcome.name}</span>, part])
+    : t("match.drawn");
+
+  // Folded, the map section is the whole band, so it carries the names; expanded,
+  // the civ section below already prints them and a second copy is just noise.
+  // The preview lands in your own row only — seeing a flag appear on the other
+  // side of the midline would say the opposite of what it means.
+  const previewFor = (s: "player1" | "player2") => (you === s ? preview : null);
+  // A select step is the one move that lands in neither player's row: the map
+  // goes to the GAME. So its preview belongs in the game's own box.
+  // Only on a select step. `selectableMapIds` is populated ahead of time, so
+  // without the step check a map you were hovering to BAN also appeared in the
+  // middle — claiming it was about to be played rather than struck out.
+  const selectGhost = preview && step?.type === "MAP_SELECT" && state.selectableMapIds.includes(preview)
+    ? mapById(preview)
+    : undefined;
+  const mw = folded ? 84 : 112, mh = folded ? 52 : 70;
+  const mapSide = (s: "player1" | "player2") => {
+    const left = s === "player1";
+    const align = left ? "right" : "left";
+    return (
+      <div className={`flex min-w-0 flex-col gap-1 ${left ? "items-end pr-1" : "items-start pl-1"}`}>
+        {folded && <span className={`truncate font-display text-sm ${OWNER[s].text}`}>{names[s]}</span>}
+        <SlotRow align={align} ids={s === "player1" ? state.mapsByP1 : state.mapsByP2}
+          slots={reserved("MAP_PICK", s)} active={at("MAP_PICK", s)} preview={previewFor(s)}
+          entry={mapById} kind="map" ring={OWNER[s].border} w={mw} h={mh} dim={played} dimTitle={t("match.used")} />
+        <SlotRow align={align} ids={s === "player1" ? state.mapBansByP1 : state.mapBansByP2}
+          slots={reserved("MAP_BAN", s)} active={at("MAP_BAN", s)} preview={previewFor(s)}
+          pending={mapPhase ? state.pendingBans[s] : undefined}
+          entry={mapById} kind="map" ring="border-[rgba(154,145,125,.45)]" w={mw} h={mh} struck />
+      </div>
+    );
+  };
+
   return (
     <div className="aoe-panel rounded-xl px-4 py-3">
-      {/* Title line */}
-      <div className="flex items-center justify-center gap-3 font-display">
+      {/* Title line. Three columns so the score stays dead centre with the fold
+          control hard right — in the flow rather than absolutely placed, so it
+          can never land on top of the title on a narrow window. */}
+      <div className="grid items-center gap-3" style={{ gridTemplateColumns: "1fr auto 1fr" }}>
+        <span aria-hidden />
+        <div className="flex items-center justify-center gap-3 font-display">
         <span className="text-[13px] uppercase tracking-[.12em] text-gold-bright">
           {state.playAll ? t("match.bestOfAll", { n: state.bestOf }) : t("match.bestOf", { n: state.bestOf, t: state.target })}
         </span>
@@ -658,7 +759,7 @@ function OverviewBand({
         )}
         {/* Where the series stands, when that is a thing rather than a turn. */}
         {state.finished ? (
-          <span className="font-display text-lg aoe-gold-text">{outcomeLabel}</span>
+          <span className="font-display text-lg aoe-gold-text">{outcomeLine}</span>
         ) : state.currentStep?.type === "GAME_RESULT" ? (
           <span className="font-display text-lg aoe-gold-text">
             {t("spec.gameInProgress", { n: state.currentGameIndex + 1 })}
@@ -671,57 +772,64 @@ function OverviewBand({
             {payload.status === "paused" ? `▶ ${t("match.resume")}` : `⏸ ${t("match.pause")}`}
           </button>
         )}
+        </div>
         {/* Folding is a choice, and once made it is kept — a board that refolded
             itself every step would be the scrolling problem in another costume. */}
         <button onClick={() => onFold(!folded)}
-          className="rounded border border-bronze px-2 py-0.5 font-sans text-[11px] text-gold-bright hover:brightness-125">
+          className="justify-self-end rounded border border-bronze px-3 py-1.5 font-sans text-[13px] font-semibold whitespace-nowrap text-gold-bright hover:brightness-125">
           {folded ? `⤢ ${t("match.expand")}` : `▭ ${t("match.minimize")}`}
         </button>
       </div>
 
-      {/* Maps: the games, then what is left to play them on */}
-      <div className="mt-2 flex flex-wrap items-end justify-center gap-1.5">
-        {state.games.slice(0, shownGames).map((g) => (
-          <GameCell key={g.gameIndex} game={g} current={!state.finished && g.gameIndex === state.currentGameIndex}
-            map={mapById(g.map)} names={names} compact={folded} t={t} />
-        ))}
-        {(state.mapsByP1.length > 0 || state.mapsByP2.length > 0 || neutral.length > 0 || mapPhase) && (
-          <>
-            <span className="mx-1.5 h-10 w-px self-center bg-bronze" aria-hidden />
-            {seats.map((s) => (
-              <MapPoolSeg key={s} seat={s} ids={s === "player1" ? state.mapsByP1 : state.mapsByP2}
-                slots={reserved("MAP_PICK", s)} played={played} mapById={mapById} compact={folded} />
-            ))}
-            {neutral.map((id) => (
-              <BandTile key={id} entry={mapById(id)} kind="map" ring="border-bronze" h={folded ? 58 : 70} w={folded ? 93 : 112} />
-            ))}
-          </>
-        )}
-      </div>
+      {/* The maps, laid out the way the hands are: each side's own on their own
+          side, converging on the middle, where the game being played for sits.
+          One centred run put "mine", "theirs", "the series" and "still free" into
+          a single row of pictures that all looked alike, and three people
+          separately said they couldn't read it.
+          Folded, this is only here during the map steps — the band follows what
+          is being done, and while civs are being drafted the civ rows have the
+          space instead. */}
+      {(!folded || mapPhase) && (
+        <div className="mt-2 grid items-center gap-3" style={{ gridTemplateColumns: "1fr auto 1fr" }}>
+          {mapSide("player1")}
+          <div className="flex items-end gap-1.5 border-x border-bronze/40 px-3">
+            {(folded ? state.games.filter((g) => g.gameIndex === state.currentGameIndex) : state.games.slice(0, shownGames))
+              .map((g) => (
+                <GameCell key={g.gameIndex} game={g} current={!state.finished && g.gameIndex === state.currentGameIndex}
+                  map={mapById(g.map)} names={names} compact={folded} civById={civById}
+                  preview={g.gameIndex === state.currentGameIndex ? selectGhost : undefined} t={t} />
+              ))}
+          </div>
+          {mapSide("player2")}
+        </div>
+      )}
 
       {!folded && <div className="aoe-rule my-2.5" />}
 
-      {/* Folded, the hands go to the rails — but only where there are margins to
-          put a rail in. Narrower than that, they stay here in miniature: the
-          information has to live somewhere, and this costs a row rather than a
-          board. Pure CSS on both sides, so the two never disagree. */}
-      {folded && (
-        <div className="mt-2 grid items-start gap-4 min-[1440px]:hidden" style={{ gridTemplateColumns: "1fr 1fr" }}>
+      {/* Folded, the hands stay here in miniature. They used to move out to rails
+          in the margins, but a rail only exists on a wide enough window and the
+          page is supposed to work on all of them — a row costs less than a board
+          and is in the same place every time.
+          Not during the map steps: the band follows the action, and a row of
+          empty civ slots under a map draft is answering a question nobody has
+          got to yet. */}
+      {folded && !mapPhase && (
+        <div className="mt-2 grid items-start gap-4" style={{ gridTemplateColumns: "1fr 1fr" }}>
           {seats.map((s, i) => {
             const left = i === 0;
             const ids = s === "player1" ? state.draftedByP1 : state.draftedByP2;
             const usedIds = new Set(state.games.map((g) => (s === "player1" ? g.civP1 : g.civP2)).filter(Boolean) as string[]);
+            const align = left ? "right" : "left";
             return (
               <div key={s} className={`${left ? "items-end pr-4" : "items-start border-l border-bronze/40 pl-4"} flex min-w-0 flex-col gap-1`}>
                 <span className={`truncate font-display text-sm ${OWNER[s].text}`}>{names[s]}</span>
-                <TileRow align={left ? "right" : "left"}>
-                  {ids.map((id) => (
-                    <BandTile key={id} entry={civById(id)} kind="civ" ring={OWNER[s].border} h={34} w={34} dim={usedIds.has(id)} />
-                  ))}
-                  {state.civBans.filter((b) => b.by === s).map((b) => (
-                    <BandTile key={b.id} entry={civById(b.id)} kind="civ" ring="border-[rgba(154,145,125,.45)]" h={34} w={34} struck />
-                  ))}
-                </TileRow>
+                <SlotRow align={align} ids={ids} slots={reserved("CIV_PICK", s)} active={at("CIV_PICK", s)}
+                  preview={previewFor(s)} dimTitle={t("match.used")}
+                  entry={civById} kind="civ" ring={OWNER[s].border} w={60} h={60} dim={usedIds} />
+                <SlotRow align={align} ids={state.civBans.filter((b) => b.by === s).map((b) => b.id)}
+                  slots={reserved("CIV_BAN", s)} active={at("CIV_BAN", s)} preview={previewFor(s)}
+                  pending={mapPhase ? undefined : state.pendingBans[s]}
+                  entry={civById} kind="civ" ring="border-[rgba(154,145,125,.45)]" w={50} h={50} struck />
               </div>
             );
           })}
@@ -748,29 +856,18 @@ function OverviewBand({
                 crowned={state.finished && state.score[s] > state.score[s === "player1" ? "player2" : "player1"]}
                 acting={acting.includes(s)} canTake={canTake && !payload.seats[s]} needsName={needsName}
                 onTake={(n) => onTake(s, n)} align={left ? "right" : "left"} t={t} />
-              <TileRow align={left ? "right" : "left"}>
-                {Array.from({ length: slots }, (_, n) => {
-                  const id = ids[n];
-                  return id
-                    ? <BandTile key={id} entry={civById(id)} kind="civ" ring={OWNER[s].border} h={tile} w={tile}
-                        dim={usedIds.has(id)} title={usedIds.has(id) ? `${civById(id)?.name} (${t("match.used")})` : undefined} pop />
-                    : <EmptySlot key={`e${n}`} h={tile} w={tile} />;
-                })}
-                {Array.from({ length: mystery(s) }, (_, n) => <MysterySlot key={`m${n}`} h={tile} w={tile} />)}
-              </TileRow>
-              {/* Civ bans and map bans get a line each. Wrapped together they
-                  formed one ragged run of mixed shapes, and "which of these were
-                  maps?" is not a question the row should be asking. */}
-              <TileRow align={left ? "right" : "left"}>
-                {state.civBans.filter((b) => b.by === s).map((b) => (
-                  <BandTile key={b.id} entry={civById(b.id)} kind="civ" ring="border-[rgba(154,145,125,.45)]" h={44} w={44} struck />
-                ))}
-              </TileRow>
-              <TileRow align={left ? "right" : "left"}>
-                {state.maps.filter((m) => m.state === "banned" && m.by === s).map((m) => (
-                  <BandTile key={m.id} entry={m} kind="map" ring="border-[rgba(154,145,125,.45)]" h={58} w={93} struck />
-                ))}
-              </TileRow>
+              <SlotRow align={left ? "right" : "left"} ids={ids} slots={slots} active={at("CIV_PICK", s)}
+                preview={previewFor(s)}
+                entry={civById} kind="civ" ring={OWNER[s].border} w={tile} h={tile} dim={usedIds}
+                dimTitle={t("match.used")} pop
+                after={Array.from({ length: mystery(s) }, (_, n) => <MysterySlot key={`m${n}`} h={tile} w={tile} />)} />
+              {/* Maps have their own section above. Wrapped in with the civs
+                  they formed one ragged run of mixed shapes, and "which of these
+                  were maps?" is not a question a row should be asking. */}
+              <SlotRow align={left ? "right" : "left"} ids={state.civBans.filter((b) => b.by === s).map((b) => b.id)}
+                slots={reserved("CIV_BAN", s)} active={at("CIV_BAN", s)} preview={previewFor(s)}
+                pending={mapPhase ? undefined : state.pendingBans[s]}
+                entry={civById} kind="civ" ring="border-[rgba(154,145,125,.45)]" w={44} h={44} struck />
             </div>
           );
         })}
@@ -781,83 +878,17 @@ function OverviewBand({
   );
 }
 
-/**
- * What you need in order to take your turn, pinned to the top of the page.
- *
- * The board carries all of this and more, but the board is where the page starts
- * and the pool is where it ends — by the time you are picking, the board is gone.
- * So this is the board reduced to the two facts you cannot act without: how long
- * you have, and which map you are drafting for. They are the biggest things on it
- * for that reason; the turn, the step and the score come along because they are
- * cheap to carry once the strip exists.
- */
-function TurnStrip({ state, payload, p1Name, p2Name, map, mapName, clockOffsetRef, youAwaiting, t }: {
-  state: DerivedState;
-  payload: Payload;
-  p1Name: string;
-  p2Name: string;
-  map?: PoolView;
-  mapName?: string;
-  clockOffsetRef: React.RefObject<number>;
-  youAwaiting: boolean;
+/** One game of the series: the map it was played on, and who took it. */
+function GameCell({ game, current, map, names, compact, civById, preview, t }: {
+  game: GameRec; current: boolean; map?: PoolView;
+  names: { player1: string; player2: string }; compact: boolean;
+  civById: (id?: string) => PoolView | undefined;
+  /** A map the viewer is hovering and could select for this game. */
+  preview?: PoolView;
   t: TFn;
 }) {
-  const seats = ["player1", "player2"] as const;
-  const acting = state.simultaneous
-    ? seats.filter((s) => state.awaiting[s])
-    : state.turn === "player1" || state.turn === "player2" ? [state.turn] : [];
-  const names = { player1: p1Name, player2: p2Name };
-  const inGame = state.currentStep?.type === "GAME_RESULT";
-  return (
-    <div className="fade-in flex items-center justify-center gap-5 px-4 py-2">
-      {/* Whose move, and what the move is. */}
-      <div className="flex min-w-0 flex-col items-end leading-tight">
-        <span className={`truncate font-display text-[15px] ${youAwaiting || inGame ? "text-gold-bright" : "text-foreground"}`}>
-          {/* Nobody is drafting while a game is being played. */}
-          {inGame ? t("spec.gameInProgress", { n: state.currentGameIndex + 1 })
-            : youAwaiting ? t("match.yourMove")
-            : state.simultaneous ? t("turn.simultaneous")
-            : acting.length === 1 ? (
-              <><span className={OWNER[acting[0]].text}>{names[acting[0]]}</span></>
-            ) : state.turn === "host" ? t("turn.randomDraw") : t("turn.awaitResult")}
-        </span>
-        <span className="max-w-[22ch] truncate text-[11px] text-muted">
-          {state.currentStep?.label || state.currentStep?.type}
-        </span>
-      </div>
-
-      {/* The map this is all for. Big, because a civ pick made against the wrong
-          map is the one mistake this whole screen exists to prevent. */}
-      {map && (
-        <div className="relative shrink-0" style={{ width: 92, height: 58 }}>
-          <Thumb src={map.imageUrl} alt={map.name} className="h-full w-full rounded border-2 border-gold bg-surface-2 object-cover" />
-          <MapLabel name={mapName} size={10} />
-        </div>
-      )}
-
-      {payload.status === "paused" ? (
-        <span className="font-display text-2xl text-danger">{t("match.paused")}</span>
-      ) : inGame ? null : (
-        // Calling a game is never on a clock, so there is nothing to count.
-        <BigCountdown deadlineTs={payload.deadlineTs} limitSec={payload.limitSec} clockOffsetRef={clockOffsetRef} size={38} live={youAwaiting} />
-      )}
-
-      <span className="font-display text-base">
-        <span className={OWNER.player1.text}>{state.score.player1}</span>
-        <span className="mx-1 text-bronze">—</span>
-        <span className={OWNER.player2.text}>{state.score.player2}</span>
-      </span>
-    </div>
-  );
-}
-
-/** One game of the series: the map it was played on, and who took it. */
-function GameCell({ game, current, map, names, compact, t }: {
-  game: GameRec; current: boolean; map?: PoolView;
-  names: { player1: string; player2: string }; compact: boolean; t: TFn;
-}) {
   const won = game.winner ?? null;
-  const w = compact ? (current ? 100 : 78) : 150;
+  const w = compact ? 116 : 150;
   const h = Math.round(w * 0.62);
   // No map yet is the normal state for every game but the first: the loser of the
   // previous one picks it, and that has not happened. A dashed box says "not yet"
@@ -865,8 +896,15 @@ function GameCell({ game, current, map, names, compact, t }: {
   if (!game.map) {
     return (
       <div style={{ width: w, height: h }}
-        className="flex items-center justify-center rounded-md border border-dashed border-bronze/60 font-display text-base text-bronze"
-        title={t("match.gameN", { n: game.gameIndex + 1 })}>?</div>
+        className="relative flex items-center justify-center overflow-hidden rounded-md border border-dashed border-bronze/60 font-display text-base text-bronze"
+        title={preview?.name ?? t("match.gameN", { n: game.gameIndex + 1 })}>
+        {preview ? (
+          <>
+            <Thumb src={preview.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40" />
+            <MapLabel name={preview.name} size={compact ? 10 : 12} dim />
+          </>
+        ) : "?"}
+      </div>
     );
   }
   const tone = won ? OWNER[won] : null;
@@ -876,40 +914,49 @@ function GameCell({ game, current, map, names, compact, t }: {
         won ? tone!.border : current ? "border-gold ovl-glow" : "border-border"
       }`} style={{ width: w, height: h, opacity: won ? 0.75 : 1 }}>
         <Thumb src={map?.imageUrl} alt={map?.name ?? ""} className="h-full w-full object-cover" />
-        <MapLabel name={map?.name} size={compact ? 10 : 12} dim={Boolean(won)} />
-        {won && <span className="absolute right-0.5 top-0 text-[11px] leading-tight">👑</span>}
+        <MapLabel name={map?.name} size={compact ? 11 : 12} dim={Boolean(won)} />
       </div>
-      <span className={`w-full truncate text-center text-[10px] leading-tight ${
-        won ? tone!.text : current ? "text-gold-bright" : "text-muted"
-      }`}>
-        G{game.gameIndex + 1}{won ? ` · ${names[won]}` : ""}
-      </span>
+      {/* What was fielded, either side of the caption. Left is P1 and right is P2
+          everywhere else on this page, so the side says whose without a label,
+          and the loser's goes grey — the result, for no extra height.
+          The caption is not 10px any more: it carries the one thing this row of
+          maps is for, and it was the smallest text on the page. */}
+      <div className="flex w-full items-center gap-1">
+        <GameCiv civ={civById(game.civP1)} small={compact} lost={won === "player2"} />
+        <span className={`min-w-0 flex-1 truncate text-center font-semibold leading-tight ${compact ? "text-[12px]" : "text-[14px]"} ${
+          won ? tone!.text : current ? "text-gold-bright" : "text-muted"
+        }`}>
+          {/* No crown here. One per game, plus one for the series, put four or
+              five of them on a board that has exactly one winner — and the
+              colour of this line already says who took the game. */}
+          G{game.gameIndex + 1}{won ? ` · ${names[won]}` : ""}
+        </span>
+        <GameCiv civ={civById(game.civP2)} small={compact} lost={won === "player1"} />
+      </div>
     </div>
   );
 }
 
-/** The maps one player put on the table, with the ones they still owe drawn empty. */
-function MapPoolSeg({ seat, ids, slots, played, mapById, compact }: {
-  seat: "player1" | "player2"; ids: string[]; slots: number;
-  played: Set<string>; mapById: (id?: string) => PoolView | undefined; compact: boolean;
-}) {
-  const total = Math.max(slots, ids.length);
-  if (total === 0) return null;
-  const h = compact ? 58 : 70, w = compact ? 93 : 112;
-  return (
-    <div className="flex items-start gap-1">
-      {Array.from({ length: total }, (_, i) => {
-        const id = ids[i];
-        return id
-          ? <BandTile key={id} entry={mapById(id)} kind="map" ring={OWNER[seat].border} h={h} w={w} dim={played.has(id)} />
-          : <EmptySlot key={`e${i}`} h={h} w={w} />;
-      })}
-    </div>
-  );
-}
 
 function TileRow({ align, children }: { align: "left" | "right"; children: React.ReactNode }) {
   return <div className={`flex flex-wrap gap-1.5 ${align === "right" ? "justify-end" : "justify-start"}`}>{children}</div>;
+}
+
+/**
+ * A civ fielded in one game, beside that game's map.
+ *
+ * Keeps its box when there is no civ yet, so the caption between the two stays
+ * centred whether nobody, one side, or both have been revealed.
+ */
+function GameCiv({ civ, small, lost }: { civ?: PoolView; small: boolean; lost: boolean }) {
+  const box = small ? "h-[20px] w-[20px]" : "h-[26px] w-[26px]";
+  if (!civ) return <span className={`shrink-0 ${box}`} aria-hidden />;
+  return (
+    <span title={civ.name} className={`shrink-0 ${box}`}>
+      <Thumb src={civ.imageUrl} alt={civ.name}
+        className={`h-full w-full rounded object-contain ${lost ? "opacity-45 grayscale" : ""}`} />
+    </span>
+  );
 }
 
 /**
@@ -932,9 +979,14 @@ function MapLabel({ name, size = 11, dim }: { name?: string; size?: number; dim?
   );
 }
 
-function BandTile({ entry, kind, ring, h, w, dim, struck, pop, title }: {
+function BandTile({ entry, kind, ring, h, w, dim, dimLabel, struck, pop, title }: {
   entry?: PoolView; kind: "civ" | "map"; ring: string; h: number; w: number;
-  dim?: boolean; struck?: boolean; pop?: boolean; title?: string;
+  dim?: boolean;
+  /** Said out loud on a dimmed tile. Grey on its own is not a word — it could
+      mean spent, banned, or unavailable, and the board uses grey for more than
+      one of those elsewhere. */
+  dimLabel?: string;
+  struck?: boolean; pop?: boolean; title?: string;
 }) {
   const img = (
     <div className="relative w-full" style={{ height: h }}>
@@ -951,13 +1003,138 @@ function BandTile({ entry, kind, ring, h, w, dim, struck, pop, title }: {
     <div className="relative shrink-0" style={{ width: w, height: h }} title={title ?? entry?.name}>
       {img}
       {kind === "map" && <MapLabel name={entry?.name} size={Math.max(9, Math.round(h * 0.19))} dim={struck || dim} />}
+      {/* Along the top, so a map's own name plate along the bottom stays put —
+          and inset by the border, like that plate is. The frame is the one part
+          of the tile that says whose it is; a label flush to the edge cuts the
+          top out of it. */}
+      {dim && dimLabel && w >= 40 && (
+        <span className="pointer-events-none absolute left-[2px] right-[2px] top-[2px] truncate rounded-t px-1 text-center font-sans text-[9px] font-bold uppercase tracking-wider text-muted"
+          style={GLASS}>
+          {dimLabel}
+        </span>
+      )}
     </div>
   );
 }
 
-/** A slot this player still owes. Reserving it is what keeps the page still. */
-function EmptySlot({ h, w }: { h: number; w: number }) {
-  return <div className="shrink-0 rounded border-2 border-dashed border-border bg-surface-2/35" style={{ width: w, height: h }} aria-hidden />;
+/**
+ * A slot this player still owes. Reserving it is what keeps the page still.
+ *
+ * A ban and a pick are opposite acts and their empty slots say so: the ban slot
+ * carries the same line across the middle that a banned tile does, so an empty
+ * row reads as "two bans go here" rather than as more of the row above it.
+ */
+function EmptySlot({ h, w, active, intent = "pick", kind = "civ", preview }: {
+  h: number; w: number; active?: boolean; intent?: "pick" | "ban";
+  kind?: "civ" | "map";
+  /** What the viewer is about to put here. */
+  preview?: PoolView;
+}) {
+  const ban = intent === "ban";
+  return (
+    <div
+      className={`relative shrink-0 overflow-hidden rounded border-2 ${ban ? "border-dotted" : "border-dashed"} ${
+        active ? `border-gold ${ban ? "slot-wait-ban" : "slot-wait-pick"}` : "border-border"
+      }`}
+      // A wash of the colour of the act. Two empty rows of identical grey boxes
+      // said "something goes here" twice; this one says which something.
+      style={{ width: w, height: h, background: ban ? "rgba(181,72,47,.13)" : "color-mix(in srgb, var(--pick) 13%, transparent)" }}
+      aria-hidden
+    >
+      {/* The thing under your cursor, in the box it would land in. A pool of
+          twenty-three tiles and a row of empty slots are far apart on screen,
+          and "which of these am I filling" was a question you had to hold in
+          your head between the two. */}
+      {preview && (
+        <Thumb src={preview.imageUrl} alt=""
+          className={`h-full w-full opacity-40 ${kind === "civ" ? "object-contain" : "object-cover"}`} />
+      )}
+      {ban && (
+        <span
+          className="absolute left-1/2 top-1/2 h-0.5 -translate-x-1/2 -translate-y-1/2 rounded"
+          style={{ width: Math.round(w * 0.6), background: active ? "rgba(241,207,108,.45)" : "rgba(154,145,125,.3)" }}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * A row of slots, drawn to its full length from the moment the draft starts.
+ *
+ * Two things come out of that. The row stops growing a tile at a time and
+ * shoving the pool down the page mid-reach — and the slots the step in progress
+ * is about to fill can be marked, gold and breathing, so "where am I acting, and
+ * how many times" is answered by the shape of the row instead of by a sentence
+ * underneath it.
+ */
+function SlotRow({ align, ids, slots, active, pending, preview, entry, kind, ring, w, h, dim, dimTitle, struck, pop, after }: {
+  align: "left" | "right";
+  /** What has been taken, in the order it was taken. */
+  ids: string[];
+  /** How many this seat will be asked for across the whole draft. */
+  slots: number;
+  /** The half-open slot range the current step fills, or null if it fills none. */
+  active: { from: number; to: number } | null;
+  /** Bans this viewer has locked in on a simultaneous step, which nobody else
+      can see yet. Redacted per recipient upstream, so for a spectator — and for
+      the opponent's row — this is always empty. */
+  pending?: string[];
+  /** An id the viewer is hovering in the pool. Shown in the slot it would take,
+      and only in this row if this row is the one that would take it. */
+  preview?: string | null;
+  entry: (id?: string) => PoolView | undefined;
+  kind: "civ" | "map";
+  ring: string;
+  w: number;
+  h: number;
+  /** Entries already spent — greyed, not gone. */
+  dim?: Set<string>;
+  dimTitle?: string;
+  struck?: boolean;
+  pop?: boolean;
+  after?: React.ReactNode;
+}) {
+  // Your own held bans sit in the row as if they were public, because to you
+  // they are: you clicked them, and the next one you click goes in the slot
+  // after them. Only this viewer's own are ever in here.
+  const held = pending ?? [];
+  const filled = held.length ? [...ids, ...held] : ids;
+  const secret = new Set(held);
+  const total = Math.max(slots, filled.length, active?.to ?? 0);
+  if (total === 0 && !after) return null;
+  // The first slot the step has not filled yet — where the thing under your
+  // cursor would actually go. Resolved against this row's own pool, so a civ
+  // hovered during a civ step never turns up in the map row.
+  // Only something still in the pool. Running the cursor over a tile that is
+  // already banned or already taken previewed it into the slot, promising a move
+  // that isn't available.
+  const hovered = preview ? entry(preview) : undefined;
+  const ghost = hovered?.state === "available" ? hovered : undefined;
+  const landing = ghost && active ? Math.max(active.from, filled.length) : -1;
+  return (
+    <TileRow align={align}>
+      {Array.from({ length: total }, (_, n) => {
+        const id = filled[n];
+        if (!id) {
+          return (
+            <EmptySlot key={`e${n}`} h={h} w={w} intent={struck ? "ban" : "pick"} kind={kind}
+              preview={n === landing ? ghost : undefined}
+              active={Boolean(active) && n >= active!.from && n < active!.to} />
+          );
+        }
+        const spent = Boolean(dim?.has(id));
+        // Gold for one you are holding — the same gold the pool tile's padlock
+        // and the waiting slot wear. It is yours and it is not out yet.
+        return (
+          <BandTile key={id} entry={entry(id)} kind={kind} ring={secret.has(id) ? "border-gold" : ring}
+            h={h} w={w} dim={spent} dimLabel={spent ? dimTitle : undefined} struck={struck} pop={pop}
+            title={spent && dimTitle ? `${entry(id)?.name} (${dimTitle})` : undefined} />
+        );
+      })}
+      {after}
+    </TileRow>
+  );
 }
 
 /**
@@ -967,7 +1144,7 @@ function EmptySlot({ h, w }: { h: number; w: number }) {
  * kind that asks for two civs one at a time) left a chosen civ looking exactly
  * like a fresh one you could still click.
  */
-function OfferHand({ hand, count, offered, used, onOffer, disabled, t }: {
+function OfferHand({ hand, count, offered, used, onOffer, onHover, disabled, t }: {
   hand: PoolView[];
   count: number;
   /** Civs you have already put up for this game. */
@@ -975,6 +1152,8 @@ function OfferHand({ hand, count, offered, used, onOffer, disabled, t }: {
   /** Civs already played in an earlier game, when the format forbids repeats. */
   used: Set<string>;
   onOffer: (id: string) => void;
+  /** What the cursor is over, so the slot it would fill can show it. */
+  onHover?: (id: string | null) => void;
   /** Not your turn. The hand stays on screen — see the panel's own note. */
   disabled?: boolean;
   t: TFn;
@@ -982,27 +1161,40 @@ function OfferHand({ hand, count, offered, used, onOffer, disabled, t }: {
   return (
     <div className={`mt-4 ${disabled ? "pointer-events-none opacity-45" : ""}`}>
       <div className="mb-2 text-xs text-muted">{disabled ? t("offer.yourHand") : t("offer.chooseHand", { n: count })}</div>
-      <div className="grid gap-2" style={GRID_CIV}>
+      <div className="grid gap-2" style={GRID_HAND}>
         {hand.map((c) => {
           const isUsed = used.has(c.id);
           const isOffered = offered.has(c.id);
           return (
             <button key={c.id} disabled={disabled || isUsed || isOffered} onClick={() => onOffer(c.id)}
-              className={`relative flex flex-col items-center rounded-lg border-2 p-2 transition ${
+              onMouseEnter={() => onHover?.(disabled || isUsed || isOffered ? null : c.id)}
+              onMouseLeave={() => onHover?.(null)}
+              className={`relative flex flex-col items-center overflow-hidden rounded-lg border-2 transition ${
                 // Chosen keeps its colour and its brightness: it is in play, not
                 // spent. Used is the one that gets drained.
                 isOffered ? "border-gold bg-gold/10 ring-2 ring-gold"
-                  : isUsed ? "border-border opacity-30 saturate-0"
+                  : isUsed ? "border-border"
                   : "cursor-pointer border-bronze hover:border-gold hover:bg-surface-2"}`}
               title={c.name}>
-              <Thumb src={c.imageUrl} alt={c.name} className="aspect-square w-full object-contain" />
-              <span className={`mt-1.5 w-full truncate text-xs leading-tight ${isOffered ? "font-semibold text-gold-bright" : "text-foreground"}`}>{c.name}</span>
-              {isOffered && (
-                <span className="absolute right-1 top-1 rounded bg-surface/85 px-1 text-[9px] font-semibold text-gold-bright">
-                  ✓ {t("offer.picked")}
+              {/* Same shape as a pool tile — 16:10 with the name on the picture.
+                  A square card with the name underneath cost a row of height per
+                  card and made the hand the tallest thing in the panel. */}
+              <Thumb src={c.imageUrl} alt={c.name}
+                className={`aspect-[16/10] w-full object-contain ${isUsed ? "opacity-25 saturate-0" : ""}`} />
+              <span className={`absolute inset-x-0 bottom-0 truncate px-1.5 py-0.5 text-center text-[11px] font-semibold leading-tight ${
+                isOffered ? "text-gold-bright" : isUsed ? "text-muted" : "text-foreground"}`} style={GLASS}>
+                {c.name}
+              </span>
+              {/* Big enough to read at a glance. These were 9px words in the
+                  corner of a card, on an element the "used" fade was already
+                  drawing at three-tenths alpha. */}
+              {isOffered && <TileBadge mark="check" size={26} label={t("offer.picked")} className="text-gold-bright" />}
+              {isUsed && (
+                <span className="absolute right-1 top-1 rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted"
+                  style={{ background: "rgba(15,17,21,.82)" }}>
+                  {t("match.used")}
                 </span>
               )}
-              {isUsed && <span className="absolute right-1 top-1 text-[9px] text-muted">{t("match.used")}</span>}
             </button>
           );
         })}
@@ -1032,137 +1224,113 @@ function SeatName({ seat, name, you, occupied, crowned, acting, canTake, needsNa
   }
   return (
     <div className={`flex max-w-full items-baseline gap-1.5 ${align === "right" ? "self-end" : "self-start"}`}>
-      {crowned && <span className="text-base leading-none" title={t("match.matchWinner")}>👑</span>}
       <span className={`truncate font-display text-base ${OWNER[seat].text} ${acting ? "underline decoration-gold decoration-2 underline-offset-4" : ""}`}>{name}</span>
+      {/* Tilted and overlapping, so it sits on the name the way a crown sits on
+          a head rather than queueing up beside it. */}
+      {crowned && (
+        <span className="relative -ml-3 inline-block -translate-y-[9px] rotate-[20deg] text-base leading-none"
+          title={t("match.matchWinner")}>👑</span>
+      )}
       {you === seat && <span className="text-[10px] text-muted">({t("match.you")})</span>}
     </div>
   );
 }
 
-function RailTile({ entry, kind, dim, struck }: {
-  entry?: PoolView;
-  kind: "civ" | "map";
-  dim?: boolean;
-  struck?: boolean;
-}) {
-  return (
-    <span className="relative block" title={entry?.name}>
-      {/* Civs get a square: a flag letterboxed into a 16:10 box was mostly box. */}
-      <Thumb
-        src={entry?.imageUrl}
-        alt={entry?.name ?? ""}
-        className={`w-full rounded bg-surface-2/60 ${kind === "civ" ? "aspect-square object-contain" : "aspect-[16/10] object-cover"} ${
-          struck ? "border border-[rgba(154,145,125,.45)] grayscale" : dim ? "opacity-40 grayscale" : ""
-        }`}
-      />
-      {struck && <span className="absolute left-0 right-0 top-1/2 h-0.5 -translate-y-1/2 bg-danger" />}
-    </span>
-  );
-}
+/**
+ * The size of a card that has already been played.
+ *
+ * A card on the table is what everybody is looking at; the hand is what you are
+ * choosing between. That was backwards — the played cards were 64px thumbnails
+ * under a hand of 180px tiles, and in the snipe step your own offer was 52px
+ * against a 190px target. One number for every played card fixes both: the two
+ * sides of a snipe are now identical, and an offered civ does not change size
+ * when the step it was offered in ends.
+ */
+const PLAYED = 128;
 
-function RailGroup({ label, tone, cols, children }: { label: string; tone: string; cols: number; children: React.ReactNode }) {
+function CivChip({ civ, size = PLAYED, dim, mark, animate }: {
+  civ?: PoolView; size?: number; dim?: boolean; mark?: "x" | "check"; animate?: boolean;
+}) {
+  if (!civ) return null;
   return (
-    <>
-      <div className={`mt-2 text-[9px] uppercase tracking-wide ${tone}`}>{label}</div>
-      <div className="mt-1 grid gap-1" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>{children}</div>
-    </>
+    <div
+      className={`relative shrink-0 overflow-hidden rounded-md border-2 border-bronze bg-surface-2 ${dim ? "opacity-40" : ""} ${mark === "x" ? "saturate-0" : ""} ${animate ? "civ-pop" : ""}`}
+      style={{ width: size }}
+      title={civ.name}
+    >
+      <Thumb src={civ.imageUrl} alt={civ.name}
+        className={`aspect-[16/10] w-full object-contain ${mark === "x" ? "opacity-45 grayscale" : ""}`} />
+      <span className="absolute inset-x-0 bottom-0 truncate px-1.5 py-0.5 text-center text-[11px] font-semibold leading-tight text-foreground"
+        style={GLASS}>
+        {civ.name}
+      </span>
+      {mark === "x" && <StrikeBar />}
+      {mark === "check" && <TileBadge mark="check" size={22} label={civ.name} className="text-gold-bright" />}
+    </div>
   );
 }
 
 /**
- * Who holds what, in the margin, once the board has gone.
+ * The same footprint as a played card, before you know what it is.
  *
- * Not the map and not the clock — those live on the panel being acted on now, and
- * a second copy of them in the corner of the eye is one place too many to look.
- * What the board alone knows is each side's hand and what they struck out, and
- * that is what stays behind when it scrolls away.
- *
- * Only where there is margin to put it: below 2xl the content runs to the edges
- * and a rail would sit on top of the pool.
+ * `active` is the one you are about to fill: gold and breathing, the same as a
+ * waiting slot on the board, so "where does this land" has one answer everywhere
+ * on the page. `preview` is what is under your cursor right now.
  */
-function ContextRail({
-  side, name, hand, handLeft, bans, mapBans, t,
-}: {
-  side: "player1" | "player2";
-  name: string;
-  hand: { key: string; civ?: PoolView; used?: boolean }[];
-  handLeft: number;
-  bans: { key: string; civ?: PoolView }[];
-  mapBans: { key: string; civ?: PoolView }[];
-  t: TFn;
+function EmptyPlayed({ size = PLAYED, hidden, active, preview }: {
+  size?: number; hidden?: boolean; active?: boolean; preview?: PoolView;
 }) {
-  const own = OWNER[side];
-  const left = side === "player1";
-  if (hand.length === 0 && bans.length === 0 && mapBans.length === 0) return null;
   return (
-    <aside
-      aria-hidden
-      // A slimmer rail, nearer the edge, so it reaches a smaller window. Past
-      // 1440 it clears the content; a little under, it laps the panel's own
-      // padding, which is invisible on something translucent that takes no clicks.
-      className={`fade-in pointer-events-none fixed top-1/2 z-20 hidden max-h-[80vh] w-[132px] -translate-y-1/2 overflow-y-auto rounded-xl border border-border bg-surface/85 p-2 backdrop-blur-sm min-[1440px]:block ${
-        left ? "left-3" : "right-3"
-      }`}
+    <div
+      style={{ width: size, height: Math.round(size * 0.625) }}
+      className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-md border-2 border-dashed font-display ${
+        active ? "border-gold slot-wait-pick text-gold-bright" : "border-border text-muted"
+      } ${hidden ? "bg-surface-2/40" : "bg-surface-2/30"}`}
     >
-      <div className={`truncate border-b pb-1 font-display text-sm ${own.text} ${own.border}`}>{name}</div>
-
-      {hand.length > 0 && (
-        <RailGroup label={t("spec.hand", { n: handLeft })} tone={own.text} cols={3}>
-          {hand.map((h) => <RailTile key={h.key} entry={h.civ} kind="civ" dim={h.used} />)}
-        </RailGroup>
-      )}
-      {bans.length > 0 && (
-        <RailGroup label={t("spec.civsBanned")} tone="text-danger" cols={4}>
-          {bans.map((b) => <RailTile key={b.key} entry={b.civ} kind="civ" struck />)}
-        </RailGroup>
-      )}
-      {mapBans.length > 0 && (
-        <RailGroup label={t("spec.mapsBanned")} tone="text-muted" cols={2}>
-          {mapBans.map((b) => <RailTile key={b.key} entry={b.civ} kind="map" struck />)}
-        </RailGroup>
-      )}
-    </aside>
-  );
-}
-
-function CivChip({ civ, dim, mark, animate }: { civ?: PoolView; dim?: boolean; mark?: "x" | "check"; animate?: boolean }) {
-  if (!civ) return null;
-  return (
-    <div className={`relative flex w-16 flex-col items-center rounded-md border-2 border-bronze bg-surface-2 px-1 py-1 text-center ${dim ? "opacity-40" : ""} ${mark === "x" ? "opacity-60 saturate-0" : ""} ${animate ? "civ-pop" : ""}`} title={civ.name}>
-      <Thumb src={civ.imageUrl} alt={civ.name} className={`aspect-square w-full object-contain ${mark === "x" ? "grayscale" : ""}`} />
-      <span className="mt-0.5 w-full truncate text-[10px] leading-tight text-muted">{civ.name}</span>
-      {mark === "x" && <span className="absolute inset-0 flex items-center justify-center text-2xl text-muted/70">✕</span>}
-      {mark === "check" && <span className="absolute right-0.5 top-0.5 text-[10px] text-gold-bright">●</span>}
+      {preview ? (
+        <>
+          <Thumb src={preview.imageUrl} alt="" className="absolute inset-0 h-full w-full object-contain opacity-40" />
+          <span className="absolute inset-x-0 bottom-0 truncate px-1.5 py-0.5 text-center text-[11px] font-semibold leading-tight text-foreground"
+            style={GLASS}>
+            {preview.name}
+          </span>
+        </>
+      ) : hidden ? "?" : ""}
     </div>
   );
 }
 
 // One side of a turn-based offer draft: face-up, under that player's own name,
 // with empty slots for what they still owe this phase.
-function OpenOfferSide({ name, ids, target, tone, civById }: {
+function OpenOfferSide({ name, ids, target, tone, civById, active, preview }: {
   name: string;
   ids: string[];
   target: number;
   tone: "sky" | "rose";
   civById: (id?: string) => PoolView | undefined;
+  /** This side is the one being asked for a card right now. */
+  active?: boolean;
+  preview?: PoolView;
 }) {
   return (
     <div className={tone === "rose" ? "text-right" : ""}>
-      <div className={`text-xs uppercase tracking-wide ${tone === "sky" ? "text-sky-400" : "text-rose-400"}`}>
+      <div className={`text-xs uppercase tracking-wide ${tone === "sky" ? "text-p1" : "text-p2"}`}>
         {name} ({ids.length}/{target})
       </div>
       <div className={`mt-1 flex gap-1.5 ${tone === "rose" ? "justify-end" : ""}`}>
         {ids.map((id) => <CivChip key={id} civ={civById(id)} animate />)}
         {Array.from({ length: Math.max(0, target - ids.length) }).map((_, i) => (
-          <div key={i} className="h-[84px] w-16 rounded-md border-2 border-dashed border-border bg-surface-2/30" />
+          <EmptyPlayed key={i} active={active} preview={i === 0 ? preview : undefined} />
         ))}
       </div>
     </div>
   );
 }
 
-function HiddenSlot() {
-  return <div className="flex h-[84px] w-16 items-center justify-center rounded-md border-2 border-dashed border-border bg-surface-2/40 text-muted">?</div>;
+function HiddenSlot({ size = PLAYED, active, preview }: {
+  size?: number; active?: boolean; preview?: PoolView;
+}) {
+  return <EmptyPlayed size={size} hidden active={active} preview={preview} />;
 }
 
 function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed, onOffer, civById, p1Name, p2Name }: {
@@ -1180,6 +1348,11 @@ function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed
   p2Name: string;
 }) {
   const { t } = useI18n();
+  // Which card of your hand the cursor is on. It belongs to this panel rather
+  // than to the room: the hand and the slots it fills are both in here, and
+  // nothing outside needs to know.
+  const [hovered, setHovered] = useState<string | null>(null);
+  const ghost = hovered && canAct ? civById(hovered) : undefined;
   const myOffered = youPlayer ? duel.offered[youPlayer] : [];
   const youSubmitted = youPlayer ? duel.submitted[youPlayer] : false;
   const oppSubmitted = opp ? duel.submitted[opp] : false;
@@ -1200,11 +1373,13 @@ function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed
         <h3 className="font-display text-lg aoe-gold-text text-center">{t("offer.titleOpen", { n: duel.offerCount })}</h3>
         <div className="aoe-rule my-3" />
         <div className="grid grid-cols-2 gap-4">
-          <OpenOfferSide name={p1Name} ids={duel.offered.player1} target={duel.offerTarget.player1} tone="sky" civById={civById} />
-          <OpenOfferSide name={p2Name} ids={duel.offered.player2} target={duel.offerTarget.player2} tone="rose" civById={civById} />
+          <OpenOfferSide name={p1Name} ids={duel.offered.player1} target={duel.offerTarget.player1} tone="sky"
+            civById={civById} active={canAct && youPlayer === "player1"} preview={youPlayer === "player1" ? ghost : undefined} />
+          <OpenOfferSide name={p2Name} ids={duel.offered.player2} target={duel.offerTarget.player2} tone="rose"
+            civById={civById} active={canAct && youPlayer === "player2"} preview={youPlayer === "player2" ? ghost : undefined} />
         </div>
         <OfferHand hand={hand} count={duel.offerCount} offered={offeredSet} disabled={!canAct}
-          used={excludeUsed ? usedSet : EMPTY_IDS} onOffer={onOffer} t={t} />
+          used={excludeUsed ? usedSet : EMPTY_IDS} onOffer={onOffer} onHover={setHovered} t={t} />
         <DuelNote>{canAct ? null : youPlayer ? t("offer.oppChoosing") : t("offer.secret")}</DuelNote>
       </section>
       </div>
@@ -1221,7 +1396,9 @@ function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed
           <div className="text-xs uppercase tracking-wide text-muted">{t("offer.yourOffer")} {youSubmitted ? t("offer.locked") : `(${myOffered.length}/${targetOf(youPlayer)})`}</div>
           <div className="mt-1 flex gap-1.5">
             {myOffered.map((id) => <CivChip key={id} civ={civById(id)} animate />)}
-            {Array.from({ length: Math.max(0, targetOf(youPlayer) - myOffered.length) }).map((_, i) => <HiddenSlot key={i} />)}
+            {Array.from({ length: Math.max(0, targetOf(youPlayer) - myOffered.length) }).map((_, i) => (
+              <HiddenSlot key={i} active={canAct} preview={i === 0 ? ghost : undefined} />
+            ))}
           </div>
         </div>
         <div className="text-right">
@@ -1233,7 +1410,7 @@ function OfferPhase({ duel, youPlayer, opp, canAct, hand, usedByYou, excludeUsed
       </div>
 
       <OfferHand hand={hand} count={duel.offerCount} offered={offeredSet} disabled={!canAct}
-        used={excludeUsed ? usedSet : EMPTY_IDS} onOffer={onOffer} t={t} />
+        used={excludeUsed ? usedSet : EMPTY_IDS} onOffer={onOffer} onHover={setHovered} t={t} />
       <DuelNote gold={Boolean(youPlayer)}>
         {canAct ? null : youPlayer ? t("offer.lockedWait") : t("offer.secret")}
       </DuelNote>
@@ -1381,8 +1558,8 @@ function SnipePhase({ duel, youPlayer, opp, canAct, onSnipe, civById, deadlineTs
               key={id}
               disabled={locked}
               onClick={() => toggle(id)}
-              style={{ width: 190 }}
-              className={`relative rounded-[10px] border-2 p-3.5 text-center transition ${
+              style={{ width: PLAYED }}
+              className={`relative overflow-hidden rounded-[10px] border-2 text-center transition ${
                 marked
                   ? `border-gold bg-gold/10 ring-2 ring-gold/50 ${urgent ? "ovl-pulse" : ""}`
                   : `${oppTone.border} ${oppTone.bg} ${locked ? "" : "cursor-pointer hover:border-danger hover:bg-danger/[.14]"}`
@@ -1390,15 +1567,17 @@ function SnipePhase({ duel, youPlayer, opp, canAct, onSnipe, civById, deadlineTs
               title={civ?.name}
             >
               <Thumb src={civ?.imageUrl} alt={civ?.name ?? ""}
-                className={`mx-auto aspect-square w-[80%] object-contain ${marked ? "grayscale" : ""}`} />
-              <span className="mt-1 block truncate font-display text-[19px] font-bold text-foreground">{civ?.name}</span>
+                className={`aspect-[16/10] w-full object-contain ${marked ? "opacity-50 grayscale" : ""}`} />
+              <span className="absolute inset-x-0 bottom-0 truncate px-1.5 py-0.5 text-center text-[12px] font-semibold leading-tight text-foreground"
+                style={GLASS}>
+                {civ?.name}
+              </span>
+              {/* Marked for the snipe: the same line a ban wears, and the same
+                  padlock a held simultaneous ban wears. It is both of those. */}
               {marked && (
                 <>
-                  <span aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center text-[56px] leading-none"
-                    style={{ color: "rgba(181,72,47,.85)" }}>✕</span>
-                  <span className="absolute right-1.5 top-1.5 rounded bg-surface/80 px-1 text-[10px] text-gold-bright">
-                    🔒 {t("snipe.yourTarget")}
-                  </span>
+                  <StrikeBar />
+                  <TileBadge mark="lock" size={22} label={t("snipe.yourTarget")} className="text-gold-bright" />
                 </>
               )}
             </button>
@@ -1427,11 +1606,11 @@ function SnipePhase({ duel, youPlayer, opp, canAct, onSnipe, civById, deadlineTs
       {/* What you put up, so the whole trade is readable from one place. */}
       <div className="mt-5 flex flex-col items-center gap-1.5 border-t border-border/60 pt-3">
         <span className="text-[10px] uppercase tracking-wide text-muted">{t("snipe.yourOfferShort")}</span>
-        <div className="flex gap-2">
-          {myOffer.map((id) => (
-            <Thumb key={id} src={civById(id)?.imageUrl} alt={civById(id)?.name ?? ""}
-              className={`h-[52px] w-[52px] rounded border-2 bg-surface-2 object-contain ${youPlayer ? OWNER[youPlayer].border : ""}`} />
-          ))}
+        {/* The same card as the row above it. Yours used to be a 52px thumbnail
+            against their 190px target — the two halves of one trade, drawn at
+            three and a half times the difference. */}
+        <div className="flex flex-wrap justify-center gap-3">
+          {myOffer.map((id) => <CivChip key={id} civ={civById(id)} />)}
         </div>
       </div>
     </section>
@@ -1475,7 +1654,7 @@ function StepBar({ steps, currentIndex, finished }: {
   if (steps.length === 0) return null;
   return (
     // Sticky is on the wrapper now, so the turn strip and this ride up together.
-    <div ref={ref} className="no-scrollbar flex gap-2 overflow-x-auto border-b border-border px-4 py-3">
+    <div ref={ref} className="no-scrollbar flex gap-2 overflow-x-auto border-b border-border px-4 py-2">
       {steps.map((s, i) => {
         const done = finished || i < currentIndex;
         const current = !finished && i === currentIndex;
@@ -1490,7 +1669,7 @@ function StepBar({ steps, currentIndex, finished }: {
               className={[
                 // Same shape as a step row in the preset editor: rounded card with
                 // a thick left edge in the acting player's colour.
-                "flex shrink-0 items-center gap-2 rounded-lg border border-l-4 px-3 py-2 whitespace-nowrap transition",
+                "flex shrink-0 items-center gap-2 rounded-lg border border-l-4 px-3 py-1 whitespace-nowrap transition",
                 own ? own.borderL : "border-l-bronze",
                 current ? "border-gold bg-gold/15 ring-1 ring-gold"
                   : done ? "border-border/60 bg-surface-2/40 opacity-50"
@@ -1511,50 +1690,6 @@ function StepBar({ steps, currentIndex, finished }: {
   );
 }
 
-// Header for a simultaneous ban step: your own locked-in bans (nobody else can
-// see them) plus whether the opponent has finished. Deliberately shows the
-// opponent's *progress* only — never their targets.
-function SimulBanStatus({ count, mine, youAwaited, oppAwaited, isPlayer, entryById }: {
-  count: number;
-  mine: string[];
-  youAwaited: boolean;
-  oppAwaited: boolean;
-  isPlayer: boolean;
-  entryById: (id?: string) => PoolView | undefined;
-}) {
-  const { t } = useI18n();
-  return (
-    <section className="aoe-panel rounded-xl p-5">
-      <h3 className="font-display text-lg aoe-gold-text text-center">{t("simulban.title", { n: count })}</h3>
-      <p className="mt-1 text-center text-xs text-muted">{t("simulban.hint")}</p>
-      <div className="aoe-rule my-3" />
-      {isPlayer ? (
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div className="text-xs uppercase tracking-wide text-muted">
-              {t("simulban.yours")} {youAwaited ? `(${mine.length}/${count})` : t("offer.locked")}
-            </div>
-            <div className="mt-1 flex flex-wrap gap-1.5">
-              {mine.map((id) => <CivChip key={id} civ={entryById(id)} mark="x" animate />)}
-              {Array.from({ length: Math.max(0, count - mine.length) }).map((_, i) => <HiddenSlot key={i} />)}
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-xs uppercase tracking-wide text-muted">
-              {oppAwaited ? t("offer.oppChoosing") : t("offer.oppReady")}
-            </div>
-            <div className="mt-1 flex justify-end gap-1.5">
-              {Array.from({ length: count }).map((_, i) => <HiddenSlot key={i} />)}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <p className="text-center text-sm text-muted">{t("simulban.secret")}</p>
-      )}
-      {isPlayer && !youAwaited && <p className="mt-4 text-center text-sm text-gold-bright">{t("simulban.lockedWait")}</p>}
-    </section>
-  );
-}
 
 /**
  * The context you lose by scrolling: this game's map, and what each side has
@@ -1625,7 +1760,7 @@ function TakeSeatButton({ needsName, onTake }: { needsName: boolean; onTake: (na
   );
 }
 
-function Lobby({ seats, you, amHost, canPlay, loggedIn, bestOf, inviteUrl, copied, anonymous, publicHover, playAll, onCopy, onTake, onAddBot, onReady, onRename, onStart, onOptions, error }: {
+function Lobby({ seats, you, amHost, canPlay, loggedIn, bestOf, target, headStart, inviteUrl, copied, anonymous, publicHover, playAll, onCopy, onTake, onAddBot, onReady, onRename, onStart, onOptions, error }: {
   seats: { host: string; player1: Seat; player2: Seat };
   you: SeatRole | "spectator";
   amHost: boolean;
@@ -1638,13 +1773,16 @@ function Lobby({ seats, you, amHost, canPlay, loggedIn, bestOf, inviteUrl, copie
   anonymous: boolean;
   publicHover: boolean;
   playAll: boolean;
+  /** Wins needed to take the series — the ceiling on a head start. */
+  target: number;
+  headStart: { player1: number; player2: number };
   onCopy: () => void;
   onTake: (seat: "player1" | "player2", name?: string) => void;
   onAddBot: (seat: "player1" | "player2") => void;
   onReady: (ready: boolean) => void;
   onRename: (name: string) => void;
   onStart: () => void;
-  onOptions: (p: { anonymous?: boolean; publicHover?: boolean; playAll?: boolean }) => void;
+  onOptions: (p: { anonymous?: boolean; publicHover?: boolean; playAll?: boolean; headStart?: { player1: number; player2: number } }) => void;
   error: string | null;
 }) {
   const { t } = useI18n();
@@ -1750,6 +1888,11 @@ function Lobby({ seats, you, amHost, canPlay, loggedIn, bestOf, inviteUrl, copie
             onChange={(v) => onOptions({ playAll: v })}
           />
         </div>
+        <HeadStart
+          value={headStart} max={Math.max(0, target - 1)} disabled={!amHost}
+          p1Name={seats.player1?.name || t("match.p1")} p2Name={seats.player2?.name || t("match.p2")}
+          onChange={(v) => onOptions({ headStart: v })} t={t}
+        />
         {/* The host needs no explanation — the toggles say what they do, and they
             are live. A guest does need to know why they're greyed out. */}
         {!amHost && <p className="mt-3 text-xs text-muted">{t("match.privacyGuestHint")}</p>}
@@ -1765,6 +1908,53 @@ function Lobby({ seats, you, amHost, canPlay, loggedIn, bestOf, inviteUrl, copie
             {t("match.forceStart")}
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The score the series starts at.
+ *
+ * Set here rather than in the preset because it belongs to one match, not to a
+ * format: the same grand-final rules get used for the loser's-bracket side too,
+ * and they arrive level. Capped one below the target, so a handicap can never
+ * finish a series nobody has played.
+ */
+function HeadStart({ value, max, disabled, p1Name, p2Name, onChange, t }: {
+  value: { player1: number; player2: number };
+  max: number;
+  disabled: boolean;
+  p1Name: string;
+  p2Name: string;
+  onChange: (v: { player1: number; player2: number }) => void;
+  t: TFn;
+}) {
+  const level = value.player1 === 0 && value.player2 === 0;
+  const bump = (seat: "player1" | "player2", by: number) => {
+    const n = Math.max(0, Math.min(max, value[seat] + by));
+    if (n !== value[seat]) onChange({ ...value, [seat]: n });
+  };
+  const side = (seat: "player1" | "player2", name: string) => (
+    <div className="flex items-center gap-2">
+      <span className={`w-24 truncate text-right font-display text-sm ${OWNER[seat].text}`}>{name}</span>
+      <button type="button" disabled={disabled || value[seat] === 0} onClick={() => bump(seat, -1)}
+        className="h-7 w-7 rounded border border-bronze font-display text-gold-bright disabled:opacity-30">−</button>
+      <span className="w-6 text-center font-display text-lg text-gold-bright">{value[seat]}</span>
+      <button type="button" disabled={disabled || value[seat] >= max} onClick={() => bump(seat, 1)}
+        className="h-7 w-7 rounded border border-bronze font-display text-gold-bright disabled:opacity-30">+</button>
+    </div>
+  );
+  return (
+    <div className="mt-3 rounded-lg border border-border p-3">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="font-display text-sm text-foreground">{t("match.headStart")}</span>
+        {level && <span className="text-xs text-muted">{t("match.headStartLevel")}</span>}
+      </div>
+      <p className="mt-1 text-xs text-muted">{t("match.headStartHint")}</p>
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-6 gap-y-2">
+        {side("player1", p1Name)}
+        {side("player2", p2Name)}
       </div>
     </div>
   );
@@ -1836,16 +2026,6 @@ function BigCountdown({ deadlineTs, limitSec, clockOffsetRef, size, live }: {
 /** How long before the clock runs out to say what the clock running out does. */
 const AUTOPICK_WARN_SEC = 3;
 
-/**
- * Whether the top-of-window strip rides along once the board scrolls away.
- *
- * Off: the clock and the current map now sit on the panel being acted on, which
- * is where the page scrolls to when your turn comes round — so the strip was
- * repeating, at the top of the screen, what was already in the middle of it.
- * Kept rather than deleted; the strip is the answer again the moment anything
- * moves back up onto the board.
- */
-const SHOW_TURN_STRIP = false;
 
 /**
  * Seconds left, never more than the step was given.
@@ -1923,23 +2103,77 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
   const isMap = kind === "map";
   const pending = new Set(pendingIds ?? []);
   const blocked = new Set(blockedIds ?? []);
-  // Which of the four states this pool actually contains. A legend that lists a
-  // state nothing on screen is in teaches nothing and costs a line of noise —
-  // most formats ban globally and never produce a "closed to you" entry at all.
-  const has = { open: false, banned: false, blocked: false, taken: false };
-  for (const e of entries) {
-    if (e.state === "banned") has.banned = true;
-    else if (e.state === "picked" || e.state === "drafted") has.taken = true;
-    else if (blocked.has(e.id)) has.blocked = true;
-    else has.open = true;
-  }
+
+  // Open, filtering nothing. A control nobody can see is a control nobody uses,
+  // and this one earns its row: late in a draft, half the pool is spent and you
+  // are hunting for one name. Showing it costs a line; hiding it costs the
+  // feature. It still starts inert — the pool you see on arrival is the whole
+  // pool, every time.
+  const [openFilter, setOpenFilter] = useState(true);
+  const [q, setQ] = useState("");
+  // One switch, not three. Banned, taken, and closed-to-you are three different
+  // rules with one consequence — you cannot have it — and the consequence is the
+  // only thing anybody would filter on. Offering them separately made the reader
+  // work out which rule applied before they could pick a checkbox.
+  const [onlyOpen, setOnlyOpen] = useState(false);
+  const needle = q.trim().toLowerCase();
+  const shown = entries.filter((e) => {
+    if (onlyOpen && (e.state !== "available" || blocked.has(e.id))) return false;
+    return !needle || e.name.toLowerCase().includes(needle);
+  });
+  const filtered = shown.length !== entries.length;
+  const clear = () => { setQ(""); setOnlyOpen(false); };
+
   return (
     // No heading. The line directly above this panel already says which pool it
     // is and what to do with it — "P1 · Ban map" over a heading reading "Maps" is
     // a row of height spent saying it twice.
     <section className="aoe-panel rounded-xl p-4" aria-label={title}>
-      <div className="grid gap-2" style={isMap ? GRID_MAP : GRID_CIV}>
-        {entries.map((e) => (
+      {/* One line when shut. It sits above the grid rather than below it because
+          a control that changes what you are looking at belongs before the thing
+          it changes. */}
+      <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
+        <button
+          onClick={() => { if (openFilter) clear(); setOpenFilter(!openFilter); }}
+          className={`rounded border px-2 py-1 transition ${
+            openFilter || filtered ? "border-gold text-gold-bright" : "border-border text-muted hover:text-gold-bright"
+          }`}
+        >
+          ⌕ {t("match.filter")}
+        </button>
+        {openFilter && (
+          <>
+            <input
+              value={q}
+              onChange={(ev) => setQ(ev.target.value)}
+              placeholder={t("match.filterSearch")}
+              className="w-48 rounded border border-border bg-surface-2 px-2 py-1 text-foreground outline-none focus:border-gold"
+            />
+            <FilterChip on={onlyOpen} onClick={() => setOnlyOpen(!onlyOpen)} label={t("match.filterOnly")} />
+            {filtered && (
+              <>
+                <span className="text-muted">{t("match.filterCount", { n: shown.length, total: entries.length })}</span>
+                <button onClick={clear} className="text-muted underline hover:text-gold-bright">{t("match.filterClear")}</button>
+              </>
+            )}
+          </>
+        )}
+      </div>
+      {shown.length === 0 && (
+        <p className="py-6 text-center text-sm text-muted">{t("match.filterNone")}</p>
+      )}
+      {/* auto-FILL, not auto-fit. auto-fit collapses the tracks nothing lands
+          in and lets `1fr` hand their width to the survivors, so filtering a
+          pool down to four made those four enormous. auto-fill keeps the empty
+          tracks, so a tile is the same size whatever the filter says and the
+          ones still showing stay exactly where they were. */}
+      {/* alignContent:start so the floor is empty space at the BOTTOM, not taller
+          rows. A grid's default align-content behaves as stretch, which would
+          hand the spare height to the auto-sized rows and pull the tiles apart —
+          the panel would keep its shape by changing the thing inside it. */}
+      <div className="grid gap-2"
+        style={isMap ? gridMap(entries.length) : { ...GRID_CIV, minHeight: CIV_POOL_FLOOR, alignContent: "start" }}>
+        {shown.map((e) => (
           <PoolTile
             key={e.id}
             e={e}
@@ -1959,26 +2193,21 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
         ))}
       </div>
 
-      {/* Four states is one more than anybody wants to infer from colour alone,
-          and the newest of them ("closed to you") has no equivalent anywhere else
-          in the app. Only the states actually present get a row. */}
-      <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[11px] text-muted">
-        {has.open && <LegendItem swatch="border-bronze bg-surface-2" label={t("match.legendAvailable")} />}
-        {has.banned && <LegendItem swatch="border-border bg-surface-2 opacity-60 saturate-0" label={t("match.legendBanned")} />}
-        {has.blocked && <LegendItem swatch="border-dashed border-danger bg-danger/20" label={t("match.legendBlocked")} />}
-        {has.taken && (
-          <span className="inline-flex items-center gap-1.5">
-            {/* Two swatches, one label: "taken" has no colour of its own — the
-                colour IS which player took it. */}
-            <span className="inline-flex gap-0.5">
-              <span className={`inline-block h-3 w-3 rounded-sm border-2 ${OWNER.player1.border} ${OWNER.player1.bg}`} />
-              <span className={`inline-block h-3 w-3 rounded-sm border-2 ${OWNER.player2.border} ${OWNER.player2.bg}`} />
-            </span>
-            {t("match.legendTaken")}
-          </span>
-        )}
-      </div>
     </section>
+  );
+}
+
+/** A filter that is on says so by looking like the thing it is filtering for. */
+function FilterChip({ on, onClick, label }: { on: boolean; onClick: () => void; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded border px-2 py-1 transition ${
+        on ? "border-gold bg-gold/10 text-gold-bright" : "border-border text-muted hover:text-gold-bright"
+      }`}
+    >
+      {on ? "✓ " : ""}{label}
+    </button>
   );
 }
 
@@ -2004,7 +2233,7 @@ function PoolTile({ e, isMap, can, tone, isSelectStep, selectable, isPending, bl
   const own = taken ? ownerOf(e.by) : null;
   const isBlocked = !banned && !taken && blocked;
 
-  const stamp = useChangeStamp(`${e.state}:${e.by ?? ""}:${isBlocked ? "b" : ""}`);
+  const stamp = useChangeStamp(`${e.state}:${e.by ?? ""}:${isBlocked ? "b" : ""}:${isPending ? "p" : ""}`);
   const struck = banned || isBlocked;
   const fresh = stamp > 0 && (struck || taken);
   const ringColour = struck ? "var(--danger)" : e.by === "player1" ? "var(--p1)" : e.by === "player2" ? "var(--p2)" : "var(--gold)";
@@ -2024,17 +2253,19 @@ function PoolTile({ e, isMap, can, tone, isSelectStep, selectable, isPending, bl
       onMouseLeave={() => onHover(null)}
       className={[
         "relative flex w-full flex-col items-center overflow-hidden rounded-lg border-2 transition",
-        isMap ? "" : "p-2",
         fresh ? (struck ? "tile-strike" : "tile-take") : "",
         // Layered rather than one chain: whose an entry is has to survive
         // every other state, or a map somebody picked reads as dead stock.
-        // Banned entries are colourless on purpose — grey, faded, ✕.
-        banned ? "border-border bg-surface-2 opacity-30 saturate-0"
+        // Banned entries are colourless on purpose — grey and struck through.
+        // The fade lives on the artwork, not here: it used to be on the button,
+        // which is the parent of every mark, so the ✕ that said "banned" was
+        // itself drawn at 30% alpha.
+        banned ? "border-border bg-surface-2"
           // Owned by someone: their border and their tint, always. A select
           // step used to overwrite this, so during "loser picks the map" the
           // maps each player had picked looked unavailable rather than theirs.
           : taken ? (own ? `${own.border} ${own.bg}` : "border-bronze bg-surface-2")
-          // Closed to you alone. Deliberately NOT the greyed-out ban look:
+          // Banned for you alone. Deliberately NOT the greyed-out ban look:
           // this civ is still live, just not for you, and drawing it as dead
           // stock would misreport what the opponent can still field.
           // Dashed, because solid red is spoken for: in this app a colour is
@@ -2067,43 +2298,56 @@ function PoolTile({ e, isMap, can, tone, isSelectStep, selectable, isPending, bl
       ].join(" ")}
       title={isBlocked ? t("match.blockedHint", { name: e.name }) : e.name}
     >
-      <Thumb src={e.imageUrl} alt={e.name} className={`w-full ${isMap ? "aspect-[16/10] object-cover" : "aspect-square object-contain"} ${banned ? "grayscale" : ""}`} />
-      {/* The name carries the state too. At this cell size the border alone
-          is a few pixels of colour, and a taken civ used to read as dead
-          because its label looked identical to a banned one's.
-          A map wears its name: the row underneath was height the picture
-          could have had, and the map is the thing being chosen. */}
+      {/* Contained, not cropped, for a civ: a flag cut off at the edges stops
+          being the thing you recognise it by. Maps are photographs and crop
+          fine. Both are 16:10 now — a square civ cell spent a third of its
+          height on the background either side of a flag. */}
+      <Thumb src={e.imageUrl} alt={e.name} className={`w-full aspect-[16/10] ${isMap ? "object-cover" : "object-contain"} ${banned ? "opacity-35 grayscale" : ""}`} />
+      {/* The name rides on the picture, behind frosted glass, for civs the same
+          as for maps: under it, the caption was a row of height the picture
+          could have had, times twenty-three. The colour still carries the
+          state — at this cell size the border alone is a few pixels, and a
+          taken civ used to read as dead because its label looked identical to
+          a banned one's. */}
       <span
-        className={`truncate leading-tight ${
+        className={`absolute inset-x-0 bottom-0 truncate px-2 py-1 text-center text-sm font-semibold leading-tight ${
           banned ? "text-muted"
-            : isBlocked ? "font-semibold text-danger"
-            : taken && own ? `font-semibold ${own.text}`
+            : isBlocked ? "text-danger"
+            : taken && own ? own.text
             : "text-foreground"
-        } ${isMap ? "absolute inset-x-0 bottom-0 px-2 py-1 text-center text-sm font-semibold" : "mt-1.5 w-full text-xs"}`}
-        style={isMap ? GLASS : undefined}
+        }`}
+        style={GLASS}
       >
         {e.name}
       </span>
+      {/* What happened to it, top right; what YOU did to it, top left. Never
+          along the bottom — the name plate lives there.
+          There used to be a legend under the pool explaining these by colour
+          swatch. It cost a row of the one screen this page is allowed, to say
+          in words what the tile can say on itself. */}
       {banned && (
-        <span className={`absolute inset-0 flex items-center justify-center text-5xl font-bold ${stamp > 0 ? "x-stamp" : ""}`}
-          style={{ color: "rgba(181,72,47,.9)" }}>✕</span>
+        <>
+          <StrikeBar animate={stamp > 0} />
+          <TileBadge mark="ban" label={t("match.legendBanned")}
+            className={`text-danger ${stamp > 0 ? "badge-pop" : ""}`} />
+        </>
       )}
-      {taken && <span className={`absolute right-1 top-1 text-xs ${own?.text ?? "text-gold-bright"}`}>●</span>}
-      {isBlocked && <span className="absolute right-1 top-1 text-xs">🚫</span>}
-      {isPending && <span className="absolute left-1 top-1 text-sm text-gold-bright">🔒</span>}
+      {/* Same glyph as a ban, deliberately: both are "you can't have this". The
+          difference is the line — struck means it is out of the draft, unstruck
+          means it is out for you alone and the opponent can still field it. */}
+      {isBlocked && <TileBadge mark="ban" label={t("match.legendBlocked")} className="text-danger" />}
+      {taken && (
+        <TileBadge mark="check" label={t("match.legendTaken")}
+          className={`${own?.text ?? "text-gold-bright"} ${stamp > 0 ? "badge-pop" : ""}`} />
+      )}
+      {isPending && (
+        <TileBadge mark="lock" corner="tl" label={t("match.pendingBan")} className="text-gold-bright" />
+      )}
     </button>
     </div>
   );
 }
 
-function LegendItem({ swatch, label }: { swatch: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={`inline-block h-3 w-3 rounded-sm border-2 ${swatch}`} />
-      {label}
-    </span>
-  );
-}
 
 function VersusBanner({ game, p1Name, p2Name, civById, mapById }: {
   game?: { civP1?: string; civP2?: string; map?: string; winner?: "player1" | "player2" | null };
@@ -2120,12 +2364,12 @@ function VersusBanner({ game, p1Name, p2Name, civById, mapById }: {
     <div className="flex flex-col items-center text-center">
       {/* The name, and only the name. Which seat they are in is already said by
           the colour, and by the side of the screen they are standing on. */}
-      <div className={`text-xs uppercase tracking-wide ${tone === "sky" ? "text-sky-400" : "text-rose-400"}`}>
+      <div className={`text-xs uppercase tracking-wide ${tone === "sky" ? "text-p1" : "text-p2"}`}>
         {name || (tone === "sky" ? t("match.p1") : t("match.p2"))}
       </div>
       <div className="relative mt-2">
         {won && <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-2xl leading-none">👑</span>}
-        <div className={`flex h-20 w-20 items-center justify-center overflow-hidden rounded-full ring-2 ${won ? "ring-gold-bright" : tone === "sky" ? "ring-sky-500/70" : "ring-rose-500/70"}`}>
+        <div className={`flex h-20 w-20 items-center justify-center overflow-hidden rounded-full ring-2 ${won ? "ring-gold-bright" : tone === "sky" ? "ring-p1/70" : "ring-p2/70"}`}>
           <Thumb src={civ?.imageUrl} alt={civ?.name ?? ""} className="civ-pop h-full w-full object-contain" />
         </div>
       </div>
@@ -2136,7 +2380,7 @@ function VersusBanner({ game, p1Name, p2Name, civById, mapById }: {
     <section className="aoe-panel relative overflow-hidden rounded-xl p-6">
       <div
         className="pointer-events-none absolute inset-0 opacity-40"
-        style={{ background: "linear-gradient(105deg, rgba(56,189,248,0.14) 0%, transparent 42%, transparent 58%, rgba(244,63,94,0.14) 100%)" }}
+        style={{ background: "linear-gradient(105deg, rgba(92,201,221,0.14) 0%, transparent 42%, transparent 58%, rgba(196,138,208,0.14) 100%)" }}
       />
       <div className="relative grid grid-cols-3 items-center gap-3">
         <Side name={p1Name} civ={c1} tone="sky" won={game?.winner === "player1"} />

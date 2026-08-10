@@ -5,7 +5,7 @@ export default function Loading() {
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-6">
+      <main className="mx-auto w-full max-w-[1360px] flex-1 px-4 py-6">
         <div className="mb-4 flex items-center justify-between">
           <div className="skeleton h-7 w-40" />
           <div className="skeleton h-4 w-24" />

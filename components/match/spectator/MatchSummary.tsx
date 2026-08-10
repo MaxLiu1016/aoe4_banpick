@@ -39,7 +39,8 @@ export function MatchSummary({ payload, roomName }: { payload: SpectatorPayload;
 
   const bans = (seat: Seat) => ({
     civs: state.civBans.filter((b) => b.by === seat).map((b) => civ.get(b.id)).filter(Boolean) as PoolView[],
-    maps: state.maps.filter((m) => m.state === "banned" && m.by === seat),
+    maps: (seat === "player1" ? state.mapBansByP1 : state.mapBansByP2)
+      .map((id) => map.get(id)).filter(Boolean) as PoolView[],
   });
 
   return (

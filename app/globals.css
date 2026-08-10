@@ -17,11 +17,20 @@
   --parchment: #e9dcc0;
   --parchment-ink: #2b2417;
   --danger: #b5482f;       /* ban red */
-  /* Seat ownership. Not new colours — the same sky-400 / rose-400 the match room
-     has always used for P1 / P2 — but the spectator view keys borders, names and
-     legends off "whose is this?", so ownership needs a name rather than a class. */
-  --p1: #38bdf8;
-  --p2: #fb7185;
+  /* The other half of that pair. Only the empty slots wear it so far — a slot
+     waiting for a pick and a slot waiting for a ban were two identical grey
+     boxes. Muted well below the flags it sits under. */
+  --pick: #6aa76b;
+  /* Seat ownership. One token each, because every surface that says "whose is
+     this?" — borders, names, legends, glows — has to move together.
+     P1 was sky-400 and is now verdigris — the colour bronze goes when it ages,
+     which is the rest of this palette. P2 was rose-400 and is now Tyrian purple: red is
+     being freed up to mean "banned", and a player wearing the ban colour is the
+     thing two players told us they were misreading. Purple is one of the game's
+     own player colours, and this particular purple is a dye rather than a screen
+     colour, so it sits with the ochre and bronze instead of on top of them. */
+  --p1: #5cc9dd;
+  --p2: #c48ad0;
   --urgent: #e0563a;       /* countdown under 10s */
 }
 
@@ -37,6 +46,10 @@
   --color-bronze: var(--bronze);
   --color-parchment: var(--parchment);
   --color-danger: var(--danger);
+  /* Exposed to Tailwind so components can say `text-p2` instead of naming a
+     palette colour. Ownership is now one edit, not a grep. */
+  --color-p1: var(--p1);
+  --color-p2: var(--p2);
   --font-sans: var(--font-geist-sans);
   --font-display: var(--font-cinzel);
 }
@@ -183,6 +196,47 @@ button:disabled { cursor: not-allowed; }
 }
 .ovl-glow { animation: ovl-glow 1.6s ease-in-out infinite; }
 
+/* An empty slot the current step is about to fill.
+   The wash breathes with the border rather than sitting still behind it — the
+   colour of the slot is what says WHICH act lands here, so it is the half worth
+   animating. An animation outranks an inline style, which is where the resting
+   wash is set, so with motion turned off the slot keeps that colour and its gold
+   border and is still the one marked out. */
+@keyframes slot-wait-pick {
+  0%, 100% { border-color: rgba(191, 155, 74, .55);
+             background: color-mix(in srgb, var(--pick) 10%, transparent);
+             box-shadow: inset 0 0 0 0 rgba(241, 207, 108, 0); }
+  50%      { border-color: rgba(241, 207, 108, 1);
+             background: color-mix(in srgb, var(--pick) 34%, transparent);
+             box-shadow: inset 0 0 16px 2px rgba(241, 207, 108, .3); }
+}
+@keyframes slot-wait-ban {
+  0%, 100% { border-color: rgba(191, 155, 74, .55);
+             background: rgba(181, 72, 47, .12);
+             box-shadow: inset 0 0 0 0 rgba(241, 207, 108, 0); }
+  50%      { border-color: rgba(241, 207, 108, 1);
+             background: rgba(181, 72, 47, .34);
+             box-shadow: inset 0 0 16px 2px rgba(241, 207, 108, .3); }
+}
+.slot-wait-pick { animation: slot-wait-pick 1.7s ease-in-out infinite; }
+.slot-wait-ban  { animation: slot-wait-ban  1.7s ease-in-out infinite; }
+
+/* A ban landing. The bar is drawn from the middle outwards rather than faded
+   in, so the gesture is the same one the mark describes. */
+@keyframes strike-draw {
+  from { transform: translateY(-50%) scaleX(0); }
+  to   { transform: translateY(-50%) scaleX(1); }
+}
+.strike-draw { animation: strike-draw .4s cubic-bezier(.22,1,.36,1); }
+
+@keyframes badge-pop {
+  0%   { transform: scale(.4); opacity: 0; }
+  60%  { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.badge-pop { animation: badge-pop .28s cubic-bezier(.22,1,.36,1); }
+
+
 /* A hidden offer turning face up: the card back rotates away and the civ arrives
    in its place. Cards are released one at a time by the view, 150ms apart, so the
    stagger is a real sequence rather than a set of delayed copies. */
@@ -256,19 +310,12 @@ button:disabled { cursor: not-allowed; }
 }
 .tile-ring { animation: tile-ring 0.6s ease-out both; }
 
-/* The cross landing on a banned tile, rather than being there all along. */
-@keyframes x-stamp {
-  0%   { opacity: 0; transform: scale(2.6) rotate(-14deg); }
-  55%  { opacity: 1; transform: scale(0.92) rotate(2deg); }
-  100% { opacity: 1; transform: scale(1) rotate(0deg); }
-}
-.x-stamp { animation: x-stamp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
-
 /* Respect users who prefer reduced motion. */
 @media (prefers-reduced-motion: reduce) {
   .route-enter, .fade-in, .skeleton, .spinner, .civ-pop, .civ-pop-glow,
   .ovl-pop, .ovl-slash, .ovl-slash-lg, .ovl-pulse, .ovl-glow, .ovl-flip, .turn-glow,
-  .ovl-sweep, .animate-pulse, .tile-take, .tile-strike, .tile-ring, .x-stamp {
+  .ovl-sweep, .animate-pulse, .tile-take, .tile-strike, .tile-ring,
+  .strike-draw, .badge-pop, .slot-wait-pick, .slot-wait-ban {
     animation: none !important;
   }
 }

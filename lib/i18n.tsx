@@ -8,7 +8,7 @@ export type Locale = "en" | "zh" | "cn" | "ja";
 
 // Traditional → Simplified character map (covers the chars used in the dictionary).
 // Lets the "cn" locale reuse the "zh" strings without a second hand-translation.
-const T2S: Record<string, string> = { "規": "规", "則": "则", "組": "组", "揮": "挥", "個": "个", "資": "资", "顯": "显", "稱": "称", "這": "这", "裡": "里", "儲": "储", "紀": "纪", "國": "国", "運": "运", "籌": "筹", "決": "决", "勝": "胜", "開": "开", "與": "与", "圖": "图", "對": "对", "戰": "战", "瀏": "浏", "覽": "览", "訂": "订", "輪": "轮", "數": "数", "擊": "击", "驟": "骤", "計": "计", "時": "时", "暫": "暂", "賽": "赛", "觀": "观", "選": "选", "標": "标", "雙": "双", "約": "约", "負": "负", "兩": "两", "邊": "边", "點": "点", "誤": "误", "陣": "阵", "為": "为", "術": "术", "來": "来", "進": "进", "廳": "厅", "帳": "帐", "號": "号", "電": "电", "郵": "邮", "碼": "码", "請": "请", "註": "注", "冊": "册", "採": "采", "員": "员", "還": "还", "沒": "没", "經": "经", "錯": "错", "敗": "败", "後": "后", "編": "编", "輯": "辑", "複": "复", "製": "制", "換": "换", "尋": "寻", "頁": "页", "刪": "删", "範": "范", "內": "内", "無": "无", "愛": "爱", "間": "间", "連": "连", "結": "结", "線": "线", "當": "当", "隊": "队", "長": "长", "準": "准", "備": "备", "傳": "传", "給": "给", "會": "会", "強": "强", "繼": "继", "續": "续", "獲": "获", "場": "场", "隨": "随", "機": "机", "隱": "隐", "鎖": "锁", "擇": "择", "緒": "绪", "張": "张", "僅": "仅", "誰": "谁", "贏": "赢", "寫": "写", "確": "确", "認": "认", "舊": "旧", "從": "从", "餘": "余", "說": "说", "項": "项", "幾": "几", "總": "总", "預": "预", "設": "设", "許": "许", "產": "产", "執": "执", "統": "统", "動": "动", "調": "调", "順": "顺", "嗎": "吗", "單": "单", "錄": "录", "種": "种", "關": "关", "閉": "闭", "東": "东", "須": "须", "現": "现", "況": "况", "於": "于", "夠": "够", "靜": "静", "練": "练", "習": "习", "滿": "满", "參": "参", "過": "过", "純": "纯", "斷": "断", "曉": "晓", "眾": "众", "欄": "栏", "訪": "访", "遊": "游", "記": "记", "條": "条", "麼": "么", "腦": "脑", "讓": "让", "幫": "帮", "領": "领", "將": "将", "圍": "围" };
+const T2S: Record<string, string> = { "規": "规", "則": "则", "組": "组", "揮": "挥", "個": "个", "資": "资", "訊": "讯", "篩": "筛", "顯": "显", "稱": "称", "這": "这", "裡": "里", "儲": "储", "紀": "纪", "國": "国", "運": "运", "籌": "筹", "決": "决", "勝": "胜", "開": "开", "與": "与", "圖": "图", "對": "对", "戰": "战", "瀏": "浏", "覽": "览", "訂": "订", "輪": "轮", "數": "数", "擊": "击", "驟": "骤", "計": "计", "時": "时", "暫": "暂", "賽": "赛", "觀": "观", "選": "选", "標": "标", "雙": "双", "約": "约", "負": "负", "兩": "两", "邊": "边", "點": "点", "誤": "误", "陣": "阵", "為": "为", "術": "术", "來": "来", "進": "进", "廳": "厅", "帳": "帐", "號": "号", "電": "电", "郵": "邮", "碼": "码", "請": "请", "註": "注", "冊": "册", "採": "采", "員": "员", "還": "还", "沒": "没", "經": "经", "錯": "错", "敗": "败", "後": "后", "編": "编", "輯": "辑", "複": "复", "製": "制", "換": "换", "尋": "寻", "頁": "页", "刪": "删", "範": "范", "內": "内", "無": "无", "愛": "爱", "間": "间", "連": "连", "結": "结", "線": "线", "當": "当", "隊": "队", "長": "长", "準": "准", "備": "备", "傳": "传", "給": "给", "會": "会", "強": "强", "繼": "继", "續": "续", "獲": "获", "場": "场", "隨": "随", "機": "机", "隱": "隐", "鎖": "锁", "擇": "择", "緒": "绪", "張": "张", "僅": "仅", "誰": "谁", "贏": "赢", "寫": "写", "確": "确", "認": "认", "舊": "旧", "從": "从", "餘": "余", "說": "说", "項": "项", "幾": "几", "總": "总", "預": "预", "設": "设", "許": "许", "產": "产", "執": "执", "統": "统", "動": "动", "調": "调", "順": "顺", "嗎": "吗", "單": "单", "錄": "录", "種": "种", "關": "关", "閉": "闭", "東": "东", "須": "须", "現": "现", "況": "况", "於": "于", "夠": "够", "靜": "静", "練": "练", "習": "习", "滿": "满", "參": "参", "過": "过", "純": "纯", "斷": "断", "曉": "晓", "眾": "众", "欄": "栏", "訪": "访", "遊": "游", "記": "记", "條": "条", "麼": "么", "腦": "脑", "讓": "让", "幫": "帮", "領": "领", "將": "将", "圍": "围" };
 function toSimplified(s: string): string {
   let out = "";
   for (const ch of s) out += T2S[ch] ?? ch;
@@ -31,15 +31,17 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   // home
   "home.kicker": { en: "Age of Empires IV", zh: "世紀帝國 IV", ja: "Age of Empires IV" },
   "home.title": { en: "Ban. Pick. Conquer.", zh: "運籌帷幄，決勝開局", ja: "BAN、PICK、そして勝利へ。" },
-  "home.subtitle": { en: "Tournament drafting for Age of Empires IV.", zh: "世紀帝國 IV · 文明與地圖 Ban/Pick", ja: "Age of Empires IV · 文明とマップの BAN/PICK" },
+  "home.subtitle": { en: "Run a tournament draft in your browser — pick a format, send your opponent the link, and start.", zh: "在瀏覽器裡跑一場完整的 Ban/Pick：挑一個賽制，把連結傳給對手，就能開始。", ja: "ブラウザで大会と同じドラフトを回せます。形式を選び、リンクを相手に送れば始まります。" },
   "home.createDraft": { en: "Start a draft", zh: "開始對戰", ja: "ドラフトを始める" },
   "home.browse": { en: "Browse presets", zh: "瀏覽規則組", ja: "プリセットを見る" },
-  "home.f1t": { en: "Fully Configurable", zh: "完全可自訂", ja: "完全カスタマイズ" },
-  "home.f1d": { en: "Rounds, civ pools, snipe rules, per-step timers, pauses — your format, your rules.", zh: "輪數、文明池、狙擊規則、每步驟計時、暫停——你的賽制由你定。", ja: "ラウンド数、文明プール、スナイプ規則、ステップごとの制限時間、一時停止——大会形式もルールもあなた次第。" },
-  "home.f2t": { en: "Live Spectating", zh: "即時觀戰", ja: "リアルタイム観戦" },
-  "home.f2d": { en: "Watch bans, picks and (optionally) live civ hovers in real time.", zh: "即時觀看禁用、選用，以及（可選）選手游標停留的文明。", ja: "禁止・選択、さらに（任意で）選手のカーソルが乗っている文明までリアルタイムで観戦。" },
-  "home.f3t": { en: "Honor-System Results", zh: "雙方約定勝負", ja: "自己申告の勝敗" },
-  "home.f3d": { en: "Either side marks the winner; the host can revert a misclick.", zh: "兩邊都能點選勝方；房主可修正誤點。", ja: "どちらの側でも勝者を記録でき、ホストは誤クリックを修正できます。" },
+  "home.f1t": { en: "Formats ready to run", zh: "現成的賽制", ja: "すぐ使える形式" },
+  "home.f1d": { en: "The EGC Masters rule sets, qualifier through grand final, and the BCC Bo3 and Bo5 drafts. Every format has its own page and its own link.", zh: "EGC Masters 從資格賽到總決賽的規則，以及 BCC 的 Bo3、Bo5 賽制。每一套賽制都有自己的頁面和連結。", ja: "EGC Masters の予選から決勝までのルールと、BCC の Bo3・Bo5 ドラフト。形式ごとに専用のページとリンクがあります。" },
+  "home.f2t": { en: "Or write your own", zh: "也可以自己寫一套", ja: "自分で組むことも" },
+  "home.f2d": { en: "Map and civ bans, a hand of civs for each player, hidden offers and counter-snipes, per-step timers, pauses, and a both-sides confirm between phases.", zh: "地圖與文明的禁用、每人一手文明池、雙方同時暗選出戰文明再互相狙擊、每步驟計時、暫停，以及中間的雙方確認。", ja: "マップと文明の禁止、プレイヤーごとの文明プール、同時に伏せて出す出場文明とスナイプ、ステップごとの制限時間、一時停止、そして区切りでの両者確認。" },
+  "home.f3t": { en: "Play without an account", zh: "不用帳號也能打", ja: "アカウントなしでも" },
+  "home.f3d": { en: "Open a public format, take a seat, and send the room link to your opponent. Or add the bot and walk a whole format through on your own.", zh: "打開一個公開賽制、坐上位子，把房間連結傳給對手。也可以找機器人陪你把整套賽制走一遍。", ja: "公開されている形式を開いて席につき、部屋のリンクを相手に送るだけ。ひとりで通したいときはボットを入れられます。" },
+  "home.f4t": { en: "A page for the stream", zh: "給直播用的觀戰頁", ja: "配信用のページ" },
+  "home.f4d": { en: "A spectator view with no buttons and no nav — the board, the clock, the map in play, and what each snipe took. Point a stream or a projector at it.", zh: "另一個觀戰頁，沒有操作介面，只有戰況：文明池、計時、本局地圖，以及每次狙擊的結果。可以直接投影或開直播。", ja: "操作 UI もナビゲーションもない観戦ページ。盤面、残り時間、このゲームのマップ、スナイプが何を落としたかだけが出ます。配信やプロジェクターにそのまま流せます。" },
   "home.roster": { en: "The Roster", zh: "文明陣容", ja: "文明一覧" },
   "home.civs": { en: "{n} civilizations", zh: "{n} 個文明", ja: "{n} 文明" },
   "home.footer": { en: "Built for the community · Civ art © Relic/Microsoft, via the Age of Empires Wiki", zh: "為社群打造 · 文明美術 © Relic/Microsoft，來源 Age of Empires Wiki", ja: "コミュニティのために · 文明アート © Relic/Microsoft（出典：Age of Empires Wiki）" },
@@ -185,11 +187,17 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "match.civs": { en: "Civilizations", zh: "文明", ja: "文明" },
   // Pool legend. Four states, and the third one only exists because a ban can be
   // aimed at one player: the civ stays live for whoever banned it.
-  "match.legendAvailable": { en: "Available", zh: "可用", ja: "選択可能" },
+  "match.filter": { en: "Filter", zh: "篩選", ja: "絞り込み" },
+  "match.filterSearch": { en: "Search by name…", zh: "用名稱搜尋…", ja: "名前で検索…" },
+  "match.filterOnly": { en: "Only what you can take", zh: "只顯示能選的", ja: "選べるものだけ" },
+  "match.filterCount": { en: "{n} of {total}", zh: "{n} / {total}", ja: "{n} / {total}" },
+  "match.filterNone": { en: "Nothing matches. Clear the filter to see the pool again.", zh: "沒有符合的。清除篩選就會看到整個池子。", ja: "該当なし。絞り込みを解除すると全体が表示されます。" },
+  "match.filterClear": { en: "Clear", zh: "清除", ja: "解除" },
   "match.legendBanned": { en: "Banned", zh: "已禁用", ja: "禁止済み" },
-  "match.legendBlocked": { en: "Closed to you", zh: "對你封鎖", ja: "あなたには禁止" },
+  "match.legendBlocked": { en: "Banned for you", zh: "對你禁用", ja: "あなたには禁止" },
   "match.legendTaken": { en: "Taken", zh: "已被選走", ja: "取得済み" },
-  "match.blockedHint": { en: "{name} — your opponent banned this against you. They can still take it.", zh: "{name} —— 對手把這張對你封鎖了，他自己還能選", ja: "{name} —— 相手があなたに対して禁止しました。相手はまだ選べます" },
+  "match.pendingBan": { en: "Locked in, not yet revealed", zh: "已鎖定，尚未揭曉", ja: "確定済み・未公開" },
+  "match.blockedHint": { en: "{name} — your opponent banned this against you. They can still take it.", zh: "{name} —— 對手把這張對你禁用了，他自己還能選", ja: "{name} —— 相手があなたに対して禁止しました。相手はまだ選べます" },
   "match.handP1": { en: "Player 1 · civ pool", zh: "玩家 1 · 文明池", ja: "プレイヤー 1 · 文明プール" },
   "match.handP2": { en: "Player 2 · civ pool", zh: "玩家 2 · 文明池", ja: "プレイヤー 2 · 文明プール" },
   "match.mapsP1": { en: "Player 1 · map pool", zh: "玩家 1 · 地圖池", ja: "プレイヤー 1 · マッププール" },
@@ -199,13 +207,16 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "match.scoreboard": { en: "Scoreboard", zh: "計分板", ja: "スコアボード" },
   "match.settings": { en: "Settings for this draft", zh: "本場對戰設定", ja: "この対戦の設定" },
   "match.privacyGuestHint": { en: "Host only, before the draft starts.", zh: "僅房主可改，且限開賽前。", ja: "ホストのみ・開始前まで。" },
+  "match.headStart": { en: "Head start", zh: "讓分", ja: "ハンデ" },
+  "match.headStartHint": { en: "The series opens at this score. For a grand final where one side arrives from the winners' bracket already a game up.", zh: "系列賽從這個比分開始。用在勝者組選手先拿一分的總決賽。", ja: "シリーズをこのスコアから開始します。勝者側が1勝アドバンテージを持つグランドファイナル向けです。" },
+  "match.headStartLevel": { en: "Level start", zh: "不讓分", ja: "ハンデなし" },
   "match.playAll": { en: "Play all {n} games", zh: "打滿 {n} 場", ja: "全 {n} 戦を消化" },
   "match.playAllHint": { en: "Don't stop once it's decided", zh: "分出勝負後不提前結束", ja: "勝敗が決まっても終了しない" },
   "match.drawn": { en: "Drawn series", zh: "平手", ja: "引き分け" },
   "match.anonymous": { en: "Anonymous", zh: "匿名", ja: "匿名" },
   "match.anonymousHint": { en: "Spectators can't see the players' names in this match.", zh: "本場對戰的觀眾看不到雙方的名字。", ja: "この試合では観戦者にプレイヤー名が表示されません。" },
   "match.minimize": { en: "Minimize", zh: "最小化", ja: "最小化" },
-  "match.expand": { en: "Expand", zh: "展開", ja: "展開" },
+  "match.expand": { en: "Show more detail", zh: "展開查看更多訊息", ja: "詳細を表示" },
   "match.civPoolTitle": { en: "Civ pools (P1 · P2)", zh: "文明池（P1 · P2）", ja: "文明プール（P1 · P2）" },
   "match.mapPoolTitle": { en: "Map pools (P1 · P2)", zh: "地圖池（P1 · P2）", ja: "マッププール（P1 · P2）" },
   "match.bannedTitle": { en: "Banned civs (P1 · P2)", zh: "已禁用的文明（P1 · P2）", ja: "禁止された文明（P1 · P2）" },
@@ -242,11 +253,6 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "offer.lockedWait": { en: "Offer locked. Waiting for opponent to reveal…", zh: "出牌已鎖定，等待對手亮牌…", ja: "提示をロックしました。相手の公開を待っています…" },
   "offer.secret": { en: "Both players are secretly offering civs…", zh: "雙方正在秘密出牌…", ja: "両プレイヤーが秘密裏に文明を提示中…" },
   // simultaneous ban phase
-  "simulban.title": { en: "Ban {n} — both players at once", zh: "雙方同時各禁用 {n} 個", ja: "両プレイヤーが同時に {n} つ禁止" },
-  "simulban.hint": { en: "Neither of you can see the other's ban until you have both chosen. Then they show at the same time.", zh: "兩邊都選完之前，誰都看不到對方禁用了什麼，選完才一起公開。", ja: "両方が選び終わるまで、相手が何を禁止したかは見えません。選び終わると同時に公開されます。" },
-  "simulban.yours": { en: "Your bans", zh: "你禁用的", ja: "あなたが禁止した" },
-  "simulban.lockedWait": { en: "Locked in. Waiting for your opponent…", zh: "已鎖定，等待對手…", ja: "確定しました。相手を待っています…" },
-  "simulban.secret": { en: "Both players are secretly banning…", zh: "雙方正在秘密禁用…", ja: "両プレイヤーが秘密裏に禁止中…" },
   // snipe phase
   "snipe.title": { en: "Snipe {n} of the opponent's offer (this game only)", zh: "狙擊對手出牌中的 {n} 張（僅限本局）", ja: "相手の提示から {n} つスナイプ（このゲームのみ）" },
   "snipe.hint": { en: "A sniped civ only misses this game. It comes back and can be used in a later one.", zh: "被狙掉的文明只是這一局不能用，下一局還可以再拿出來。", ja: "スナイプされた文明はこのゲームで使えないだけです。次のゲームではまた出せます。" },
@@ -297,9 +303,6 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "spec.mapsPicked": { en: "MAPS PICKED", zh: "選的地圖", ja: "選んだマップ" },
   "spec.mapsBanned": { en: "MAPS BANNED", zh: "已禁用的地圖", ja: "禁止したマップ" },
   "spec.used": { en: "used", zh: "已用", ja: "使用済" },
-  "spec.legendPool": { en: "Available", zh: "可用", ja: "選択可能" },
-  "spec.legendBanned": { en: "Banned", zh: "已被禁用", ja: "禁止済み" },
-  "spec.legendHeld": { en: "{name} holds", zh: "{name} 持有", ja: "{name} が保持" },
   "spec.turnOf": { en: "{name} · {step}", zh: "{name} · {step}", ja: "{name} · {step}" },
   "spec.bothTurn": { en: "Both players · {step}", zh: "雙方 · {step}", ja: "両者 · {step}" },
   "spec.gameMap": { en: "GAME {n} · {map}", zh: "第 {n} 局 · {map}", ja: "第 {n} ゲーム · {map}" },

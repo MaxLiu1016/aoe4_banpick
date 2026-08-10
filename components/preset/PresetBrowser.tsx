@@ -18,6 +18,9 @@ export function PresetBrowser({ initial }: { initial?: { items: ClientPreset[]; 
   const loggedIn = !!session?.user;
   const isAdmin = Boolean((session?.user as { isAdmin?: boolean } | undefined)?.isAdmin);
 
+  // Public is the landing tab for everybody, signed in or not. It is the shelf
+  // of formats somebody came here to run; "mine" is the shorter, emptier list
+  // and opening on it made a signed-in first-timer land on nothing at all.
   const [scope, setScope] = useState<"mine" | "public">("public");
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
@@ -25,9 +28,6 @@ export function PresetBrowser({ initial }: { initial?: { items: ClientPreset[]; 
   const [items, setItems] = useState<ClientPreset[]>(initial?.items ?? []);
   const [total, setTotal] = useState(initial?.total ?? 0);
   const [loading, setLoading] = useState(false);
-
-  // Default to "mine" once we know the user is logged in.
-  useEffect(() => { if (loggedIn) setScope("mine"); }, [loggedIn]);
 
   // Debounce the search box.
   useEffect(() => {
@@ -53,16 +53,18 @@ export function PresetBrowser({ initial }: { initial?: { items: ClientPreset[]; 
       {/* Controls */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="flex rounded-lg border border-border p-0.5">
+          {/* Public on the left: it is the default, and a tab strip reads from
+              the left, so the one you are on should be the one you start at. */}
+          <button onClick={() => { setScope("public"); setPage(1); }}
+            className={`rounded px-3 py-1.5 text-sm transition ${scope === "public" ? "bg-surface-2 text-gold-bright" : "text-muted hover:text-gold-bright"}`}>
+            {t("presets.tabPublic")}
+          </button>
           {loggedIn && (
             <button onClick={() => { setScope("mine"); setPage(1); }}
               className={`rounded px-3 py-1.5 text-sm transition ${scope === "mine" ? "bg-surface-2 text-gold-bright" : "text-muted hover:text-gold-bright"}`}>
               {t("presets.tabMine")}
             </button>
           )}
-          <button onClick={() => { setScope("public"); setPage(1); }}
-            className={`rounded px-3 py-1.5 text-sm transition ${scope === "public" ? "bg-surface-2 text-gold-bright" : "text-muted hover:text-gold-bright"}`}>
-            {t("presets.tabPublic")}
-          </button>
         </div>
         <input
           value={q}

@@ -34,7 +34,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
       <SiteHeader />
       {/* Room for the bottom of the draft to breathe — and for the panel the page
           scrolls to when your turn comes round to actually reach the top. */}
-      <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 pb-12 pt-6">
+      <main className="mx-auto w-full max-w-[1360px] flex-1 px-4 pb-12 pt-6">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h1 className="font-display text-2xl aoe-gold-text">{room?.name ?? "Ban/Pick Match"}</h1>

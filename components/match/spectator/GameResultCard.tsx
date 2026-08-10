@@ -47,7 +47,7 @@ export function GameResultCard({ payload }: { payload: SpectatorPayload }) {
       className="absolute inset-0"
       style={{
         background:
-          "linear-gradient(105deg, rgba(56,189,248,.16) 0%, var(--background) 42%, var(--background) 58%, rgba(251,113,133,.16) 100%)",
+          "linear-gradient(105deg, rgba(92,201,221,.16) 0%, var(--background) 42%, var(--background) 58%, rgba(196,138,208,.16) 100%)",
       }}
     >
       <div className="absolute left-0 right-0 top-[58px] text-center">

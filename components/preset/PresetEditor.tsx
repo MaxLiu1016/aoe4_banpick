@@ -83,14 +83,14 @@ function fieldsFor(s: Step): StepFields {
 // yellow next to those two reads as the same colour.
 const EDGE_BOTH =
   "border-l-transparent before:absolute before:inset-y-0 before:-left-1 before:w-1 " +
-  "before:bg-gradient-to-b before:from-sky-500/80 before:to-rose-500/80";
+  "before:bg-gradient-to-b before:from-p1/80 before:to-p2/80";
 
 // Left edge = who acts.
 function edgeClass(s: Step): string {
   if (s.type === "GAME_RESULT") return "border-l-amber-500/60";
   if (!fieldsFor(s).actor) return EDGE_BOTH;
-  if (s.actor === "PLAYER1") return "border-l-sky-500/70";
-  if (s.actor === "PLAYER2") return "border-l-rose-500/70";
+  if (s.actor === "PLAYER1") return "border-l-p1/70";
+  if (s.actor === "PLAYER2") return "border-l-p2/70";
   if (s.actor === "LOSER" || s.actor === "WINNER") return "border-l-amber-500/60";
   return "border-l-bronze";
 }
@@ -420,7 +420,7 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
                 ) : f.simultaneous !== false ? (
                   <span
                     title={t("editor.bothHint")}
-                    className="rounded border border-sky-500/40 bg-gradient-to-r from-sky-500/20 to-rose-500/20 px-2 py-1 text-xs whitespace-nowrap text-foreground"
+                    className="rounded border border-p1/40 bg-gradient-to-r from-p1/20 to-p2/20 px-2 py-1 text-xs whitespace-nowrap text-foreground"
                   >
                     {t("editor.both")}
                   </span>
@@ -548,9 +548,9 @@ function StepTimeline({ steps }: { steps: Step[] }) {
             className={`flex shrink-0 flex-col items-center rounded-md border bg-surface-2/60 px-2 py-1 text-[10px] leading-tight transition hover:brightness-125 ${
               s.type === "GAME_RESULT" ? "border-amber-500/70" :
               // Same "both players" split as the step rows, so the two views agree.
-              !fieldsFor(s).actor ? "border-transparent bg-gradient-to-r from-sky-500/25 to-rose-500/25" :
-              s.actor === "PLAYER1" ? "border-sky-500/60" :
-              s.actor === "PLAYER2" ? "border-rose-500/60" :
+              !fieldsFor(s).actor ? "border-transparent bg-gradient-to-r from-p1/25 to-p2/25" :
+              s.actor === "PLAYER1" ? "border-p1/60" :
+              s.actor === "PLAYER2" ? "border-p2/60" :
               s.actor === "LOSER" || s.actor === "WINNER" ? "border-amber-500/50" : "border-bronze"
             }`}
           >

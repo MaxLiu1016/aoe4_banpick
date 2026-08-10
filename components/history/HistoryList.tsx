@@ -138,9 +138,9 @@ export function HistoryList({ loggedIn, presetId }: { loggedIn: boolean; presetI
                   {m.anonymous && <span className="ml-2 text-xs text-muted">🕶</span>}
                 </div>
                 <div className="truncate text-xs text-muted">
-                  <span className="text-sky-400">{p1}</span>
+                  <span className="text-p1">{p1}</span>
                   <span className="mx-1.5">vs</span>
-                  <span className="text-rose-400">{p2}</span>
+                  <span className="text-p2">{p2}</span>
                   {m.bestOf ? <span className="ml-2">· Bo{m.bestOf}</span> : null}
                   {m.role && <span className="ml-2">· {t(`history.role.${m.role}`)}</span>}
                 </div>
