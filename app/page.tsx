@@ -30,14 +30,16 @@ export default function Home() {
           </div>
         </section>
 
-        {/* What the site does. The copy was written and translated long ago and
-            then never put on a page — so the landing page said nothing about the
-            product, to a reader or to a crawler. */}
-        <section className="mt-20 grid gap-6 sm:grid-cols-3">
+        {/* What the site does. Four cards rather than three because the product
+            grew two things the old copy had no room for — the formats that ship
+            ready to run, and the broadcast page — and neither belongs folded into
+            a sentence about something else. Two by two, so none of them is thin. */}
+        <section className="mt-20 grid gap-6 sm:grid-cols-2">
           {[
             { t: "home.f1t", d: "home.f1d" },
             { t: "home.f2t", d: "home.f2d" },
             { t: "home.f3t", d: "home.f3d" },
+            { t: "home.f4t", d: "home.f4d" },
           ].map((f) => (
             <div key={f.t} className="aoe-panel rounded-xl p-6">
               <h2 className="font-display text-lg aoe-gold-text">{t(f.t)}</h2>
