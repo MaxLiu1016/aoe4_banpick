@@ -2184,20 +2184,6 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
           a control that changes what you are looking at belongs before the thing
           it changes. */}
       <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
-        {/* Somebody trying a format out for the first time hits random over and
-            over just to watch the turns go by — that is the use SAS described,
-            and it is also the fastest way for anyone to see what a preset does.
-            A real move with real consequences, so it is a plain labelled button
-            and not something a stray keystroke can trigger. */}
-        {legal.length > 0 && (
-          <button
-            onClick={() => onPick(legal[Math.floor(Math.random() * legal.length)].id)}
-            title={t("match.randomHint")}
-            className="rounded border border-bronze px-2 py-1 text-gold-bright transition hover:brightness-125"
-          >
-            🎲 {t("match.random")}
-          </button>
-        )}
         {/* Right-click is invisible until somebody tells you, so this line is
             the feature's only discovery surface. It doubles as the way out once
             the pool is covered in marks. */}
@@ -2255,7 +2241,20 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
           hand the spare height to the auto-sized rows and pull the tiles apart —
           the panel would keep its shape by changing the thing inside it. */}
       <div className="grid gap-2"
-        style={isMap ? gridMap(entries.length) : { ...GRID_CIV, minHeight: CIV_POOL_FLOOR, alignContent: "start" }}>
+        style={isMap
+          // Counted in, or the map row it is joining wraps: gridMap sizes the
+          // columns from how many things have to fit on one line.
+          ? gridMap(entries.length + (legal.length > 0 ? 1 : 0))
+          : { ...GRID_CIV, minHeight: CIV_POOL_FLOOR, alignContent: "start" }}>
+        {/* First, and in the grid with everything else, because what it returns
+            is one of these tiles — it is the cell that stands for "any of them".
+            As a button in the toolbar it read as a setting rather than a move.
+            It survives the filter on purpose: filtering is about finding one
+            thing, and this is the choice not to. */}
+        {legal.length > 0 && (
+          <RandomTile isMap={isMap} tone={tone}
+            onPick={() => onPick(legal[Math.floor(Math.random() * legal.length)].id)} t={t} />
+        )}
         {shown.map((e) => (
           <PoolTile
             key={e.id}
@@ -2279,6 +2278,47 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
       </div>
 
     </section>
+  );
+}
+
+/**
+ * Let the draft decide.
+ *
+ * Built as a tile because it stands in for one: the same 16:10 frame and frosted
+ * name plate the pool wears, with a question mark where the flag would be. The
+ * border is dashed for the reason every dashed edge on this board is — nothing
+ * has landed there yet.
+ *
+ * It draws from `legal`, the same predicate the tiles use, so it can never cast
+ * a move a tile would have refused. And it is a real move with real consequences,
+ * which is why it takes a deliberate click on a labelled thing rather than a key.
+ */
+function RandomTile({ isMap, tone, onPick, t }: {
+  isMap: boolean; tone: "ban" | "pick" | "neutral"; onPick: () => void; t: TFn;
+}) {
+  return (
+    <button
+      onClick={onPick}
+      title={t("match.randomHint")}
+      className={`relative flex w-full cursor-pointer flex-col items-center overflow-hidden rounded-lg border-2 border-dashed bg-surface-2 transition ${
+        tone === "ban"
+          ? "border-danger/50 text-danger hover:border-danger hover:bg-danger/10"
+          : "border-gold/50 text-gold-bright hover:border-gold hover:bg-gold/10"
+      }`}
+    >
+      {/* Nudged up by the height of the plate that covers the bottom of the
+          frame, so the mark reads as centred in the tile rather than in the
+          rectangle before the name was laid over it. */}
+      <span className={`flex w-full items-center justify-center pb-4 font-display leading-none ${
+        isMap ? "aspect-[16/10] text-[40px]" : "aspect-[16/10] text-[32px]"
+      }`}>
+        ?
+      </span>
+      <span className="absolute inset-x-0 bottom-0 truncate px-2 py-1 text-center text-sm font-semibold leading-tight"
+        style={GLASS}>
+        {t("match.random")}
+      </span>
+    </button>
   );
 }
 
@@ -2433,11 +2473,11 @@ function PoolTile({ e, isMap, can, tone, isSelectStep, selectable, isPending, bl
       )}
       {/* Same glyph as a ban, deliberately: both are "you can't have this". Both
           get the line too, because a player pointed out that from where he sits
-          the consequence is identical — but his is dashed, and his tile keeps
-          its colour, because the civ is still live for the opponent who cast it. */}
+          the consequence is identical — but his is short, and his tile keeps its
+          colour, because the civ is still live for the opponent who cast it. */}
       {isBlocked && (
         <>
-          <StrikeBar dashed animate={stamp > 0} />
+          <StrikeBar short animate={stamp > 0} />
           <TileBadge mark="ban" label={t("match.legendBlocked")} className="text-danger" />
         </>
       )}

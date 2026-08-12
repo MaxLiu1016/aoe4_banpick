@@ -73,21 +73,23 @@ export function TileBadge({ mark, size = 24, corner = "tr", className = "", styl
  * board strip wears, and what an empty ban slot draws to say a ban belongs
  * there. The pool was the one place spelling it ✕ instead.
  */
-export function StrikeBar({ animate, dashed }: { animate?: boolean; dashed?: boolean }) {
+export function StrikeBar({ animate, short }: { animate?: boolean; short?: boolean }) {
   return (
     <span
       aria-hidden
-      className={`pointer-events-none absolute inset-x-0 top-1/2 z-10 h-[3px] -translate-y-1/2 ${animate ? "strike-draw" : ""}`}
-      style={{
-        // Dashed for a ban that only closed this civ to YOU. The line is the
-        // word "no", which is what a player asked to see and is true either way;
-        // the breaks in it are what keeps "gone from the draft" and "gone for
-        // you, and your opponent may still field it" from becoming one thing.
-        background: dashed
-          ? "repeating-linear-gradient(to right, var(--danger) 0 9px, transparent 9px 16px)"
-          : "var(--danger)",
-        boxShadow: dashed ? undefined : "0 0 6px rgba(0,0,0,.6)",
-      }}
+      // Length, not texture, is what separates the two bans. A full-width line
+      // means gone from the draft; a short centred one means closed to you, and
+      // your opponent may still field it. Both are solid, because a dashed line
+      // reads as a weaker "no" rather than a narrower one — and from where the
+      // player sits the refusal is equally final either way.
+      //
+      // Centred with left/right insets rather than -translate-x-1/2: `strike-draw`
+      // animates `transform`, so a translate utility would be overwritten the
+      // moment the line is drawn and the bar would slide off centre.
+      className={`pointer-events-none absolute top-1/2 z-10 h-[3px] -translate-y-1/2 ${
+        short ? "left-[32%] right-[32%]" : "inset-x-0"
+      } ${animate ? "strike-draw" : ""}`}
+      style={{ background: "var(--danger)", boxShadow: "0 0 6px rgba(0,0,0,.6)" }}
     />
   );
 }

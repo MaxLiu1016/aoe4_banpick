@@ -483,12 +483,12 @@ function PoolCell({ entry, isMap, out, closed, leaving }: {
       <MapName name={entry.name} dim={out} size={isMap ? 15 : 13} tone={owner ? OWNER[owner] : undefined} />
       {owner && <TileBadge mark="check" size={24} label={entry.name} style={{ color: OWNER[owner] }} />}
       {/* Closed to one side only: the same glyph a full ban wears, deliberately,
-          because both are "you can't have this". The difference is the line —
-          struck means it is out of the draft, unstruck means the other player
-          can still field it. */}
+          because both are "you can't have this". The difference is the length of
+          the line — right across means out of the draft, a short centred one
+          means out for that player while the other can still field it. */}
       {!out && closed && (
         <>
-          <StrikeBar dashed />
+          <StrikeBar short />
           <TileBadge mark="ban" size={24} label={entry.name} className="text-danger" />
         </>
       )}
