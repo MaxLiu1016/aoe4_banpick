@@ -7,6 +7,7 @@ import { GUEST_ACCESS } from "@/lib/features";
 import { getGuestToken, guestName, setGuestName } from "@/lib/guest";
 import { Thumb } from "@/components/Thumb";
 import { useChangeStamp } from "./useChangeStamp";
+import { useCivMarks } from "@/lib/useCivMarks";
 import { StrikeBar, TileBadge } from "./TileMark";
 import { getSocket } from "@/lib/socket/client";
 import { C2S, S2C } from "@/lib/socket/events";
@@ -127,6 +128,8 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const [payload, setPayload] = useState<Payload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [oppHover, setOppHover] = useState<string | null>(null);
+  // Your own marks on the pool — local to this browser, never sent anywhere.
+  const marks = useCivMarks(matchId);
   // What YOU are hovering. It already went out over the wire for the opponent's
   // benefit; keeping it here is what lets the slot it would land in show it.
   const [myHover, setMyHover] = useState<string | null>(null);
@@ -496,6 +499,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
       {(showMaps) && (
         <Pool title={t("match.maps")} entries={mapsView} clickable={clickable} onPick={act} kind="map"
           pendingIds={simulBan ? myPendingBans : undefined}
+          marked={marks.marked} onMark={marks.toggle} onClearMarks={marks.clear}
           oppHover={oppHover} onHover={(id) => { setMyHover(id); sendHover("map", id); }}
           tone={step?.type === "MAP_BAN" ? "ban" : step?.type === "MAP_PICK" ? "pick" : "neutral"}
           highlightSelectable={step?.type === "MAP_SELECT" ? state.selectableMapIds : undefined} />
@@ -504,6 +508,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         <Pool title={t("match.civs")} entries={civsView} clickable={clickable} onPick={act}
           pendingIds={simulBan ? myPendingBans : undefined}
           blockedIds={blockedForMe}
+          marked={marks.marked} onMark={marks.toggle} onClearMarks={marks.clear}
           oppHover={oppHover} onHover={(id) => { setMyHover(id); sendHover("civ", id); }}
           tone={step?.type === "CIV_BAN" ? "ban" : "pick"} />
       )}
@@ -898,6 +903,7 @@ function GameCell({ game, current, map, names, compact, civById, preview, t }: {
       <div style={{ width: w, height: h }}
         className="relative flex items-center justify-center overflow-hidden rounded-md border border-dashed border-bronze/60 font-display text-base text-bronze"
         title={preview?.name ?? t("match.gameN", { n: game.gameIndex + 1 })}>
+        <GameTag n={game.gameIndex + 1} compact={compact} t={t} />
         {preview ? (
           <>
             <Thumb src={preview.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40" />
@@ -914,6 +920,7 @@ function GameCell({ game, current, map, names, compact, civById, preview, t }: {
         won ? tone!.border : current ? "border-gold ovl-glow" : "border-border"
       }`} style={{ width: w, height: h, opacity: won ? 0.75 : 1 }}>
         <Thumb src={map?.imageUrl} alt={map?.name ?? ""} className="h-full w-full object-cover" />
+        <GameTag n={game.gameIndex + 1} compact={compact} t={t} />
         <MapLabel name={map?.name} size={compact ? 11 : 12} dim={Boolean(won)} />
       </div>
       {/* What was fielded, either side of the caption. Left is P1 and right is P2
@@ -926,10 +933,12 @@ function GameCell({ game, current, map, names, compact, civById, preview, t }: {
         <span className={`min-w-0 flex-1 truncate text-center font-semibold leading-tight ${compact ? "text-[12px]" : "text-[14px]"} ${
           won ? tone!.text : current ? "text-gold-bright" : "text-muted"
         }`}>
-          {/* No crown here. One per game, plus one for the series, put four or
-              five of them on a board that has exactly one winner — and the
-              colour of this line already says who took the game. */}
-          G{game.gameIndex + 1}{won ? ` · ${names[won]}` : ""}
+          {/* Which game it is moved onto the picture, so this line is free to be
+              the result and nothing else — "G3 · Bella" spent half its width
+              saying something the tag above already said.
+              No crown: one per game plus one for the series put five of them on
+              a board with exactly one winner, and the colour says who took it. */}
+          {won ? names[won] : "—"}
         </span>
         <GameCiv civ={civById(game.civP2)} small={compact} lost={won === "player1"} />
       </div>
@@ -940,6 +949,25 @@ function GameCell({ game, current, map, names, compact, civById, preview, t }: {
 
 function TileRow({ align, children }: { align: "left" | "right"; children: React.ReactNode }) {
   return <div className={`flex flex-wrap gap-1.5 ${align === "right" ? "justify-end" : "justify-start"}`}>{children}</div>;
+}
+
+/**
+ * Which game this is, laid across the top of its own map.
+ *
+ * SAS asked for "GAME 1" rather than "G1", to make it easier to catch. On the
+ * picture rather than in the caption because this row is the tightest thing on
+ * the board — over the artwork it costs nothing, and the map's own name plate
+ * already holds the bottom edge.
+ */
+function GameTag({ n, compact, t }: { n: number; compact: boolean; t: TFn }) {
+  return (
+    <span
+      className="pointer-events-none absolute left-[2px] right-[2px] top-[2px] truncate rounded-t px-1 text-center font-sans font-bold uppercase tracking-[.14em] text-gold-bright"
+      style={{ ...GLASS, fontSize: compact ? 9 : 11, lineHeight: compact ? "15px" : "18px" }}
+    >
+      {t("match.gameN", { n })}
+    </span>
+  );
 }
 
 /**
@@ -2098,11 +2126,15 @@ function ConfirmSeat({ name, confirmed, tone }: { name: string; confirmed: boole
   );
 }
 
-function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightSelectable, pendingIds, blockedIds, kind = "civ", tone = "neutral" }: {
+function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightSelectable, pendingIds, blockedIds, marked, onMark, onClearMarks, kind = "civ", tone = "neutral" }: {
   title: string; entries: PoolView[]; clickable: (e: PoolView) => boolean; onPick: (id: string) => void;
   onHover: (id: string | null) => void; oppHover: string | null; highlightSelectable?: string[]; kind?: "civ" | "map";
   /** Your own not-yet-revealed simultaneous bans — shown only to you. */
   pendingIds?: string[];
+  /** Entries you have marked for yourself. Local; nobody else ever sees these. */
+  marked?: Set<string>;
+  onMark?: (id: string) => void;
+  onClearMarks?: () => void;
   /** Entries the opponent banned against you alone: dead to you, still theirs to take. */
   blockedIds?: string[];
   tone?: "ban" | "pick" | "neutral";
@@ -2147,6 +2179,22 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
           a control that changes what you are looking at belongs before the thing
           it changes. */}
       <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
+        {/* Right-click is invisible until somebody tells you, so this line is
+            the feature's only discovery surface. It doubles as the way out once
+            the pool is covered in marks. */}
+        {onMark && (
+          <span className="text-muted">
+            {t("match.markHint")}
+            {marked && marked.size > 0 && (
+              <>
+                {" · "}
+                <button onClick={onClearMarks} className="underline hover:text-gold-bright">
+                  {t("match.markClear")} ({marked.size})
+                </button>
+              </>
+            )}
+          </span>
+        )}
         <button
           onClick={() => { if (openFilter) clear(); setOpenFilter(!openFilter); }}
           className={`rounded border px-2 py-1 transition ${
@@ -2202,6 +2250,8 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
             isPending={pending.has(e.id)}
             blocked={blocked.has(e.id)}
             oppHovered={oppHover === e.id}
+            marked={Boolean(marked?.has(e.id))}
+            onMark={onMark}
             onPick={onPick}
             onHover={onHover}
             t={t}
@@ -2239,10 +2289,14 @@ function FilterChip({ on, onClick, label }: { on: boolean; onClick: () => void; 
  * The stamp is what keeps that honest. Animations play on change, never on mount,
  * so opening a draft that is already half-banned does not replay every ban at once.
  */
-function PoolTile({ e, isMap, can, tone, isSelectStep, selectable, isPending, blocked, oppHovered, onPick, onHover, t }: {
+function PoolTile({ e, isMap, can, tone, isSelectStep, selectable, isPending, blocked, oppHovered, marked, onMark, onPick, onHover, t }: {
   e: PoolView; isMap: boolean; can: boolean; tone: "ban" | "pick" | "neutral";
   isSelectStep: boolean; selectable: boolean; isPending: boolean; blocked: boolean;
-  oppHovered: boolean; onPick: (id: string) => void; onHover: (id: string | null) => void; t: TFn;
+  oppHovered: boolean;
+  /** Marked by this viewer, for this viewer. */
+  marked: boolean;
+  onMark?: (id: string) => void;
+  onPick: (id: string) => void; onHover: (id: string | null) => void; t: TFn;
 }) {
   const banned = e.state === "banned";
   const taken = e.state === "picked" || e.state === "drafted";
@@ -2267,6 +2321,10 @@ function PoolTile({ e, isMap, can, tone, isSelectStep, selectable, isPending, bl
       onClick={() => can && onPick(e.id)}
       onMouseEnter={() => onHover(e.id)}
       onMouseLeave={() => onHover(null)}
+      // Right-click marks. Left-click is the draft action and cannot be shared:
+      // a modifier would be worse, because the cost of getting it wrong is a
+      // ban you did not mean to cast.
+      onContextMenu={onMark ? (ev) => { ev.preventDefault(); onMark(e.id); } : undefined}
       className={[
         "relative flex w-full flex-col items-center overflow-hidden rounded-lg border-2 transition",
         fresh ? (struck ? "tile-strike" : "tile-take") : "",
@@ -2318,7 +2376,13 @@ function PoolTile({ e, isMap, can, tone, isSelectStep, selectable, isPending, bl
           being the thing you recognise it by. Maps are photographs and crop
           fine. Both are 16:10 now — a square civ cell spent a third of its
           height on the background either side of a flag. */}
-      <Thumb src={e.imageUrl} alt={e.name} className={`w-full aspect-[16/10] ${isMap ? "object-cover" : "object-contain"} ${banned ? "opacity-35 grayscale" : ""}`} />
+      {/* The fade for a mark goes on the artwork, never on the button — the
+          button is the parent of every badge, and dimming it would take the
+          mark down with the thing it is marking. Same trap the ✕ fell into. */}
+      <Thumb src={e.imageUrl} alt={e.name}
+        className={`w-full aspect-[16/10] ${isMap ? "object-cover" : "object-contain"} ${
+          banned ? "opacity-35 grayscale" : marked ? "opacity-40 saturate-50" : ""
+        }`} />
       {/* The name rides on the picture, behind frosted glass, for civs the same
           as for maps: under it, the caption was a row of height the picture
           could have had, times twenty-three. The colour still carries the
@@ -2358,6 +2422,12 @@ function PoolTile({ e, isMap, can, tone, isSelectStep, selectable, isPending, bl
       )}
       {isPending && (
         <TileBadge mark="lock" corner="tl" label={t("match.pendingBan")} className="text-gold-bright" />
+      )}
+      {/* Top LEFT, which is this board's corner for "a note of your own" — the
+          same corner the padlock uses. Muted rather than coloured, because every
+          colour on this tile already means something the rules decided. */}
+      {marked && !isPending && (
+        <TileBadge mark="check" size={20} corner="tl" label={t("match.marked")} className="text-muted" />
       )}
     </button>
     </div>
