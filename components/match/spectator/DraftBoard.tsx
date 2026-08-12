@@ -8,6 +8,8 @@ import { CivDuelPanel, LockRow } from "./CivDuel";
 import { useChangeStamp } from "../useChangeStamp";
 import { StrikeBar, TileBadge } from "../TileMark";
 import { OWNER, OWNER_RGB, other, seatNames, type Seat, type SpectatorPayload } from "./types";
+import { stepLabel } from "@/lib/draft/stepLabel";
+import type { Step } from "@/lib/draft/schema";
 
 /** Steps either side of the current one to keep on screen. */
 const STEP_WINDOW = 3;
@@ -331,7 +333,7 @@ export function DraftBoard({
                 className="max-w-[220px] truncate font-sans text-[15px] leading-none"
                 style={{ color: now ? "var(--gold-bright)" : done ? "var(--muted)" : "var(--foreground)", fontWeight: now ? 600 : 400 }}
               >
-                {s.label}
+                {stepLabel(t, { type: s.type as Step["type"], actor: s.stepActor, simultaneous: s.simultaneous })}
               </span>
             </div>
           );

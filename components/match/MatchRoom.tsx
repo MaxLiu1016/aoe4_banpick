@@ -7,14 +7,16 @@ import { GUEST_ACCESS } from "@/lib/features";
 import { getGuestToken, guestName, setGuestName } from "@/lib/guest";
 import { Thumb } from "@/components/Thumb";
 import { useChangeStamp } from "./useChangeStamp";
+import { stepLabel } from "@/lib/draft/stepLabel";
 import { useCivMarks } from "@/lib/useCivMarks";
 import { StrikeBar, TileBadge } from "./TileMark";
 import { getSocket } from "@/lib/socket/client";
 import { C2S, S2C } from "@/lib/socket/events";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, localName } from "@/lib/i18n";
 import { CIVS } from "@/data/civs";
 import { DEFAULT_MAPS } from "@/data/maps";
 import type { DerivedState, PoolView, SeatRole, CivDuel, GameRec } from "@/lib/draft/engine";
+import type { Step } from "@/lib/draft/schema";
 
 // Resolve images from the CURRENT data by id, so even matches created before an
 // asset update (frozen snapshot) still show up-to-date thumbnails.
@@ -345,9 +347,16 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
     return false;
   }
 
-  // Entries enriched with current images (decoupled from the frozen snapshot).
-  const civsView: PoolView[] = state.civs.map((c) => ({ ...c, imageUrl: CIV_IMG.get(c.id) ?? c.imageUrl }));
-  const mapsView: PoolView[] = state.maps.map((m) => ({ ...m, imageUrl: MAP_IMG.get(m.id) ?? m.imageUrl }));
+  // Entries enriched with current images AND the reader's language, both keyed
+  // by id and both decoupled from the frozen snapshot. Doing it here, once, is
+  // what keeps every name downstream translated — the whole room reads its civs
+  // off these two arrays, so there is no second place to remember.
+  const civsView: PoolView[] = state.civs.map((c) => ({
+    ...c, imageUrl: CIV_IMG.get(c.id) ?? c.imageUrl, name: localName(t, "civ", c.id, c.name),
+  }));
+  const mapsView: PoolView[] = state.maps.map((m) => ({
+    ...m, imageUrl: MAP_IMG.get(m.id) ?? m.imageUrl, name: localName(t, "map", m.id, m.name),
+  }));
 
   const currentMap = state.games[state.currentGameIndex]?.map;
   const currentMapName = mapsView.find((m) => m.id === currentMap)?.name;
@@ -457,7 +466,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
             )}
             <div className={currentMap ? "min-w-0 text-left" : "text-center"}>
               <p className="font-display text-lg aoe-gold-text">
-                {step.type === "GAME_RESULT" ? t("match.gameN", { n: state.currentGameIndex + 1 }) : (step.label || step.type)}
+                {step.type === "GAME_RESULT" ? t("match.gameN", { n: state.currentGameIndex + 1 }) : stepLabel(t, step)}
               </p>
               {/* Whose move and how long is left, on the thing they are about. */}
               {!inGame && (
@@ -1667,6 +1676,7 @@ function StepBar({ steps, currentIndex, finished }: {
   currentIndex: number;
   finished: boolean;
 }) {
+  const { t } = useI18n();
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const bar = ref.current;
@@ -1696,12 +1706,18 @@ function StepBar({ steps, currentIndex, finished }: {
         const current = !finished && i === currentIndex;
         const own = ownerOf(s.actor ?? undefined);
         const newGame = i > 0 && s.gameIndex !== steps[i - 1].gameIndex;
+        // Named from what the step declares, not from the seat the engine
+        // resolved it to: before the game a LOSER step depends on has been
+        // played there is no loser yet, and the bar shows every step from the
+        // start. The colour still comes from the resolved actor, which is what
+        // that stripe has always meant.
+        const label = stepLabel(t, { type: s.type as Step["type"], actor: s.stepActor, simultaneous: s.simultaneous });
         return (
           <div key={i} className="flex shrink-0 items-center gap-2">
             {newGame && <span className="mx-1 h-8 w-px bg-border" aria-hidden />}
             <div
               data-current={current ? "1" : undefined}
-              title={s.label}
+              title={label}
               className={[
                 // Same shape as a step row in the preset editor: rounded card with
                 // a thick left edge in the acting player's colour.
@@ -1716,7 +1732,7 @@ function StepBar({ steps, currentIndex, finished }: {
                 {done && !current ? "✓" : i + 1}
               </span>
               <span className={`text-sm leading-tight ${current ? "font-semibold text-gold-bright" : done ? "text-muted" : "text-foreground"}`}>
-                {s.label}
+                {label}
               </span>
             </div>
           </div>

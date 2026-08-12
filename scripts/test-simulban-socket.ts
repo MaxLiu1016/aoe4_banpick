@@ -44,7 +44,7 @@ async function main() {
   const config = buildDefaultConfig(3);
   // Replace the two sequential map bans with ONE simultaneous 2-per-player step.
   config.steps = [
-    { ...config.steps[0], simultaneous: true, count: 2, label: "Both: ban 2 maps" },
+    { ...config.steps[0], simultaneous: true, count: 2, },
     ...config.steps.slice(2),
   ];
 

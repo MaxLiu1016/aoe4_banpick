@@ -11,7 +11,7 @@ const config = buildDefaultConfig(3);
 // Turn the two leading one-at-a-time map bans into ONE simultaneous step where
 // each player bans 2 maps at the same time.
 config.steps = [
-  { ...config.steps[0], simultaneous: true, count: 2, label: "Both: ban 2 maps" },
+  { ...config.steps[0], simultaneous: true, count: 2, },
   ...config.steps.slice(2),
 ];
 

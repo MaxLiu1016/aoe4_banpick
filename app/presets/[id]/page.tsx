@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Thumb } from "@/components/Thumb";
 import { StartMatchButton } from "@/components/match/StartMatchButton";
+import { StepName } from "@/components/preset/StepName";
+import { EntryName } from "@/components/EntryName";
 import { T } from "@/lib/i18n";
 import { getPublicPreset, presetSummary } from "@/lib/preset/publicPreset";
 import { gameIndexOfSteps } from "@/lib/draft/engine";
@@ -74,7 +76,7 @@ export default async function PresetPage({ params }: { params: Promise<{ id: str
             {c.steps.map((s, i) => (
               <li key={s.id} className="flex items-baseline gap-3 rounded border border-border/60 px-3 py-2 text-sm">
                 <span className="w-6 shrink-0 text-right font-display text-muted">{i + 1}</span>
-                <span className="flex-1 text-foreground">{s.label || s.type}</span>
+                <span className="flex-1 text-foreground"><StepName step={s} /></span>
                 <span className="shrink-0 text-xs text-muted">
                   {games > 1 && <> <T k="match.gameN" vars={{ n: gameOf[i] + 1 }} /> · </>}
                   {s.count > 1 ? `×${s.count} · ` : ""}
@@ -93,7 +95,7 @@ export default async function PresetPage({ params }: { params: Promise<{ id: str
             {c.civs.map((civ) => (
               <li key={civ.id} className="aoe-panel rounded-lg p-2 text-center">
                 <Thumb src={civ.imageUrl} alt={civ.name} className="mx-auto aspect-square w-full object-contain" />
-                <span className="mt-1 block truncate text-xs text-foreground">{civ.name}</span>
+                <span className="mt-1 block truncate text-xs text-foreground"><EntryName kind="civ" id={civ.id} name={civ.name} /></span>
               </li>
             ))}
           </ul>

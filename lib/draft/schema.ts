@@ -63,7 +63,11 @@ export const StepSchema = z.object({
   simultaneous: z.boolean().optional(),
   // Whether this step may be paused.
   pausable: z.boolean().default(true),
-  label: z.string().max(120).optional(),
+  // No `label`. A step's name is derived from its type, actor and simultaneity
+  // (see lib/draft/stepLabel.ts) rather than stored, because a stored one cannot
+  // be translated after the fact and drifts from the step it names. Zod strips
+  // unknown keys, so presets saved before this still parse — their labels are
+  // simply ignored, which is the intent.
 });
 export type Step = z.infer<typeof StepSchema>;
 

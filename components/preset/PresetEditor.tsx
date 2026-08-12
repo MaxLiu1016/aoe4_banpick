@@ -9,10 +9,10 @@ import type { PresetConfig, Step, StepType, Actor, Pool, PoolEntry } from "@/lib
 import { buildDefaultConfig } from "@/lib/draft/defaultPreset";
 import { gameIndexOfSteps } from "@/lib/draft/engine";
 import { validatePreset } from "@/lib/draft/validate";
-import { defaultStepLabel } from "@/lib/draft/stepLabel";
+import { stepLabel } from "@/lib/draft/stepLabel";
 import { ClonePresetButton } from "@/components/preset/ClonePresetButton";
 import { NumberInput } from "@/components/NumberInput";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, localName } from "@/lib/i18n";
 import { CIVS } from "@/data/civs";
 import { DEFAULT_MAPS } from "@/data/maps";
 
@@ -107,7 +107,7 @@ function newStep(): Step {
     banScope: "opponent" as const,
     pausable: false,
   };
-  return { id: crypto.randomUUID(), ...base, label: defaultStepLabel(base) };
+  return { id: crypto.randomUUID(), ...base };
 }
 
 export function PresetEditor({ initial }: { initial: ClientPreset }) {
@@ -180,8 +180,6 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
         // else by.
         delete merged.simultaneous;
       }
-      const wasAuto = !old.label || old.label === defaultStepLabel(old);
-      if (wasAuto) merged.label = defaultStepLabel(merged);
       steps[idx] = merged;
       return { ...c, steps };
     });
@@ -339,12 +337,12 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
                 className={`flex flex-col items-center rounded-lg border p-2 transition ${
                   on ? "border-gold bg-surface-2" : "border-border opacity-40 hover:opacity-80"
                 }`}
-                title={c.name}
+                title={localName(t, "civ", c.id, c.name)}
               >
                 {c.imageUrl && (
                   <Thumb src={c.imageUrl} alt={c.name} className="h-9 w-9 object-contain" />
                 )}
-                <span className="mt-1 text-[10px] leading-tight text-muted">{c.name}</span>
+                <span className="mt-1 text-[10px] leading-tight text-muted">{localName(t, "civ", c.id, c.name)}</span>
               </button>
             );
           })}
@@ -497,12 +495,6 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
                     {t("editor.pausableShort")}
                   </label>
                 )}
-                <input
-                  value={s.label ?? ""}
-                  onChange={(e) => updateStep(i, { label: e.target.value })}
-                  placeholder={defaultStepLabel(s)}
-                  className="min-w-40 flex-1 rounded border border-border bg-surface px-2 py-1 text-foreground"
-                />
               </div>
             </li>
             );
@@ -535,6 +527,7 @@ function actorShortOf(s: Step): string {
 // A horizontal node timeline of the steps: each node briefly shows what it does
 // and which game it's in; clicking one scrolls that step into view.
 function StepTimeline({ steps }: { steps: Step[] }) {
+  const { t } = useI18n();
   const gameOf = gameIndexOfSteps(steps);
   return (
     <div className="mb-3 flex items-center gap-1 overflow-x-auto pb-2">
@@ -544,7 +537,7 @@ function StepTimeline({ steps }: { steps: Step[] }) {
           <button
             type="button"
             onClick={() => document.getElementById(`step-node-${i}`)?.scrollIntoView({ behavior: "smooth", block: "center" })}
-            title={`#${i + 1} · ${defaultStepLabel(s)}`}
+            title={`#${i + 1} · ${stepLabel(t, s)}`}
             className={`flex shrink-0 flex-col items-center rounded-md border bg-surface-2/60 px-2 py-1 text-[10px] leading-tight transition hover:brightness-125 ${
               s.type === "GAME_RESULT" ? "border-amber-500/70" :
               // Same "both players" split as the step rows, so the two views agree.

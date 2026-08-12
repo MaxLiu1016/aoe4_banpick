@@ -3,7 +3,6 @@ import { dbConnect } from "./mongoose";
 import { User } from "./models/User";
 import { Preset } from "./models/Preset";
 import { DEMO_PRESETS } from "../data/demoPresets";
-import { withEnglishStepLabels } from "./draft/stepLabel";
 
 // Admin credentials come from env vars. There is deliberately NO fallback password:
 // this seed force-resets the admin's password on every boot, so a default here would
@@ -73,7 +72,7 @@ export async function seedInitialData(): Promise<void> {
         ownerId: admin._id,
         name: d.name,
         description: d.description,
-        config: withEnglishStepLabels(d.config),
+        config: d.config,
         isPublic: true,
         isDemo: true,
         demoKey: d.key,
@@ -87,7 +86,7 @@ export async function seedInitialData(): Promise<void> {
     if (d.version > stored) {
       doc.name = d.name;
       doc.description = d.description;
-      doc.config = withEnglishStepLabels(d.config);
+      doc.config = d.config;
       doc.demoVersion = d.version;
       doc.markModified("config"); // Mixed field — mongoose can't see into it
       await doc.save();

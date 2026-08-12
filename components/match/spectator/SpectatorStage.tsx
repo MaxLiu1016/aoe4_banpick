@@ -6,13 +6,48 @@ import { deriveState, type EngineAction } from "@/lib/draft/engine";
 import type { PresetConfig } from "@/lib/draft/schema";
 import { getSocket } from "@/lib/socket/client";
 import { C2S, S2C } from "@/lib/socket/events";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, localName } from "@/lib/i18n";
+import { CIVS } from "@/data/civs";
+import { DEFAULT_MAPS } from "@/data/maps";
 import { DraftBoard } from "./DraftBoard";
 import { ReplayControls } from "./ReplayControls";
+import type { TFn } from "@/lib/draft/stepLabel";
 import { MatchSummary } from "./MatchSummary";
 import { GameResultCard } from "./GameResultCard";
 import { SnipeOutcome } from "./CivDuel";
 import { OWNER_RGB, seatNames, type Seat, type SpectatorPayload } from "./types";
+
+// Resolved from the CURRENT catalogue by id, exactly as the draft room does it.
+// A preset freezes a copy of every entry's name and image, and a match freezes
+// that copy again, so a broadcast of a two-month-old preset would otherwise show
+// two-month-old art — and the names would be stuck in whatever language the
+// preset's author happened to be using.
+const CIV_BY_ID = new Map(CIVS.map((c) => [c.id, c]));
+const MAP_BY_ID = new Map(DEFAULT_MAPS.map((m) => [m.id, m]));
+
+/**
+ * One seam for the whole broadcast picture.
+ *
+ * Every component below this reads its civs and maps off `payload.state`, so
+ * translating here covers the board, the duel, the result card and the summary
+ * at once — and none of them has to know that the names it prints are not the
+ * ones the server sent.
+ */
+function enrich(t: TFn, p: SpectatorPayload | null): SpectatorPayload | null {
+  if (!p) return p;
+  return {
+    ...p,
+    state: {
+      ...p.state,
+      civs: p.state.civs.map((c) => ({
+        ...c, imageUrl: CIV_BY_ID.get(c.id)?.imageUrl ?? c.imageUrl, name: localName(t, "civ", c.id, c.name),
+      })),
+      maps: p.state.maps.map((m) => ({
+        ...m, imageUrl: MAP_BY_ID.get(m.id)?.imageUrl ?? m.imageUrl, name: localName(t, "map", m.id, m.name),
+      })),
+    },
+  };
+}
 
 /** How long the snipe result stays up before the draft moves on. */
 const SNIPE_HOLD_MS = 10_000;
@@ -183,11 +218,8 @@ export function SpectatorStage({ matchId, roomName }: { matchId: string; roomNam
   // catch — same controls, but now they reach the first ban rather than the
   // first packet this page received.
   const frames = fullHistory ?? history;
-  const shown: SpectatorPayload | null = live
-    ? payload
-    : frames[Math.min(cursor, frames.length - 1)]
-      ? { ...frames[Math.min(cursor, frames.length - 1)], deadlineTs: null }
-      : payload;
+  const parked = live ? null : frames[Math.min(cursor, frames.length - 1)];
+  const shown: SpectatorPayload | null = enrich(t, live ? payload : parked ? { ...parked, deadlineTs: null } : payload);
 
   const holding =
     live && snipeHold !== null && shown?.state.currentGameIndex === snipeHold && !shown.state.finished

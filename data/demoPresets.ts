@@ -207,8 +207,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P1 · Ban map"
+          "pausable": false
         },
         {
           "id": "406934d7-251e-4587-857f-46ff81308b21",
@@ -219,8 +218,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P2 · Ban map"
+          "pausable": false
         },
         {
           "id": "99bf221f-b4c2-4e5d-bac3-8595b80cb272",
@@ -231,8 +229,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P1 · Pick map (into pool)"
+          "pausable": false
         },
         {
           "id": "2e34e30b-d48f-407d-9d27-c4a19853c696",
@@ -243,8 +240,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P2 · Pick map (into pool)"
+          "pausable": false
         },
         {
           "id": "587008d2-9d38-40c6-a04d-7afa63a98e6b",
@@ -256,8 +252,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Ban map"
+          "pausable": false
         },
         {
           "id": "a4411079-9c61-4816-8254-0bce3f09fe66",
@@ -269,8 +264,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P1 · Ban map"
+          "pausable": false
         },
         {
           "id": "0c5fc674-7b94-47ea-a4bc-d0b4ab6d6752",
@@ -282,8 +276,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P1 · Ban map"
+          "pausable": false
         },
         {
           "id": "79d5be73-b70b-45c2-bc32-f84115caf2e3",
@@ -295,8 +288,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Ban map"
+          "pausable": false
         },
         {
           "id": "730f90b7-c2f5-4ff1-8455-6908120345fe",
@@ -308,8 +300,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Random · Select map"
+          "pausable": true
         },
         {
           "id": "bcc-bo3-map-civ-gate",
@@ -320,8 +311,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 60,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Both players confirm to continue"
+          "pausable": true
         },
         {
           "id": "65369351-7905-4dbb-a853-22ac8d89e7f0",
@@ -333,8 +323,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P1 · Ban civ"
+          "pausable": false
         },
         {
           "id": "79555d71-6850-4104-905c-660c18558e54",
@@ -346,8 +335,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Ban civ"
+          "pausable": false
         },
         {
           "id": "de5d8917-081e-4faf-9f7e-7c3129348de5",
@@ -359,8 +347,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P1 · Ban civ"
+          "pausable": false
         },
         {
           "id": "b2c86a65-213c-4676-855c-11385ddd3ce7",
@@ -372,8 +359,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Ban civ"
+          "pausable": false
         },
         {
           "id": "99327e54-211a-46a3-8289-1a25325f6bfc",
@@ -384,8 +370,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P1 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "66b671c0-0921-4eb8-9834-d8f2eee56c53",
@@ -396,8 +381,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P2 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "28bb2435-1044-4482-9620-5f5e0b012c80",
@@ -409,8 +393,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "82b5d107-0bbb-4c1e-bf2c-eca6beb7dfd5",
@@ -422,8 +405,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P1 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "aa5de46d-3879-4bc3-8b9c-1337b28cba3c",
@@ -435,8 +417,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Ban civ"
+          "pausable": false
         },
         {
           "id": "465ea5e0-8709-40b7-ad57-5b8958c721b3",
@@ -448,8 +429,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P1 · Ban civ"
+          "pausable": false
         },
         {
           "id": "4dc8c98b-31f3-4b95-8c20-10b2867d3464",
@@ -460,8 +440,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P1 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "8a02576f-6c07-4298-a3e6-9e57ec0229e6",
@@ -472,8 +451,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P2 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "8498f229-26bc-4962-b4cc-d830f5d69a73",
@@ -484,8 +462,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P1 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "588459e9-a4fc-4cd3-ab7a-c6eb84e4af67",
@@ -496,8 +473,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P2 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "97219ffc-6cd2-4935-9b33-d1b7a3e39bfb",
@@ -508,8 +484,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P1 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "bb8a6355-2dc1-431d-b372-fef7955233c3",
@@ -520,8 +495,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P2 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "290851bf-ab32-46fe-af40-718362ffd725",
@@ -532,8 +506,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
+          "pausable": false
         },
         {
           "id": "3ca7bedf-64f7-4be6-b26b-af60e93b8ec0",
@@ -544,8 +517,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Snipe opponent (simultaneous)"
+          "pausable": false
         },
         {
           "id": "227468cf-3918-49fb-90fb-c52729d139d4",
@@ -556,8 +528,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Game result"
+          "pausable": false
         },
         {
           "id": "ec1065bd-7bdc-4544-bb23-89e57a89b8fb",
@@ -569,8 +540,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Loser · Select map"
+          "pausable": false
         },
         {
           "id": "confirm-map-9",
@@ -581,8 +551,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 60,
           "showCurrentMap": true,
           "excludeUsedCivs": false,
-          "pausable": true,
-          "label": "Confirm the map"
+          "pausable": true
         },
         {
           "id": "0ef8a39e-9851-425a-b508-1bddb69a94d3",
@@ -593,8 +562,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
+          "pausable": false
         },
         {
           "id": "99cfa415-92f7-4d88-9219-1875c6cc7a23",
@@ -605,8 +573,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Snipe opponent (simultaneous)"
+          "pausable": false
         },
         {
           "id": "5dddc3cb-004b-4206-8e2d-8250dacb14e7",
@@ -617,8 +584,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Game result"
+          "pausable": false
         },
         {
           "id": "1ad7be64-8bdd-4a47-8600-a52769337832",
@@ -630,8 +596,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Loser · Select map"
+          "pausable": false
         },
         {
           "id": "confirm-map-8",
@@ -642,8 +607,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 60,
           "showCurrentMap": true,
           "excludeUsedCivs": false,
-          "pausable": true,
-          "label": "Confirm the map"
+          "pausable": true
         },
         {
           "id": "8bc85816-cb99-44cd-aaf5-8ab41f21109e",
@@ -654,8 +618,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
+          "pausable": false
         },
         {
           "id": "444fd235-26be-4166-84c9-d7ed7f796d9b",
@@ -666,8 +629,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Snipe opponent (simultaneous)"
+          "pausable": false
         },
         {
           "id": "15c30a12-2623-4eab-b312-0f9913210245",
@@ -678,8 +640,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Game result"
+          "pausable": false
         }
       ],
       "options": {
@@ -873,8 +834,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P1 · Ban map"
+          "pausable": false
         },
         {
           "id": "c45a8b68-1a5d-4cb5-a17d-0eff2bbdfce5",
@@ -885,8 +845,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P2 · Ban map"
+          "pausable": false
         },
         {
           "id": "c3996f1d-abf6-49c4-bc0f-6f7bd10a5b08",
@@ -897,8 +856,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P1 · Pick map (into pool)"
+          "pausable": false
         },
         {
           "id": "8b90f35b-6afa-40a5-93f9-c2f106a6c7a7",
@@ -909,8 +867,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P2 · Pick map (into pool)"
+          "pausable": false
         },
         {
           "id": "615b1dca-c71e-4619-9577-079b2b3fd167",
@@ -922,8 +879,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Ban map"
+          "pausable": false
         },
         {
           "id": "6fc7afd7-19e9-474a-8a5f-290e7308ce51",
@@ -935,8 +891,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P1 · Ban map"
+          "pausable": false
         },
         {
           "id": "9fbde93a-45da-45f5-a207-9b5bde273895",
@@ -947,8 +902,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P1 · Pick map (into pool)"
+          "pausable": false
         },
         {
           "id": "32b9c16c-80e8-4ab0-a67e-99b531d099ec",
@@ -959,8 +913,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P2 · Pick map (into pool)"
+          "pausable": false
         },
         {
           "id": "86cbe4f2-4b9b-425b-815a-008dea3c7ee6",
@@ -972,8 +925,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Random · Select map"
+          "pausable": true
         },
         {
           "id": "bcc-bo5-map-civ-gate",
@@ -984,8 +936,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 60,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Both players confirm to continue"
+          "pausable": true
         },
         {
           "id": "8d751a86-6b8d-478e-926c-3c775fcc6a6b",
@@ -997,8 +948,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P1 · Ban civ"
+          "pausable": false
         },
         {
           "id": "8511eaa6-4615-4852-80b1-47a019f2b60b",
@@ -1010,8 +960,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Ban civ"
+          "pausable": false
         },
         {
           "id": "52d45158-14e4-4971-8bc6-1da623e21e2f",
@@ -1023,8 +972,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P1 · Ban civ"
+          "pausable": false
         },
         {
           "id": "b842cc60-f5a1-46a7-8699-e18db65397d6",
@@ -1036,8 +984,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Ban civ"
+          "pausable": false
         },
         {
           "id": "87415aa8-410c-4c78-b663-f2bf975f3388",
@@ -1048,8 +995,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P1 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "c894512b-48e5-414e-a6a6-76ae2ad66893",
@@ -1060,8 +1006,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P2 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "5e770f85-6dd3-4e5a-bc4a-c0b607fa13a4",
@@ -1073,8 +1018,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "d5917885-2e60-4340-95e9-18cee63d7484",
@@ -1086,8 +1030,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P1 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "98f60338-0b4d-4b9f-b341-bdd17d13a3b4",
@@ -1099,8 +1042,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Ban civ"
+          "pausable": false
         },
         {
           "id": "fa32c845-1baa-4d1e-846c-bb0eb91a7494",
@@ -1112,8 +1054,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P1 · Ban civ"
+          "pausable": false
         },
         {
           "id": "02c88a4f-0dd6-4ab4-81c7-e672bac5131a",
@@ -1124,8 +1065,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P1 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "6543a77b-a8b6-4a5f-9c14-3b3b983abb20",
@@ -1136,8 +1076,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P2 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "700ace3c-5334-4b93-9b6b-97649889dddf",
@@ -1148,8 +1087,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P1 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "c851d051-1588-47c0-bb4d-5825b32e5184",
@@ -1160,8 +1098,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P2 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "0bcd320c-53b1-4f0e-bf76-bec96a581598",
@@ -1172,8 +1109,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P1 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "db1e01f8-ad40-4c79-be61-3e7df58b8f92",
@@ -1184,8 +1120,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "P2 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "ff80aa47-ffd5-45c3-bbb0-70b3eb28dec3",
@@ -1197,8 +1132,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P1 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "2070ec84-0951-4d8a-802e-5eea8ca0f946",
@@ -1210,8 +1144,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "f2df94ab-fec6-4752-84e7-36978c056326",
@@ -1223,8 +1156,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P1 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "83eb8d14-f96f-47e0-9d71-d2420f9f1f5e",
@@ -1236,8 +1168,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": false,
-          "label": "P2 · Pick civ into pool"
+          "pausable": false
         },
         {
           "id": "053a05fc-7c6e-4fe3-9a76-53934a365410",
@@ -1248,8 +1179,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
+          "pausable": false
         },
         {
           "id": "1edd0e13-e73a-4d65-9b6d-f6e0d4701d7c",
@@ -1260,8 +1190,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Snipe opponent (simultaneous)"
+          "pausable": false
         },
         {
           "id": "bf64deb4-5238-4c17-9af1-8f4084817139",
@@ -1272,8 +1201,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Game result"
+          "pausable": false
         },
         {
           "id": "a2c1a987-7121-4c53-8a80-9c97381dd398",
@@ -1285,8 +1213,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Loser · Select map"
+          "pausable": false
         },
         {
           "id": "confirm-map-7",
@@ -1297,8 +1224,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 60,
           "showCurrentMap": true,
           "excludeUsedCivs": false,
-          "pausable": true,
-          "label": "Confirm the map"
+          "pausable": true
         },
         {
           "id": "08a58288-f36a-4d7f-89d8-fecbd7b5d7c2",
@@ -1309,8 +1235,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
+          "pausable": false
         },
         {
           "id": "2c341893-895d-46a6-9b59-4dfa5f7a8e39",
@@ -1321,8 +1246,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Snipe opponent (simultaneous)"
+          "pausable": false
         },
         {
           "id": "b8a21ee9-17e4-45f5-9678-0d33d310e052",
@@ -1333,8 +1257,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Game result"
+          "pausable": false
         },
         {
           "id": "5d824f69-96f4-491f-afed-aeeae25b54ba",
@@ -1346,8 +1269,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Loser · Select map"
+          "pausable": false
         },
         {
           "id": "confirm-map-6",
@@ -1358,8 +1280,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 60,
           "showCurrentMap": true,
           "excludeUsedCivs": false,
-          "pausable": true,
-          "label": "Confirm the map"
+          "pausable": true
         },
         {
           "id": "01c1425d-0e39-4a13-8c06-09f197694bbb",
@@ -1370,8 +1291,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
+          "pausable": false
         },
         {
           "id": "a78e112f-00aa-423c-b06f-b0c7e0172e7c",
@@ -1382,8 +1302,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Snipe opponent (simultaneous)"
+          "pausable": false
         },
         {
           "id": "671f1e95-71ba-4791-bffe-3b5705f21441",
@@ -1394,8 +1313,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Game result"
+          "pausable": false
         },
         {
           "id": "8855d05a-be85-4b5d-bd59-392282fb65d1",
@@ -1407,8 +1325,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Loser · Select map"
+          "pausable": false
         },
         {
           "id": "confirm-map-5",
@@ -1419,8 +1336,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 60,
           "showCurrentMap": true,
           "excludeUsedCivs": false,
-          "pausable": true,
-          "label": "Confirm the map"
+          "pausable": true
         },
         {
           "id": "4e7a6606-35ae-44b1-bfeb-96448cd8c3fc",
@@ -1431,8 +1347,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
+          "pausable": false
         },
         {
           "id": "458cfe29-26e3-4c95-99aa-34b6a24aed32",
@@ -1443,8 +1358,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Snipe opponent (simultaneous)"
+          "pausable": false
         },
         {
           "id": "89a965c5-3b3a-4c73-a4f9-1de8ab74b3de",
@@ -1455,8 +1369,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Game result"
+          "pausable": false
         },
         {
           "id": "bb7da104-471e-42e5-9782-2bea82480f4b",
@@ -1468,8 +1381,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Loser · Select map"
+          "pausable": false
         },
         {
           "id": "confirm-map-4",
@@ -1480,8 +1392,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 60,
           "showCurrentMap": true,
           "excludeUsedCivs": false,
-          "pausable": true,
-          "label": "Confirm the map"
+          "pausable": true
         },
         {
           "id": "7c2f8a8a-bf6b-4e78-a009-3cd76dcc1dc8",
@@ -1492,8 +1403,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
+          "pausable": false
         },
         {
           "id": "4d64f709-deec-44dd-b3c2-aa353169d93f",
@@ -1504,8 +1414,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Snipe opponent (simultaneous)"
+          "pausable": false
         },
         {
           "id": "e865efa4-856d-4b15-a556-f70342ec3388",
@@ -1516,8 +1425,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Game result"
+          "pausable": false
         }
       ],
       "options": {
@@ -1701,8 +1609,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P1 · Ban map"
+          "pausable": true
         },
         {
           "id": "MAP_BAN-1",
@@ -1713,8 +1620,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P2 · Ban map"
+          "pausable": true
         },
         {
           "id": "CIV_BAN-2",
@@ -1725,8 +1631,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P1 · Pick map (into pool)"
+          "pausable": true
         },
         {
           "id": "CIV_BAN-3",
@@ -1737,8 +1642,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P2 · Pick map (into pool)"
+          "pausable": true
         },
         {
           "id": "CIV_PICK-4",
@@ -1749,8 +1653,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P1 · Pick map (into pool)"
+          "pausable": true
         },
         {
           "id": "GAME_RESULT-25",
@@ -1761,8 +1664,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P2 · Pick map (into pool)"
+          "pausable": true
         },
         {
           "id": "09179417-f17d-42b6-bc94-1501f9719a49",
@@ -1774,8 +1676,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Random · Select map"
+          "pausable": true
         },
         {
           "id": "6c98d936-f141-42c2-b7a1-1c38ccf1b8d3",
@@ -1787,8 +1688,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": true,
-          "label": "P1 · Ban civ"
+          "pausable": true
         },
         {
           "id": "86658e31-f903-4011-971b-0c52162dde6f",
@@ -1800,8 +1700,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": true,
-          "label": "P2 · Ban civ"
+          "pausable": true
         },
         {
           "id": "d31394c4-448e-421e-8bbe-575b7a06debe",
@@ -1813,8 +1712,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": true,
-          "label": "P1 · Ban civ"
+          "pausable": true
         },
         {
           "id": "da5bc025-4fe8-4db1-aaef-fcd48fd0378f",
@@ -1826,8 +1724,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": true,
-          "label": "P2 · Ban civ"
+          "pausable": true
         },
         {
           "id": "52797920-3217-40b8-afbd-40632c173ed1",
@@ -1838,8 +1735,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P1 · Pick civ into pool"
+          "pausable": true
         },
         {
           "id": "85769d14-cc39-45a4-9ead-39b696a42ddb",
@@ -1850,8 +1746,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P2 · Pick civ into pool"
+          "pausable": true
         },
         {
           "id": "defc3fc8-0259-4c62-b1c3-b9ab8cc43bc6",
@@ -1863,8 +1758,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": true,
-          "label": "P1 · Ban civ"
+          "pausable": true
         },
         {
           "id": "fca26866-5bac-4e63-b385-2f76ed01e993",
@@ -1876,8 +1770,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "showCurrentMap": false,
           "excludeUsedCivs": true,
           "banScope": "opponent",
-          "pausable": true,
-          "label": "P2 · Ban civ"
+          "pausable": true
         },
         {
           "id": "03f9322c-efdc-4089-829a-4566c4523e3b",
@@ -1888,8 +1781,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P1 · Pick civ into pool"
+          "pausable": true
         },
         {
           "id": "861d5641-ca01-44bb-8789-da1ec5ca685e",
@@ -1900,8 +1792,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P2 · Pick civ into pool"
+          "pausable": true
         },
         {
           "id": "ad1bd095-bb01-42d3-a553-0947b8e77823",
@@ -1912,8 +1803,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P1 · Pick civ into pool"
+          "pausable": true
         },
         {
           "id": "14184712-e0ce-4d30-af63-34fa808eec54",
@@ -1924,8 +1814,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P2 · Pick civ into pool"
+          "pausable": true
         },
         {
           "id": "087fd67c-bd85-4134-9dfb-c4533b5307de",
@@ -1936,8 +1825,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P1 · Pick civ into pool"
+          "pausable": true
         },
         {
           "id": "5f56fbdf-14d3-47b7-ba03-8ea2d57682ab",
@@ -1948,8 +1836,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P2 · Pick civ into pool"
+          "pausable": true
         },
         {
           "id": "b5325de9-5083-49a9-85f1-7d5a936668b9",
@@ -1960,8 +1847,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Pick civ to field (simultaneous)"
+          "pausable": true
         },
         {
           "id": "39cfea76-31ba-4531-81b2-690a80a32587",
@@ -1972,8 +1858,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Pick civ to field (simultaneous)"
+          "pausable": true
         },
         {
           "id": "1ca8fed9-b8ca-44a7-b522-2fe705af95ff",
@@ -1984,8 +1869,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Snipe opponent (simultaneous)"
+          "pausable": true
         },
         {
           "id": "11da54e4-6175-4e8b-8b7a-ba5f9e6ed2bf",
@@ -1996,8 +1880,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Snipe opponent (simultaneous)"
+          "pausable": true
         },
         {
           "id": "0c08202d-531b-4eea-8b38-421f99bc9ab9",
@@ -2008,8 +1891,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Game result"
+          "pausable": true
         },
         {
           "id": "71cd9347-ec36-4d94-9713-05d1d221faa8",
@@ -2021,8 +1903,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Loser · Select map"
+          "pausable": true
         },
         {
           "id": "confirm-map-3",
@@ -2033,8 +1914,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 60,
           "showCurrentMap": true,
           "excludeUsedCivs": false,
-          "pausable": true,
-          "label": "Confirm the map"
+          "pausable": true
         },
         {
           "id": "9a97ffbb-e9f5-4691-aef6-0d80fe6e75eb",
@@ -2045,8 +1925,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Pick civ to field (simultaneous)"
+          "pausable": true
         },
         {
           "id": "ca70f74c-df03-4748-9e4c-be9a518ad350",
@@ -2057,8 +1936,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Pick civ to field (simultaneous)"
+          "pausable": true
         },
         {
           "id": "1e5f44e2-36cb-42cd-a7e3-b8396f2894ad",
@@ -2069,8 +1947,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Snipe opponent (simultaneous)"
+          "pausable": true
         },
         {
           "id": "04cba7c6-31c1-46bb-be82-8b8e8b72f2c4",
@@ -2081,8 +1958,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Snipe opponent (simultaneous)"
+          "pausable": true
         },
         {
           "id": "11acdb2d-1ddf-4a86-af8f-89b2b134ad62",
@@ -2093,8 +1969,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Game result"
+          "pausable": true
         },
         {
           "id": "14fdbb93-83b5-4b0e-9143-cb29f6554139",
@@ -2106,8 +1981,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Loser · Select map"
+          "pausable": true
         },
         {
           "id": "confirm-map-2",
@@ -2118,8 +1992,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 60,
           "showCurrentMap": true,
           "excludeUsedCivs": false,
-          "pausable": true,
-          "label": "Confirm the map"
+          "pausable": true
         },
         {
           "id": "0f1e6f22-d17f-49d1-b2f3-44efa5bffd83",
@@ -2130,8 +2003,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Pick civ to field (simultaneous)"
+          "pausable": true
         },
         {
           "id": "28c4e603-7562-49be-a0fc-d16b56158026",
@@ -2142,8 +2014,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Pick civ to field (simultaneous)"
+          "pausable": true
         },
         {
           "id": "9903d2f4-87e4-4f30-bdb6-5b88528dd3a6",
@@ -2154,8 +2025,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Snipe opponent (simultaneous)"
+          "pausable": true
         },
         {
           "id": "d5f5cdc7-15e1-4004-8961-6bd7b41d1b88",
@@ -2166,8 +2036,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Snipe opponent (simultaneous)"
+          "pausable": true
         },
         {
           "id": "487eaa3d-0f70-4944-82dd-6665a667e751",
@@ -2178,8 +2047,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Game result"
+          "pausable": true
         }
       ],
       "options": {
@@ -2363,8 +2231,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P1 · Ban map"
+          "pausable": true
         },
         {
           "id": "MAP_BAN-1",
@@ -2375,8 +2242,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P2 · Ban map"
+          "pausable": true
         },
         {
           "id": "CIV_BAN-2",
@@ -2387,8 +2253,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P1 · Pick map (into pool)"
+          "pausable": true
         },
         {
           "id": "CIV_BAN-3",
@@ -2399,8 +2264,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P2 · Pick map (into pool)"
+          "pausable": true
         },
         {
           "id": "CIV_PICK-4",
@@ -2411,8 +2275,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P1 · Pick map (into pool)"
+          "pausable": true
         },
         {
           "id": "GAME_RESULT-25",
@@ -2423,8 +2286,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "P2 · Pick map (into pool)"
+          "pausable": true
         },
         {
           "id": "09179417-f17d-42b6-bc94-1501f9719a49",
@@ -2436,8 +2298,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Random · Select map"
+          "pausable": true
         },
         {
           "id": "b5325de9-5083-49a9-85f1-7d5a936668b9",
@@ -2448,8 +2309,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Pick civ to field (simultaneous)"
+          "pausable": true
         },
         {
           "id": "0c08202d-531b-4eea-8b38-421f99bc9ab9",
@@ -2460,8 +2320,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Game result"
+          "pausable": true
         },
         {
           "id": "71cd9347-ec36-4d94-9713-05d1d221faa8",
@@ -2473,8 +2332,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": true,
-          "label": "Loser · Select map"
+          "pausable": true
         },
         {
           "id": "confirm-map-1",
@@ -2485,8 +2343,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 60,
           "showCurrentMap": true,
           "excludeUsedCivs": false,
-          "pausable": true,
-          "label": "Confirm the map"
+          "pausable": true
         },
         {
           "id": "9a97ffbb-e9f5-4691-aef6-0d80fe6e75eb",
@@ -2497,8 +2354,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
+          "pausable": false
         },
         {
           "id": "11acdb2d-1ddf-4a86-af8f-89b2b134ad62",
@@ -2509,8 +2365,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Game result"
+          "pausable": false
         },
         {
           "id": "14fdbb93-83b5-4b0e-9143-cb29f6554139",
@@ -2522,8 +2377,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Loser · Select map"
+          "pausable": false
         },
         {
           "id": "confirm-map-0",
@@ -2534,8 +2388,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 60,
           "showCurrentMap": true,
           "excludeUsedCivs": false,
-          "pausable": true,
-          "label": "Confirm the map"
+          "pausable": true
         },
         {
           "id": "0f1e6f22-d17f-49d1-b2f3-44efa5bffd83",
@@ -2546,8 +2399,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Pick civ to field (simultaneous)"
+          "pausable": false
         },
         {
           "id": "487eaa3d-0f70-4944-82dd-6665a667e751",
@@ -2558,8 +2410,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
           "timeLimitSec": 30,
           "showCurrentMap": false,
           "excludeUsedCivs": true,
-          "pausable": false,
-          "label": "Game result"
+          "pausable": false
         }
       ],
       "options": {

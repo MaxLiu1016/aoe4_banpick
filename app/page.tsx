@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { SiteHeader } from "@/components/SiteHeader";
 import { CIVS } from "@/data/civs";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, localName } from "@/lib/i18n";
 
 export default function Home() {
   const { t } = useI18n();
@@ -55,12 +55,14 @@ export default function Home() {
           </h2>
           <div className="aoe-rule mb-6 mt-4" />
           <div className="grid grid-cols-6 gap-3 sm:grid-cols-12">
-            {CIVS.map((c) => (
-              <div key={c.id} className="group flex items-center justify-center" title={c.name}>
+            {CIVS.map((c) => {
+              const name = localName(t, "civ", c.id, c.name);
+              return (
+              <div key={c.id} className="group flex items-center justify-center" title={name}>
                 {c.imageUrl ? (
                   <Image
                     src={c.imageUrl}
-                    alt={c.name}
+                    alt={name}
                     width={48}
                     height={48}
                     className="h-11 w-11 object-contain opacity-60 transition group-hover:scale-125 group-hover:opacity-100"
@@ -70,7 +72,8 @@ export default function Home() {
                   <div className="h-11 w-11 rounded bg-surface-2" />
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       </main>

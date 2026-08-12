@@ -1,5 +1,5 @@
 import { isSimultaneousStep } from "./schema";
-import type { PresetConfig, Step, PoolEntry } from "./schema";
+import type { PresetConfig, Step, PoolEntry, Actor } from "./schema";
 
 export type SeatRole = "player1" | "player2" | "host";
 export type ActionType = "ban" | "pick" | "select" | "snipe" | "result" | "offer" | "gsnipe" | "confirm";
@@ -86,7 +86,7 @@ export interface DerivedState {
    * a tile at a time and shoves everything below it down the page — which happens
    * to be exactly when the player is reaching for the pool.
    */
-  stepBar: { type: string; label: string; gameIndex: number; actor: SeatRole | null; count: number }[];
+  stepBar: { type: string; gameIndex: number; actor: SeatRole | null; stepActor: Actor; simultaneous: boolean; count: number }[];
   /** True when the current step is a simultaneous (hidden) duel step. */
   simultaneous: boolean;
   /**
@@ -538,9 +538,14 @@ export function deriveState(
 
   const stepBar = steps.map((s, i) => ({
     type: s.type as string,
-    label: s.label || (s.type as string),
     gameIndex: gameOf[i],
+    // Two different actors, and the difference is not pedantry. `actor` is who
+    // is on the clock right now — LOSER resolved against a game that has been
+    // played. `stepActor` is what the step DECLARES, which is what its name says
+    // and the only one that reads correctly before the game it depends on exists.
     actor: isSimultaneousStep(s) ? null : resolveActor(s, gameOf[i], games),
+    stepActor: s.actor,
+    simultaneous: isSimultaneousStep(s),
     count: s.count,
   }));
 

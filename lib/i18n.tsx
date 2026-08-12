@@ -8,7 +8,7 @@ export type Locale = "en" | "zh" | "cn" | "ja";
 
 // Traditional → Simplified character map (covers the chars used in the dictionary).
 // Lets the "cn" locale reuse the "zh" strings without a second hand-translation.
-const T2S: Record<string, string> = { "規": "规", "則": "则", "組": "组", "揮": "挥", "個": "个", "資": "资", "訊": "讯", "篩": "筛", "試": "试", "剛": "刚", "報": "报", "載": "载", "題": "题", "問": "问", "顧": "顾", "鍵": "键", "顯": "显", "稱": "称", "這": "这", "裡": "里", "儲": "储", "紀": "纪", "國": "国", "運": "运", "籌": "筹", "決": "决", "勝": "胜", "開": "开", "與": "与", "圖": "图", "對": "对", "戰": "战", "瀏": "浏", "覽": "览", "訂": "订", "輪": "轮", "數": "数", "擊": "击", "驟": "骤", "計": "计", "時": "时", "暫": "暂", "賽": "赛", "觀": "观", "選": "选", "標": "标", "雙": "双", "約": "约", "負": "负", "兩": "两", "邊": "边", "點": "点", "誤": "误", "陣": "阵", "為": "为", "術": "术", "來": "来", "進": "进", "廳": "厅", "帳": "帐", "號": "号", "電": "电", "郵": "邮", "碼": "码", "請": "请", "註": "注", "冊": "册", "採": "采", "員": "员", "還": "还", "沒": "没", "經": "经", "錯": "错", "敗": "败", "後": "后", "編": "编", "輯": "辑", "複": "复", "製": "制", "換": "换", "尋": "寻", "頁": "页", "刪": "删", "範": "范", "內": "内", "無": "无", "愛": "爱", "間": "间", "連": "连", "結": "结", "線": "线", "當": "当", "隊": "队", "長": "长", "準": "准", "備": "备", "傳": "传", "給": "给", "會": "会", "強": "强", "繼": "继", "續": "续", "獲": "获", "場": "场", "隨": "随", "機": "机", "隱": "隐", "鎖": "锁", "擇": "择", "緒": "绪", "張": "张", "僅": "仅", "誰": "谁", "贏": "赢", "寫": "写", "確": "确", "認": "认", "舊": "旧", "從": "从", "餘": "余", "說": "说", "項": "项", "幾": "几", "總": "总", "預": "预", "設": "设", "許": "许", "產": "产", "執": "执", "統": "统", "動": "动", "調": "调", "順": "顺", "嗎": "吗", "單": "单", "錄": "录", "種": "种", "關": "关", "閉": "闭", "東": "东", "須": "须", "現": "现", "況": "况", "於": "于", "夠": "够", "靜": "静", "練": "练", "習": "习", "滿": "满", "參": "参", "過": "过", "純": "纯", "斷": "断", "曉": "晓", "眾": "众", "欄": "栏", "訪": "访", "遊": "游", "記": "记", "條": "条", "麼": "么", "腦": "脑", "讓": "让", "幫": "帮", "領": "领", "將": "将", "圍": "围" };
+const T2S: Record<string, string> = { "規": "规", "則": "则", "組": "组", "揮": "挥", "個": "个", "資": "资", "訊": "讯", "篩": "筛", "試": "试", "剛": "刚", "報": "报", "載": "载", "題": "题", "問": "问", "顧": "顾", "鍵": "键", "顯": "显", "稱": "称", "這": "这", "裡": "里", "儲": "储", "紀": "纪", "國": "国", "運": "运", "籌": "筹", "決": "决", "勝": "胜", "開": "开", "與": "与", "圖": "图", "對": "对", "戰": "战", "瀏": "浏", "覽": "览", "訂": "订", "輪": "轮", "數": "数", "擊": "击", "驟": "骤", "計": "计", "時": "时", "暫": "暂", "賽": "赛", "觀": "观", "選": "选", "標": "标", "雙": "双", "約": "约", "負": "负", "兩": "两", "邊": "边", "點": "点", "誤": "误", "陣": "阵", "為": "为", "術": "术", "來": "来", "進": "进", "廳": "厅", "帳": "帐", "號": "号", "電": "电", "郵": "邮", "碼": "码", "請": "请", "註": "注", "冊": "册", "採": "采", "員": "员", "還": "还", "沒": "没", "經": "经", "錯": "错", "敗": "败", "後": "后", "編": "编", "輯": "辑", "複": "复", "製": "制", "換": "换", "尋": "寻", "頁": "页", "刪": "删", "範": "范", "內": "内", "無": "无", "愛": "爱", "間": "间", "連": "连", "結": "结", "線": "线", "當": "当", "隊": "队", "長": "长", "準": "准", "備": "备", "傳": "传", "給": "给", "會": "会", "強": "强", "繼": "继", "續": "续", "獲": "获", "場": "场", "隨": "随", "機": "机", "隱": "隐", "鎖": "锁", "擇": "择", "緒": "绪", "張": "张", "僅": "仅", "誰": "谁", "贏": "赢", "寫": "写", "確": "确", "認": "认", "舊": "旧", "從": "从", "餘": "余", "說": "说", "項": "项", "幾": "几", "總": "总", "預": "预", "設": "设", "許": "许", "產": "产", "執": "执", "統": "统", "動": "动", "調": "调", "順": "顺", "嗎": "吗", "單": "单", "錄": "录", "種": "种", "關": "关", "閉": "闭", "東": "东", "須": "须", "現": "现", "況": "况", "於": "于", "夠": "够", "靜": "静", "練": "练", "習": "习", "滿": "满", "參": "参", "過": "过", "純": "纯", "斷": "断", "曉": "晓", "眾": "众", "欄": "栏", "訪": "访", "遊": "游", "記": "记", "條": "条", "麼": "么", "腦": "脑", "讓": "让", "幫": "帮", "領": "领", "將": "将", "圍": "围", "蘭": "兰", "聖": "圣", "羅": "罗", "馬": "马", "蘇": "苏", "遺": "遗", "龍": "龙", "騎": "骑", "團": "团", "貞": "贞", "頓": "顿", "魯": "鲁" };
 function toSimplified(s: string): string {
   let out = "";
   for (const ch of s) out += T2S[ch] ?? ch;
@@ -359,6 +359,11 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "step.CIV_SNIPE_OPPONENT": { en: "Snipe opponent", zh: "狙擊對手", ja: "相手をスナイプ" },
   "step.CIV_SNIPE_DRAFT": { en: "Snipe civ (legacy)", zh: "狙擊文明（舊版）", ja: "文明をスナイプ（旧仕様）" },
   "step.GAME_RESULT": { en: "Game result", zh: "對局結果", ja: "ゲーム結果" },
+  // The two ways a step name is dressed. Separate keys because the join is not
+  // punctuation-neutral across languages: the CJK forms want their own brackets
+  // and no spaces around the middot.
+  "step.byActor": { en: "{actor} · {step}", zh: "{actor}・{step}", ja: "{actor}・{step}" },
+  "step.simul": { en: "{step} (simultaneous)", zh: "{step}（同時）", ja: "{step}（同時）" },
   // actors
   "actor.HOST_DRAW": { en: "🎲 Random (from remaining)", zh: "🎲 隨機（從剩餘）", ja: "🎲 ランダム（残りから）" },
   "actor.PLAYER1": { en: "Player 1", zh: "玩家 1", ja: "プレイヤー 1" },
@@ -441,6 +446,40 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "validate.gameNoCiv": { en: "Game {game}: add a civ step (offer/snipe) — players have no civ.", zh: "第 {game} 場：需要一個文明步驟（選文明出戰／狙擊）—— 選手沒有文明可用。", ja: "ゲーム {game}：文明ステップ（出場文明の選択／スナイプ）を追加してください。使う文明がありません。" },
   "validate.offerMinusSnipe": { en: "Game {game}: offer ({offer}) minus snipe ({snipe}) must be at least 1, or a player can be left with no civ.", zh: "第 {game} 場：選文明出戰（{offer}）扣掉狙擊（{snipe}）後必須至少剩 1，否則可能出現選手沒有文明可選的情況。", ja: "ゲーム {game}：出場文明の数（{offer}）からスナイプ（{snipe}）を引いた値は 1 以上必要です。さもないと使える文明が無くなる可能性があります。" },
   "validate.handTooSmall": { en: "Each player's hand ({hand}) is smaller than the number of games ({games}); with “exclude used civs” they will run out.", zh: "每位選手的文明池（{hand}）少於比賽場數（{games}），開了「排除已用文明」會不夠用。", ja: "各プレイヤーの手持ち文明（{hand}）がゲーム数（{games}）より少ないため、「使用済み文明を除外」を有効にすると足りなくなります。" },
+
+  // --- Civilizations -------------------------------------------------------
+  // Keyed by the civ's id, which is a stable slug, so these survive a rename of
+  // the English name. Looked up at RENDER time, never written into a preset: a
+  // preset stores its own copy of every pool entry's name (PoolEntrySchema), and
+  // that copy is snapshotted again into Match.config when a room opens. Translate
+  // the data file instead and a draft already in flight keeps the old names — and
+  // both players would see whatever language the preset's author happened to use.
+  //
+  // Anything the dictionary does not know falls back to the stored name, which is
+  // what makes a custom pool with hand-written entries work unchanged.
+  "civ.english": { en: "English", zh: "英格蘭", ja: "イングランド" },
+  "civ.french": { en: "French", zh: "法蘭西", ja: "フランス" },
+  "civ.holy-roman-empire": { en: "Holy Roman Empire", zh: "神聖羅馬帝國", ja: "神聖ローマ帝国" },
+  "civ.mongols": { en: "Mongols", zh: "蒙古", ja: "モンゴル" },
+  "civ.rus": { en: "Rus", zh: "羅斯", ja: "ルーシ" },
+  "civ.delhi-sultanate": { en: "Delhi Sultanate", zh: "德里蘇丹國", ja: "デリー・スルタン朝" },
+  "civ.abbasid-dynasty": { en: "Abbasid Dynasty", zh: "阿拔斯王朝", ja: "アッバース朝" },
+  "civ.chinese": { en: "Chinese", zh: "中國", ja: "中国" },
+  "civ.ottomans": { en: "Ottomans", zh: "鄂圖曼", ja: "オスマン" },
+  "civ.malians": { en: "Malians", zh: "馬利", ja: "マリ" },
+  "civ.byzantines": { en: "Byzantines", zh: "拜占庭", ja: "ビザンティン" },
+  "civ.japanese": { en: "Japanese", zh: "日本", ja: "日本" },
+  "civ.ayyubids": { en: "Ayyubids", zh: "阿尤布王朝", ja: "アイユーブ朝" },
+  "civ.zhu-xis-legacy": { en: "Zhu Xi's Legacy", zh: "朱熹遺產", ja: "朱熹の遺産" },
+  "civ.jin-dynasty": { en: "Jin Dynasty", zh: "金朝", ja: "金朝" },
+  "civ.order-of-the-dragon": { en: "Order of the Dragon", zh: "龍騎士團", ja: "竜の騎士団" },
+  "civ.jeanne-darc": { en: "Jeanne d'Arc", zh: "聖女貞德", ja: "ジャンヌ・ダルク" },
+  "civ.knights-templar": { en: "Knights Templar", zh: "聖殿騎士團", ja: "テンプル騎士団" },
+  "civ.house-of-lancaster": { en: "House of Lancaster", zh: "蘭開斯特家族", ja: "ランカスター家" },
+  "civ.golden-horde": { en: "Golden Horde", zh: "金帳汗國", ja: "金帳汗国" },
+  "civ.macedonian-dynasty": { en: "Macedonian Dynasty", zh: "馬其頓王朝", ja: "マケドニア朝" },
+  "civ.sengoku-daimyo": { en: "Sengoku Daimyo", zh: "戰國大名", ja: "戦国大名" },
+  "civ.tughlaq-dynasty": { en: "Tughlaq Dynasty", zh: "圖格魯克王朝", ja: "トゥグルク朝" },
 };
 
 // BCP-47 tag written to <html lang> for each locale.
@@ -486,6 +525,31 @@ export function useI18n(): I18nCtx {
   const ctx = useContext(Ctx);
   if (!ctx) return { locale: "en", setLocale: () => {}, t: (k) => DICT[k]?.en ?? k };
   return ctx;
+}
+
+/**
+ * A pool entry's name in the reader's language, falling back to the name the
+ * preset stored.
+ *
+ * The fallback is the whole design, not a safety net. A preset carries its own
+ * copy of every entry it uses, and a custom pool can contain anything somebody
+ * typed — so a dictionary can only ever cover the catalogue, and the honest
+ * behaviour for everything else is to print what the author wrote. Civ ids are a
+ * closed set of 23 and are covered; map ids are an open set, because the editor
+ * slugs whatever name a human types.
+ *
+ * Keyed by id rather than by the stored name, so a civ renamed in English keeps
+ * its translations, and so a preset authored in one language still reads
+ * correctly to someone using another.
+ */
+export function localName(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  kind: "civ" | "map",
+  id: string,
+  stored: string,
+): string {
+  const key = `${kind}.${id}`;
+  return DICT[key] ? t(key) : stored;
 }
 
 // Render a translated string inside server components (which can't call the hook).
