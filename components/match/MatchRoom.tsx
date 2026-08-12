@@ -2161,13 +2161,25 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
   // and emptied the grid — it was not merely useless once a match was under way,
   // it was wrong. The search box stays: a forty-map pool is worth searching.
   const [onlyOpen, setOnlyOpen] = useState(false);
+  // Your own shortlist, on its own. Marking is only half a shortlist while the
+  // marks are still scattered through twenty-three tiles — this is the half that
+  // makes them a list you can look at.
+  const [onlyMarked, setOnlyMarked] = useState(false);
   const canFilterState = !isMap;
   const needle = q.trim().toLowerCase();
+  // Inert with nothing marked, rather than emptying the pool. Clearing your marks
+  // while the view is narrowed to them would otherwise leave a blank panel and no
+  // obvious way back, and it costs a boolean to make that unreachable.
+  const marksShown = onlyMarked && Boolean(marked?.size);
   const shown = entries.filter((e) => {
     if (canFilterState && onlyOpen && (e.state !== "available" || blocked.has(e.id))) return false;
+    if (marksShown && !marked?.has(e.id)) return false;
     return !needle || e.name.toLowerCase().includes(needle);
   });
   const filtered = shown.length !== entries.length;
+  // Only what the panel itself holds. "Show marked" lives outside it and stays on
+  // when the panel shuts: closing a search box should not throw away the view you
+  // built by hand.
   const clear = () => { setQ(""); setOnlyOpen(false); };
 
   // Everything the rules would accept from you right now. `clickable` is the
@@ -2184,26 +2196,10 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
           a control that changes what you are looking at belongs before the thing
           it changes. */}
       <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
-        {/* Right-click is invisible until somebody tells you, so this line is
-            the feature's only discovery surface. It doubles as the way out once
-            the pool is covered in marks. */}
-        {onMark && (
-          <span className="text-muted">
-            {t("match.markHint")}
-            {marked && marked.size > 0 && (
-              <>
-                {" · "}
-                <button onClick={onClearMarks} className="underline hover:text-gold-bright">
-                  {t("match.markClear")} ({marked.size})
-                </button>
-              </>
-            )}
-          </span>
-        )}
         <button
           onClick={() => { if (openFilter) clear(); setOpenFilter(!openFilter); }}
           className={`rounded border px-2 py-1 transition ${
-            openFilter || filtered ? "border-gold text-gold-bright" : "border-border text-muted hover:text-gold-bright"
+            openFilter || needle || onlyOpen ? "border-gold text-gold-bright" : "border-border text-muted hover:text-gold-bright"
           }`}
         >
           ⌕ {t("match.filter")}
@@ -2222,10 +2218,33 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
             {filtered && (
               <>
                 <span className="text-muted">{t("match.filterCount", { n: shown.length, total: entries.length })}</span>
-                <button onClick={clear} className="text-muted underline hover:text-gold-bright">{t("match.filterClear")}</button>
+                {/* Clears everything narrowing the grid, including the marked
+                    view — a button labelled "clear" that leaves a filter on is
+                    a button that lied. Only the implicit close is gentler. */}
+                <button onClick={() => { clear(); setOnlyMarked(false); }}
+                  className="text-muted underline hover:text-gold-bright">{t("match.filterClear")}</button>
               </>
             )}
           </>
+        )}
+        {/* Marks live at the far right, apart from the filter panel, because they
+            are yours rather than the draft's — the left of this row is what the
+            rules are doing, the right is what you are doing about it.
+            Right-clicking is invisible until somebody says so, which makes this
+            the feature's only discovery surface; it is also the way back out. */}
+        {onMark && (
+          <span className="ml-auto flex items-center gap-2 text-muted">
+            {t("match.markHint")}
+            {marked && marked.size > 0 && (
+              <>
+                <FilterChip on={onlyMarked} onClick={() => setOnlyMarked(!onlyMarked)}
+                  label={`${t("match.markShow")} (${marked.size})`} />
+                <button onClick={onClearMarks} className="underline hover:text-gold-bright">
+                  {t("match.markClear")}
+                </button>
+              </>
+            )}
+          </span>
         )}
       </div>
       {shown.length === 0 && (
@@ -2246,15 +2265,6 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
           // columns from how many things have to fit on one line.
           ? gridMap(entries.length + (legal.length > 0 ? 1 : 0))
           : { ...GRID_CIV, minHeight: CIV_POOL_FLOOR, alignContent: "start" }}>
-        {/* First, and in the grid with everything else, because what it returns
-            is one of these tiles — it is the cell that stands for "any of them".
-            As a button in the toolbar it read as a setting rather than a move.
-            It survives the filter on purpose: filtering is about finding one
-            thing, and this is the choice not to. */}
-        {legal.length > 0 && (
-          <RandomTile isMap={isMap} tone={tone}
-            onPick={() => onPick(legal[Math.floor(Math.random() * legal.length)].id)} t={t} />
-        )}
         {shown.map((e) => (
           <PoolTile
             key={e.id}
@@ -2275,6 +2285,17 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
             t={t}
           />
         ))}
+        {/* Last, and in the grid with everything else, because what it returns is
+            one of these tiles — it is the cell that stands for "any of them". As a
+            button in the toolbar it read as a setting rather than a move; at the
+            front it displaced the entry every eye starts on. The end is where a
+            thing you reach for after looking belongs.
+            It survives the filter on purpose: filtering is about finding one
+            particular thing, and this is the choice not to. */}
+        {legal.length > 0 && (
+          <RandomTile isMap={isMap} tone={tone}
+            onPick={() => onPick(legal[Math.floor(Math.random() * legal.length)].id)} t={t} />
+        )}
       </div>
 
     </section>

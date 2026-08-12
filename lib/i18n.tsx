@@ -195,6 +195,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "match.randomHint": { en: "Picks one of the legal targets for you", zh: "幫你從可選的裡面挑一個", ja: "選べるものから1つ選びます" },
   "match.markHint": { en: "Right-click to mark", zh: "右鍵標記", ja: "右クリックで印" },
   "match.marked": { en: "Marked", zh: "已標記", ja: "印あり" },
+  "match.markShow": { en: "Marked only", zh: "只顯示標記", ja: "印だけ表示" },
   "match.markClear": { en: "Clear marks", zh: "清除標記", ja: "印を消す" },
   "match.filter": { en: "Filter", zh: "篩選", ja: "絞り込み" },
   "match.filterSearch": { en: "Search by name…", zh: "用名稱搜尋…", ja: "名前で検索…" },
