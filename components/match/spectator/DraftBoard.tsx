@@ -104,8 +104,12 @@ const COL_DUEL = { w: 200, inset: 40, centre: 280 };
  * reports "locked in / choosing" rather than trying to fill the gap.
  */
 export function DraftBoard({
-  payload, roomName, clockOffset,
-}: { payload: SpectatorPayload; roomName: string; clockOffset: number }) {
+  payload, roomName, clockOffset, live = true,
+}: {
+  payload: SpectatorPayload; roomName: string; clockOffset: number;
+  /** False when an operator has stepped back through the draft's history. */
+  live?: boolean;
+}) {
   const { t } = useI18n();
   const { state } = payload;
   const names = seatNames(payload, { player1: t("match.p1"), player2: t("match.p2") });
@@ -273,12 +277,21 @@ export function DraftBoard({
           </div>
         </div>
         <div className="flex items-center justify-end">
+          {/* This badge is the one honest signal that the board is not showing the
+              current step. Kept here rather than splashed across the canvas: an
+              operator running deliberately behind should not have a banner burnt
+              into their output, but "LIVE" must never be a lie. */}
           {payload.status === "paused" ? (
             <span className="font-display text-[34px] font-bold leading-none text-danger">{t("spec.paused")}</span>
-          ) : (
+          ) : live ? (
             <span className="inline-flex items-center gap-[9px] font-sans text-[16px] font-semibold tracking-[.18em] text-muted">
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--urgent)" }} />
               {t("spec.live")}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-[9px] font-sans text-[16px] font-semibold tracking-[.18em] text-gold-bright">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--gold)" }} />
+              {t("replay.reviewing")}
             </span>
           )}
         </div>
