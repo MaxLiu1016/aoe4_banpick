@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { deriveState, type EngineAction } from "@/lib/draft/engine";
+import type { PresetConfig } from "@/lib/draft/schema";
 import { getSocket } from "@/lib/socket/client";
 import { C2S, S2C } from "@/lib/socket/events";
 import { useI18n } from "@/lib/i18n";
@@ -63,6 +65,11 @@ export function SpectatorStage({ matchId, roomName }: { matchId: string; roomNam
   const [history, setHistory] = useState<SpectatorPayload[]>([]);
   /** null = following live. A number is a position the operator parked on. */
   const [cursor, setCursor] = useState<number | null>(null);
+  // A finished draft can be replayed from the beginning by anyone, including
+  // somebody who opened the link a week later — the log is fetched once and the
+  // states are derived here, because the engine is a pure function and this is
+  // the one moment nothing in it is secret any more.
+  const [fullHistory, setFullHistory] = useState<SpectatorPayload[] | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   // Server-minus-client clock skew, so the countdown tracks the server's real
   // deadline rather than this machine's idea of now. State rather than a ref: it
@@ -121,6 +128,46 @@ export function SpectatorStage({ matchId, roomName }: { matchId: string; roomNam
     };
   }, [matchId]);
 
+  // Replace the tab's own buffer with the whole draft, once it is over. Until
+  // then there is nothing to fetch: the endpoint refuses a running match, which
+  // is what keeps an unrevealed offer out of a browser that should not have it.
+  const finished = payload?.state.finished ?? false;
+  // A ref, not the state, guards the fetch: React runs effects twice in
+  // development and the state has not been written yet the second time round,
+  // so guarding on `fullHistory` fired the request twice and let the first
+  // response lose a race with its own cleanup.
+  const fetchedReplay = useRef(false);
+  useEffect(() => {
+    if (!finished || fetchedReplay.current) return;
+    fetchedReplay.current = true;
+    (async () => {
+      try {
+        const r = await fetch(`/api/matches/${matchId}/replay`);
+        if (!r.ok) return;
+        const { config, actions } = (await r.json()) as { config: PresetConfig; actions: EngineAction[] };
+        if (!payload) return;
+        // One frame per act, derived from a growing prefix of the log — exactly
+        // what the server does live, run here instead.
+        //
+        // Every frame is derived as "running" and left to work out for itself
+        // whether the series is over: the engine decides that from the score,
+        // and forcing "finished" on all of them made every frame of the replay
+        // render as the end-of-series summary.
+        const frame = (prefix: EngineAction[]) => {
+          const state = deriveState(config, prefix, "running");
+          return { ...payload!, status: state.status, deadlineTs: null, awaitingAck: null, state };
+        };
+        setFullHistory([frame([]), ...actions.map((_, i) => frame(actions.slice(0, i + 1)))]);
+      } catch (e) {
+        // Loud rather than silent: the page still works from its own buffer, but
+        // a replay that quietly is not there looks identical to one that is.
+        fetchedReplay.current = false;
+        console.warn("[replay] could not build the draft history", e);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished, matchId]);
+
   // Held long enough to read out loud, then it gets out of the way on its own.
   useEffect(() => {
     if (snipeHold === null) return;
@@ -132,10 +179,14 @@ export function SpectatorStage({ matchId, roomName }: { matchId: string; roomNam
   // blanked — a historical deadline would otherwise count down against now and
   // show a dead timer racing to zero.
   const live = cursor === null;
+  // Once the whole draft is available it replaces what this tab happened to
+  // catch — same controls, but now they reach the first ban rather than the
+  // first packet this page received.
+  const frames = fullHistory ?? history;
   const shown: SpectatorPayload | null = live
     ? payload
-    : history[Math.min(cursor, history.length - 1)]
-      ? { ...history[Math.min(cursor, history.length - 1)], deadlineTs: null }
+    : frames[Math.min(cursor, frames.length - 1)]
+      ? { ...frames[Math.min(cursor, frames.length - 1)], deadlineTs: null }
       : payload;
 
   const holding =
@@ -144,16 +195,16 @@ export function SpectatorStage({ matchId, roomName }: { matchId: string; roomNam
       : null;
 
   const seek = (i: number) => {
-    const clamped = Math.max(0, Math.min(i, history.length - 1));
-    setCursor(clamped >= history.length - 1 ? null : clamped);
+    const clamped = Math.max(0, Math.min(i, frames.length - 1));
+    setCursor(clamped >= frames.length - 1 ? null : clamped);
   };
-  const at = live ? Math.max(0, history.length - 1) : Math.min(cursor, history.length - 1);
+  const at = live ? Math.max(0, frames.length - 1) : Math.min(cursor, frames.length - 1);
 
   // Arrow keys, because the mouse is not where a caster's hand is.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      const here = cursor === null ? history.length - 1 : cursor;
+      const here = cursor === null ? frames.length - 1 : cursor;
       if (e.key === "ArrowLeft") { e.preventDefault(); seek(here - 1); }
       else if (e.key === "ArrowRight") { e.preventDefault(); seek(here + 1); }
       else if (e.key === "Home") { e.preventDefault(); seek(0); }
@@ -162,7 +213,7 @@ export function SpectatorStage({ matchId, roomName }: { matchId: string; roomNam
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cursor, history.length]);
+  }, [cursor, frames.length]);
 
   // Whose turn it is, thrown in from the edges of the window rather than the edges
   // of the board. The stage is letterboxed on most screens, and lighting that
@@ -217,7 +268,8 @@ export function SpectatorStage({ matchId, roomName }: { matchId: string; roomNam
           <DraftBoard payload={shown} roomName={roomName} clockOffset={clockOffset} live={live} />
         )}
       </div>
-      <ReplayControls at={at} total={history.length} live={live} onSeek={seek} onLive={() => setCursor(null)} />
+      <ReplayControls at={at} total={frames.length} live={live} pinned={Boolean(fullHistory)}
+        onSeek={seek} onLive={() => setCursor(null)} />
     </div>
   );
 }

@@ -486,7 +486,12 @@ function PoolCell({ entry, isMap, out, closed, leaving }: {
           because both are "you can't have this". The difference is the line —
           struck means it is out of the draft, unstruck means the other player
           can still field it. */}
-      {!out && closed && <TileBadge mark="ban" size={24} label={entry.name} className="text-danger" />}
+      {!out && closed && (
+        <>
+          <StrikeBar dashed />
+          <TileBadge mark="ban" size={24} label={entry.name} className="text-danger" />
+        </>
+      )}
       {out && <StrikeBar animate={stamp > 0} />}
       {fresh && (
         <span key={stamp} aria-hidden className="tile-ring pointer-events-none absolute inset-0 rounded-[10px]"

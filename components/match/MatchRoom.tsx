@@ -2170,6 +2170,11 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
   const filtered = shown.length !== entries.length;
   const clear = () => { setQ(""); setOnlyOpen(false); };
 
+  // Everything the rules would accept from you right now. `clickable` is the
+  // same predicate the tiles use, so this can never offer a move a tile would
+  // have refused — the button and the grid cannot drift apart.
+  const legal = entries.filter((e) => clickable(e));
+
   return (
     // No heading. The line directly above this panel already says which pool it
     // is and what to do with it — "P1 · Ban map" over a heading reading "Maps" is
@@ -2179,6 +2184,20 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
           a control that changes what you are looking at belongs before the thing
           it changes. */}
       <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
+        {/* Somebody trying a format out for the first time hits random over and
+            over just to watch the turns go by — that is the use SAS described,
+            and it is also the fastest way for anyone to see what a preset does.
+            A real move with real consequences, so it is a plain labelled button
+            and not something a stray keystroke can trigger. */}
+        {legal.length > 0 && (
+          <button
+            onClick={() => onPick(legal[Math.floor(Math.random() * legal.length)].id)}
+            title={t("match.randomHint")}
+            className="rounded border border-bronze px-2 py-1 text-gold-bright transition hover:brightness-125"
+          >
+            🎲 {t("match.random")}
+          </button>
+        )}
         {/* Right-click is invisible until somebody tells you, so this line is
             the feature's only discovery surface. It doubles as the way out once
             the pool is covered in marks. */}
@@ -2412,10 +2431,16 @@ function PoolTile({ e, isMap, can, tone, isSelectStep, selectable, isPending, bl
             className={`text-danger ${stamp > 0 ? "badge-pop" : ""}`} />
         </>
       )}
-      {/* Same glyph as a ban, deliberately: both are "you can't have this". The
-          difference is the line — struck means it is out of the draft, unstruck
-          means it is out for you alone and the opponent can still field it. */}
-      {isBlocked && <TileBadge mark="ban" label={t("match.legendBlocked")} className="text-danger" />}
+      {/* Same glyph as a ban, deliberately: both are "you can't have this". Both
+          get the line too, because a player pointed out that from where he sits
+          the consequence is identical — but his is dashed, and his tile keeps
+          its colour, because the civ is still live for the opponent who cast it. */}
+      {isBlocked && (
+        <>
+          <StrikeBar dashed animate={stamp > 0} />
+          <TileBadge mark="ban" label={t("match.legendBlocked")} className="text-danger" />
+        </>
+      )}
       {taken && (
         <TileBadge mark="check" label={t("match.legendTaken")}
           className={`${own?.text ?? "text-gold-bright"} ${stamp > 0 ? "badge-pop" : ""}`} />

@@ -73,12 +73,21 @@ export function TileBadge({ mark, size = 24, corner = "tr", className = "", styl
  * board strip wears, and what an empty ban slot draws to say a ban belongs
  * there. The pool was the one place spelling it ✕ instead.
  */
-export function StrikeBar({ animate }: { animate?: boolean }) {
+export function StrikeBar({ animate, dashed }: { animate?: boolean; dashed?: boolean }) {
   return (
     <span
       aria-hidden
       className={`pointer-events-none absolute inset-x-0 top-1/2 z-10 h-[3px] -translate-y-1/2 ${animate ? "strike-draw" : ""}`}
-      style={{ background: "var(--danger)", boxShadow: "0 0 6px rgba(0,0,0,.6)" }}
+      style={{
+        // Dashed for a ban that only closed this civ to YOU. The line is the
+        // word "no", which is what a player asked to see and is true either way;
+        // the breaks in it are what keeps "gone from the draft" and "gone for
+        // you, and your opponent may still field it" from becoming one thing.
+        background: dashed
+          ? "repeating-linear-gradient(to right, var(--danger) 0 9px, transparent 9px 16px)"
+          : "var(--danger)",
+        boxShadow: dashed ? undefined : "0 0 6px rgba(0,0,0,.6)",
+      }}
     />
   );
 }

@@ -19,11 +19,14 @@ import { useI18n } from "@/lib/i18n";
  * burnt into their output. The board's own LIVE indicator carries the truth for
  * anyone who looks.
  */
-export function ReplayControls({ at, total, live, onSeek, onLive }: {
+export function ReplayControls({ at, total, live, pinned, onSeek, onLive }: {
   /** 0-based position in the history buffer. */
   at: number;
   total: number;
   live: boolean;
+  /** Always on screen. Set once a draft is over: there is no live picture left
+      to keep clean, and replaying it is the only reason to open the page. */
+  pinned?: boolean;
   onSeek: (index: number) => void;
   onLive: () => void;
 }) {
@@ -33,7 +36,7 @@ export function ReplayControls({ at, total, live, onSeek, onLive }: {
   // back to be findable without knowing that moving the mouse summons it. That
   // is a fact about `live`, so it is derived rather than stored; the state below
   // only tracks the part that is genuinely about recent input.
-  const visible = !live || stirred;
+  const visible = pinned || !live || stirred;
 
   // Any input reveals it; a few seconds of stillness puts it away again.
   useEffect(() => {

@@ -191,6 +191,8 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "err.matchBody": { en: "The draft is safe — it lives on the server, not in this tab. Try again to rejoin where you left off. The error has been reported automatically.", zh: "抽選本身沒事 —— 它存在伺服器上，不在這個分頁裡。按重試就會回到你剛才的位置。錯誤已經自動回報了。", ja: "ドラフト自体は無事です — サーバー上にあり、このタブにはありません。再試行すれば元の位置に戻ります。エラーは自動的に報告されました。" },
   "err.retry": { en: "Try again", zh: "重試", ja: "再試行" },
   "err.reload": { en: "Reload the page", zh: "重新載入頁面", ja: "ページを再読み込み" },
+  "match.random": { en: "Random", zh: "隨機", ja: "ランダム" },
+  "match.randomHint": { en: "Picks one of the legal targets for you", zh: "幫你從可選的裡面挑一個", ja: "選べるものから1つ選びます" },
   "match.markHint": { en: "Right-click to mark", zh: "右鍵標記", ja: "右クリックで印" },
   "match.marked": { en: "Marked", zh: "已標記", ja: "印あり" },
   "match.markClear": { en: "Clear marks", zh: "清除標記", ja: "印を消す" },
