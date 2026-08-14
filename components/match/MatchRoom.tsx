@@ -27,10 +27,13 @@ const MAP_IMG = new Map(DEFAULT_MAPS.map((m) => [m.id, m.imageUrl]));
 // is attributed to a player. Bans are deliberately colourless (greyscale + ✕) so
 // red always reads as "player 2" — players were misreading the old green "pick"
 // tint as "it's my turn". Gold is reserved for "you are the one acting now".
-type OwnerTone = { text: string; border: string; borderL: string; ring: string; bg: string };
+// `hoverText` is spelled out rather than built from `text`, because Tailwind
+// finds classes by scanning the source for them — a name assembled at runtime
+// is a name that never gets compiled.
+type OwnerTone = { text: string; hoverText: string; border: string; borderL: string; ring: string; bg: string };
 const OWNER: Record<"player1" | "player2", OwnerTone> = {
-  player1: { text: "text-p1", border: "border-p1", borderL: "border-l-p1", ring: "ring-p1", bg: "bg-p1/10" },
-  player2: { text: "text-p2", border: "border-p2", borderL: "border-l-p2", ring: "ring-p2", bg: "bg-p2/10" },
+  player1: { text: "text-p1", hoverText: "group-hover:text-p1", border: "border-p1", borderL: "border-l-p1", ring: "ring-p1", bg: "bg-p1/10" },
+  player2: { text: "text-p2", hoverText: "group-hover:text-p2", border: "border-p2", borderL: "border-l-p2", ring: "ring-p2", bg: "bg-p2/10" },
 };
 function ownerOf(by?: string) {
   return by === "player1" ? OWNER.player1 : by === "player2" ? OWNER.player2 : null;
@@ -333,10 +336,11 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   // Simultaneous ban: there is no "turn" — both players act at once, gated on
   // `awaiting`, and each other's picks stay hidden until both have submitted.
   const simulBan = Boolean(step?.simultaneous) && (step?.type === "MAP_BAN" || step?.type === "CIV_BAN");
-  // Whose move the pool is offering, so its tiles can wear that seat's colour.
-  // A simultaneous step is both seats' at once and so has no one colour — the
-  // tiles stay neutral there rather than picking a side at random.
-  const actorTone = state.turn === "player1" || state.turn === "player2" ? OWNER[state.turn] : null;
+  // Your own colour, for the hover cue on a tile you could actually click.
+  // Yours rather than "whoever is on the clock": a tile only lights up when the
+  // rules would accept the press, and the only person that can be is you — which
+  // stays true on a simultaneous step, where nobody is on the clock at all.
+  const youTone = youPlayer ? OWNER[youPlayer] : null;
   const myPendingBans = youPlayer ? state.pendingBans[youPlayer] : [];
   const canSimulBan = simulBan && canActDuel;
   const usedByYou = youPlayer
@@ -522,7 +526,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           marked={marks.marked} onMark={marks.toggle} onClearMarks={marks.clear}
           oppHover={oppHover} onHover={(id) => { setMyHover(id); sendHover("map", id); }}
           tone={step?.type === "MAP_BAN" ? "ban" : "pick"}
-          actorTone={actorTone}
+          youTone={youTone}
           highlightSelectable={step?.type === "MAP_SELECT" ? state.selectableMapIds : undefined} />
       )}
       {showCivs && (
@@ -532,7 +536,7 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           marked={marks.marked} onMark={marks.toggle} onClearMarks={marks.clear}
           oppHover={oppHover} onHover={(id) => { setMyHover(id); sendHover("civ", id); }}
           tone={step?.type === "CIV_BAN" ? "ban" : "pick"}
-          actorTone={actorTone} />
+          youTone={youTone} />
       )}
       {/* Two-pool duel: simultaneous hidden offer */}
       {showOffer && duel && (
@@ -2192,11 +2196,11 @@ function ConfirmSeat({ name, status, tone }: { name: string; status: SeatConfirm
   );
 }
 
-function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightSelectable, pendingIds, blockedIds, marked, onMark, onClearMarks, kind = "civ", tone = "neutral", actorTone = null }: {
+function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightSelectable, pendingIds, blockedIds, marked, onMark, onClearMarks, kind = "civ", tone = "neutral", youTone = null }: {
   title: string; entries: PoolView[]; clickable: (e: PoolView) => boolean; onPick: (id: string) => void;
   onHover: (id: string | null) => void; oppHover: string | null; highlightSelectable?: string[]; kind?: "civ" | "map";
-  /** Whose move this step is, for the tiles to wear. Null on a simultaneous one. */
-  actorTone?: OwnerTone | null;
+  /** The viewer's own seat colour, for the hover cue on tiles they may click. */
+  youTone?: OwnerTone | null;
   /** Your own not-yet-revealed simultaneous bans — shown only to you. */
   pendingIds?: string[];
   /** Entries you have marked for yourself. Local; nobody else ever sees these. */
@@ -2340,7 +2344,7 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
             isMap={isMap}
             can={clickable(e)}
             tone={tone}
-            actorTone={actorTone}
+            youTone={youTone}
             // During a select step (highlightSelectable given), only those entries are highlighted.
             isSelectStep={highlightSelectable != null}
             selectable={highlightSelectable ? highlightSelectable.includes(e.id) : true}
@@ -2438,10 +2442,10 @@ function FilterChip({ on, onClick, label }: { on: boolean; onClick: () => void; 
  * The stamp is what keeps that honest. Animations play on change, never on mount,
  * so opening a draft that is already half-banned does not replay every ban at once.
  */
-function PoolTile({ e, isMap, can, tone, actorTone, isSelectStep, selectable, isPending, blocked, oppHovered, marked, onMark, onPick, onHover, t }: {
+function PoolTile({ e, isMap, can, tone, youTone, isSelectStep, selectable, isPending, blocked, oppHovered, marked, onMark, onPick, onHover, t }: {
   e: PoolView; isMap: boolean; can: boolean; tone: "ban" | "pick" | "neutral";
-  /** Whose move this step is, when it is one seat's. Null on a simultaneous one. */
-  actorTone: OwnerTone | null;
+  /** The viewer's own seat colour, for the hover cue. Null for a spectator. */
+  youTone: OwnerTone | null;
   isSelectStep: boolean; selectable: boolean; isPending: boolean; blocked: boolean;
   oppHovered: boolean;
   /** Marked by this viewer, for this viewer. */
@@ -2458,23 +2462,19 @@ function PoolTile({ e, isMap, can, tone, actorTone, isSelectStep, selectable, is
   const struck = banned || isBlocked;
   const fresh = stamp > 0 && (struck || taken);
   /**
-   * What this step would DO to an entry still on the table, said in the name.
+   * What clicking this would do, said in the name — on hover, and only there.
    *
-   * The border already carries it, but at this cell size the border is two
-   * pixels of a tile that is mostly artwork — the same reason the caption wears
-   * the owner's colour once an entry is taken. Red for a ban, the acting seat's
-   * colour for a pick, so a pool mid-draft reads as "these are about to become
-   * P2's" rather than as an undifferentiated grid.
+   * The border and the tint already move under the cursor; the name is the part
+   * people actually read, and at this cell size the border is two pixels of
+   * something that is mostly artwork. Red for a ban, your own seat's colour for
+   * a pick.
    *
-   * Not on a select step's non-candidates: they are already faded to 30%
-   * because they are NOT on offer, and colouring them would have the tile
-   * arguing with itself.
+   * Only while `can`, which is the same predicate the click uses: this is an
+   * answer to "what happens if I press this", so it has no business appearing on
+   * a tile that would refuse the press — on somebody else's turn, on a select
+   * step's non-candidates, or on an entry that is already spent.
    */
-  const offerTone =
-    isSelectStep && !selectable ? "text-foreground"
-      : tone === "ban" ? "text-danger"
-      : tone === "pick" && actorTone ? actorTone.text
-      : "text-foreground";
+  const hoverTone = !can ? "" : tone === "ban" ? "group-hover:text-danger" : youTone?.hoverText ?? "";
   const ringColour = struck ? "var(--danger)" : e.by === "player1" ? "var(--p1)" : e.by === "player2" ? "var(--p2)" : "var(--gold)";
 
   return (
@@ -2495,7 +2495,9 @@ function PoolTile({ e, isMap, can, tone, actorTone, isSelectStep, selectable, is
       // ban you did not mean to cast.
       onContextMenu={onMark ? (ev) => { ev.preventDefault(); onMark(e.id); } : undefined}
       className={[
-        "relative flex w-full flex-col items-center overflow-hidden rounded-lg border-2 transition",
+        // `group` so the name plate can answer the cursor too — it is a child of
+        // this button, and :hover on the button is the only place the state lives.
+        "group relative flex w-full flex-col items-center overflow-hidden rounded-lg border-2 transition",
         fresh ? (struck ? "tile-strike" : "tile-take") : "",
         // Layered rather than one chain: whose an entry is has to survive
         // every other state, or a map somebody picked reads as dead stock.
@@ -2563,7 +2565,7 @@ function PoolTile({ e, isMap, can, tone, actorTone, isSelectStep, selectable, is
           banned ? "text-muted"
             : isBlocked ? "text-danger"
             : taken && own ? own.text
-            : offerTone
+            : `text-foreground ${hoverTone}`
         }`}
         style={GLASS}
       >
