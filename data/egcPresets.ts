@@ -211,7 +211,14 @@ function build(stage: EgcStage): PresetConfig {
     // player has had a chance to see which map came out — and the first civ step is
     // a blind ban, the one you least want to rush. Generous but not open-ended: if
     // somebody walks away the timer confirms for them rather than hanging the draft.
-    mk({ type: "SYNC_CONFIRM", actor: "PLAYER1", pool: "civ", timeLimitSec: 60, pausable: true }),
+    //
+    // HOST_DRAW is how a confirm gate says "everybody", and it has to: naming a
+    // seat is what makes a gate one-sided (`isSimultaneousStep`). This step used
+    // to read PLAYER1 — filler, because StepSpec demands an actor — and that
+    // filler quietly asked P1 alone, so the moment P1 pressed it the blind ban's
+    // clock started on a P2 who might still have been reading the map. Which is
+    // the exact thing the paragraph above says this step is here to prevent.
+    mk({ type: "SYNC_CONFIRM", actor: "HOST_DRAW", pool: "civ", timeLimitSec: 60, pausable: true }),
     ...civDraft(stage.snake, stage.tail ?? false),
     ...series(stage.bestOf),
   ].map((s, i) => ({ ...s, id: `${stage.key}-${String(i + 1).padStart(2, "0")}` }));
@@ -232,7 +239,7 @@ function build(stage: EgcStage): PresetConfig {
 }
 
 /** Bump a preset's version to make the seed overwrite the copy in the database. */
-export const EGC_PRESET_VERSION = 4;
+export const EGC_PRESET_VERSION = 5;
 
 export const EGC_PRESETS = STAGES.map((s, i) => ({
   key: s.key,

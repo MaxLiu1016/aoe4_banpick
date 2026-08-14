@@ -29,7 +29,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
   {
     "key": "bcc-bo3",
     "order": 20,
-    "version": 5,
+    "version": 6,
     "name": "Bo3 Draft(BCC)",
     "description": "For Border Conquest Cup, Standard Bo3 — map BP, hand draft, simultaneous offer & snipe.",
     "config": {
@@ -305,7 +305,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
         {
           "id": "bcc-bo3-map-civ-gate",
           "type": "SYNC_CONFIRM",
-          "actor": "PLAYER1",
+          "actor": "HOST_DRAW",
           "pool": "civ",
           "count": 1,
           "timeLimitSec": 60,
@@ -656,7 +656,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
   {
     "key": "bcc-bo5",
     "order": 21,
-    "version": 5,
+    "version": 6,
     "name": "Bo5 Draft(BCC)",
     "description": "For Border Conquest Cup, Standard Bo5 — map BP, hand draft, simultaneous offer & snipe.",
     "config": {
@@ -930,7 +930,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
         {
           "id": "bcc-bo5-map-civ-gate",
           "type": "SYNC_CONFIRM",
-          "actor": "PLAYER1",
+          "actor": "HOST_DRAW",
           "pool": "civ",
           "count": 1,
           "timeLimitSec": 60,

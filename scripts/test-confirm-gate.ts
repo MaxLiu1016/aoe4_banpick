@@ -22,7 +22,8 @@
  */
 import { validatePreset } from "@/lib/draft/validate";
 import { stepLabel } from "@/lib/draft/stepLabel";
-import { deriveState, type EngineAction } from "@/lib/draft/engine";
+import { deriveState, gameIndexOfSteps, type EngineAction } from "@/lib/draft/engine";
+import { isSimultaneousStep } from "@/lib/draft/schema";
 import { buildDefaultConfig } from "@/lib/draft/defaultPreset";
 import { EGC_PRESETS } from "@/data/egcPresets";
 import { DEMO_PRESETS } from "@/data/demoPresets";
@@ -145,6 +146,26 @@ const shipped: [string, PresetConfig][] = [
 for (const [name, cfg] of shipped) {
   const hit = validatePreset(cfg).filter((e) => e.code === "actorNoPrevGame");
   ok(hit.length === 0, `${name}${hit.length ? ` → ${JSON.stringify(hit)}` : ""}`);
+}
+
+// --- The gate between the two halves -----------------------------------------
+// The map draft ends in a server draw, and the civ half opens on a blind ban.
+// The gate in between exists so BOTH players get to see the drawn map before
+// that clock starts. Three shipped formats had `actor: "PLAYER1"` on it —
+// filler, because the step type demands an actor — which asked P1 alone and
+// started P2's blind ban the instant P1 pressed it. Nothing caught it because
+// the step bar called every gate "both players confirm" regardless.
+//
+// Not a `validatePreset` rule: a one-sided gate in game 1 is a legitimate thing
+// for somebody to build. It is these presets that must not have one.
+console.log("\nNo shipped preset asks one seat to open the civ half alone");
+for (const [name, cfg] of shipped) {
+  const gameOf = gameIndexOfSteps(cfg.steps);
+  const oneSided = cfg.steps
+    .map((s, i) => ({ s, i }))
+    .filter(({ s, i }) => s.type === "SYNC_CONFIRM" && gameOf[i] === 0 && !isSimultaneousStep(s));
+  ok(oneSided.length === 0,
+    `${name}${oneSided.length ? ` → step ${oneSided.map(({ s, i }) => `${i + 1} (${s.actor})`).join(", ")}` : ""}`);
 }
 
 console.log(failures === 0 ? "\nALL PASS ✓" : `\n${failures} FAILURE(S) ✗`);
