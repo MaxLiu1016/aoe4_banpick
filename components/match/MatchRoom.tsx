@@ -333,6 +333,10 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   // Simultaneous ban: there is no "turn" — both players act at once, gated on
   // `awaiting`, and each other's picks stay hidden until both have submitted.
   const simulBan = Boolean(step?.simultaneous) && (step?.type === "MAP_BAN" || step?.type === "CIV_BAN");
+  // Whose move the pool is offering, so its tiles can wear that seat's colour.
+  // A simultaneous step is both seats' at once and so has no one colour — the
+  // tiles stay neutral there rather than picking a side at random.
+  const actorTone = state.turn === "player1" || state.turn === "player2" ? OWNER[state.turn] : null;
   const myPendingBans = youPlayer ? state.pendingBans[youPlayer] : [];
   const canSimulBan = simulBan && canActDuel;
   const usedByYou = youPlayer
@@ -517,7 +521,8 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           pendingIds={simulBan ? myPendingBans : undefined}
           marked={marks.marked} onMark={marks.toggle} onClearMarks={marks.clear}
           oppHover={oppHover} onHover={(id) => { setMyHover(id); sendHover("map", id); }}
-          tone={step?.type === "MAP_BAN" ? "ban" : step?.type === "MAP_PICK" ? "pick" : "neutral"}
+          tone={step?.type === "MAP_BAN" ? "ban" : "pick"}
+          actorTone={actorTone}
           highlightSelectable={step?.type === "MAP_SELECT" ? state.selectableMapIds : undefined} />
       )}
       {showCivs && (
@@ -526,7 +531,8 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
           blockedIds={blockedForMe}
           marked={marks.marked} onMark={marks.toggle} onClearMarks={marks.clear}
           oppHover={oppHover} onHover={(id) => { setMyHover(id); sendHover("civ", id); }}
-          tone={step?.type === "CIV_BAN" ? "ban" : "pick"} />
+          tone={step?.type === "CIV_BAN" ? "ban" : "pick"}
+          actorTone={actorTone} />
       )}
       {/* Two-pool duel: simultaneous hidden offer */}
       {showOffer && duel && (
@@ -712,6 +718,20 @@ function OverviewBand({
     hidden && duel!.offered[seat].length === 0 && !state.awaiting[seat] ? duel!.offerTarget[seat] : 0;
 
   const size = 76;
+  /**
+   * The hand tiles in the folded band, at the pool's own shape and scale.
+   *
+   * They were 60x60 squares. A civ flag is 16:10 and drawn `object-contain`, so
+   * a square cell rendered it 60 wide by 37 tall and spent the rest of itself on
+   * background — the same flag in the pool three rows further down came out
+   * 101x64, and the two did not look like the same object.
+   *
+   * Narrowed for a long hand, the way the expanded row already narrows: the
+   * folded band's whole job is keeping the page inside one window, and a Bo9's
+   * ten civs at full width would take two lines to say what one was saying.
+   */
+  const handSlots = Math.max(reserved("CIV_PICK", "player1"), reserved("CIV_PICK", "player2"));
+  const foldedCiv = handSlots > 6 ? { w: 76, h: 48 } : { w: 96, h: 60 };
   const names = { player1: p1Name, player2: p2Name };
 
   // "{name} wins!" with the name in that player's colour. Built by splitting the
@@ -739,7 +759,12 @@ function OverviewBand({
   const selectGhost = preview && step?.type === "MAP_SELECT" && state.selectableMapIds.includes(preview)
     ? mapById(preview)
     : undefined;
-  const mw = folded ? 84 : 112, mh = folded ? 52 : 70;
+  // One size, folded or not. Folding used to shrink these to 84x52 as well as
+  // hide the sections you are not using, and a map at that size read as a
+  // thumbnail OF the pool tile below it (~137x86) rather than as the same
+  // object. Dropping the sections is what buys the height; the tiles that are
+  // left should be the size the rest of the page draws a map at.
+  const mw = 112, mh = 70;
   const mapSide = (s: "player1" | "player2") => {
     const left = s === "player1";
     const align = left ? "right" : "left";
@@ -846,11 +871,12 @@ function OverviewBand({
                 <span className={`truncate font-display text-sm ${OWNER[s].text}`}>{names[s]}</span>
                 <SlotRow align={align} ids={ids} slots={reserved("CIV_PICK", s)} active={at("CIV_PICK", s)}
                   preview={previewFor(s)} dimTitle={t("match.used")}
-                  entry={civById} kind="civ" ring={OWNER[s].border} w={60} h={60} dim={usedIds} />
+                  entry={civById} kind="civ" ring={OWNER[s].border} w={foldedCiv.w} h={foldedCiv.h} dim={usedIds} />
                 <SlotRow align={align} ids={state.civBans.filter((b) => b.by === s).map((b) => b.id)}
                   slots={reserved("CIV_BAN", s)} active={at("CIV_BAN", s)} preview={previewFor(s)}
                   pending={mapPhase ? undefined : state.pendingBans[s]}
-                  entry={civById} kind="civ" ring="border-[rgba(154,145,125,.45)]" w={50} h={50} struck />
+                  entry={civById} kind="civ" ring="border-[rgba(154,145,125,.45)]"
+                  w={Math.round(foldedCiv.w * 0.8)} h={Math.round(foldedCiv.h * 0.8)} struck />
               </div>
             );
           })}
@@ -2166,9 +2192,11 @@ function ConfirmSeat({ name, status, tone }: { name: string; status: SeatConfirm
   );
 }
 
-function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightSelectable, pendingIds, blockedIds, marked, onMark, onClearMarks, kind = "civ", tone = "neutral" }: {
+function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightSelectable, pendingIds, blockedIds, marked, onMark, onClearMarks, kind = "civ", tone = "neutral", actorTone = null }: {
   title: string; entries: PoolView[]; clickable: (e: PoolView) => boolean; onPick: (id: string) => void;
   onHover: (id: string | null) => void; oppHover: string | null; highlightSelectable?: string[]; kind?: "civ" | "map";
+  /** Whose move this step is, for the tiles to wear. Null on a simultaneous one. */
+  actorTone?: OwnerTone | null;
   /** Your own not-yet-revealed simultaneous bans — shown only to you. */
   pendingIds?: string[];
   /** Entries you have marked for yourself. Local; nobody else ever sees these. */
@@ -2312,6 +2340,7 @@ function Pool({ title, entries, clickable, onPick, onHover, oppHover, highlightS
             isMap={isMap}
             can={clickable(e)}
             tone={tone}
+            actorTone={actorTone}
             // During a select step (highlightSelectable given), only those entries are highlighted.
             isSelectStep={highlightSelectable != null}
             selectable={highlightSelectable ? highlightSelectable.includes(e.id) : true}
@@ -2409,8 +2438,10 @@ function FilterChip({ on, onClick, label }: { on: boolean; onClick: () => void; 
  * The stamp is what keeps that honest. Animations play on change, never on mount,
  * so opening a draft that is already half-banned does not replay every ban at once.
  */
-function PoolTile({ e, isMap, can, tone, isSelectStep, selectable, isPending, blocked, oppHovered, marked, onMark, onPick, onHover, t }: {
+function PoolTile({ e, isMap, can, tone, actorTone, isSelectStep, selectable, isPending, blocked, oppHovered, marked, onMark, onPick, onHover, t }: {
   e: PoolView; isMap: boolean; can: boolean; tone: "ban" | "pick" | "neutral";
+  /** Whose move this step is, when it is one seat's. Null on a simultaneous one. */
+  actorTone: OwnerTone | null;
   isSelectStep: boolean; selectable: boolean; isPending: boolean; blocked: boolean;
   oppHovered: boolean;
   /** Marked by this viewer, for this viewer. */
@@ -2426,6 +2457,24 @@ function PoolTile({ e, isMap, can, tone, isSelectStep, selectable, isPending, bl
   const stamp = useChangeStamp(`${e.state}:${e.by ?? ""}:${isBlocked ? "b" : ""}:${isPending ? "p" : ""}`);
   const struck = banned || isBlocked;
   const fresh = stamp > 0 && (struck || taken);
+  /**
+   * What this step would DO to an entry still on the table, said in the name.
+   *
+   * The border already carries it, but at this cell size the border is two
+   * pixels of a tile that is mostly artwork — the same reason the caption wears
+   * the owner's colour once an entry is taken. Red for a ban, the acting seat's
+   * colour for a pick, so a pool mid-draft reads as "these are about to become
+   * P2's" rather than as an undifferentiated grid.
+   *
+   * Not on a select step's non-candidates: they are already faded to 30%
+   * because they are NOT on offer, and colouring them would have the tile
+   * arguing with itself.
+   */
+  const offerTone =
+    isSelectStep && !selectable ? "text-foreground"
+      : tone === "ban" ? "text-danger"
+      : tone === "pick" && actorTone ? actorTone.text
+      : "text-foreground";
   const ringColour = struck ? "var(--danger)" : e.by === "player1" ? "var(--p1)" : e.by === "player2" ? "var(--p2)" : "var(--gold)";
 
   return (
@@ -2514,7 +2563,7 @@ function PoolTile({ e, isMap, can, tone, isSelectStep, selectable, isPending, bl
           banned ? "text-muted"
             : isBlocked ? "text-danger"
             : taken && own ? own.text
-            : "text-foreground"
+            : offerTone
         }`}
         style={GLASS}
       >
