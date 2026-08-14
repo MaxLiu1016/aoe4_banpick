@@ -479,14 +479,18 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
               // and beside a step that is about civs, "why is it here" is the
               // question. Above rather than beside: the row's width belongs to
               // the instruction, and a caption in it would push the two apart.
+              // A tenth bigger than the band's copy of the same map (112x70),
+              // caption and name plate with it so the block scales as one thing.
+              // It is the map being played FOR, sitting next to the instruction
+              // it qualifies; the band's is the record you glance back at.
               <div className="shrink-0">
-                <p className="mb-1 text-center font-sans text-[11px] tracking-[.1em] text-muted">
+                <p className="mb-1 text-center font-sans text-[12px] tracking-[.1em] text-muted">
                   {t("match.currentMap")}
                 </p>
-                <div className="relative" style={{ width: 112, height: 70 }}>
+                <div className="relative" style={{ width: 123, height: 77 }}>
                   <Thumb src={mapById(currentMap)?.imageUrl} alt={currentMapName ?? ""}
                     className="h-full w-full rounded-md border-2 border-gold bg-surface-2 object-cover" />
-                  <MapLabel name={currentMapName} size={11} />
+                  <MapLabel name={currentMapName} size={12} />
                 </div>
               </div>
             )}
