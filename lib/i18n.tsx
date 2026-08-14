@@ -183,7 +183,9 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "match.confirmNotAsked": { en: "Not asked", zh: "無需確認", ja: "確認は不要" },
   "match.confirmWaitingOpp": { en: "Waiting for your opponent…", zh: "等待對手確認…", ja: "相手の確認を待っています…" },
   "match.confirmWaitingYou": { en: "Press confirm when you're ready", zh: "準備好了就按確認", ja: "準備ができたら確認を押してください" },
-  "match.currentMap": { en: "Current map:", zh: "本局地圖：", ja: "このゲームのマップ：" },
+  // A caption over the thumbnail, not the left half of "label: value" — the
+  // picture underneath is the value, so the colon has nothing left to introduce.
+  "match.currentMap": { en: "Current map", zh: "當前地圖", ja: "現在のマップ" },
   "match.maps": { en: "Maps", zh: "地圖", ja: "マップ" },
   "match.civs": { en: "Civilizations", zh: "文明", ja: "文明" },
   // Pool legend. Four states, and the third one only exists because a ban can be

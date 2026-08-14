@@ -473,10 +473,21 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         {step && !state.finished && (
           <div className="flex items-center justify-center gap-5">
             {currentMap && step.type !== "GAME_RESULT" && (
-              <div className="relative shrink-0" style={{ width: 112, height: 70 }}>
-                <Thumb src={mapById(currentMap)?.imageUrl} alt={currentMapName ?? ""}
-                  className="h-full w-full rounded-md border-2 border-gold bg-surface-2 object-cover" />
-                <MapLabel name={currentMapName} size={11} />
+              // Captioned, because the picture alone does not say which of the
+              // several maps on this screen it is. Its own plate carries the
+              // map's NAME, which answers "which map" and not "why is it here" —
+              // and beside a step that is about civs, "why is it here" is the
+              // question. Above rather than beside: the row's width belongs to
+              // the instruction, and a caption in it would push the two apart.
+              <div className="shrink-0">
+                <p className="mb-1 text-center font-sans text-[11px] tracking-[.1em] text-muted">
+                  {t("match.currentMap")}
+                </p>
+                <div className="relative" style={{ width: 112, height: 70 }}>
+                  <Thumb src={mapById(currentMap)?.imageUrl} alt={currentMapName ?? ""}
+                    className="h-full w-full rounded-md border-2 border-gold bg-surface-2 object-cover" />
+                  <MapLabel name={currentMapName} size={11} />
+                </div>
               </div>
             )}
             <div className={currentMap ? "min-w-0 text-left" : "text-center"}>
