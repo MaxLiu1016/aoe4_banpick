@@ -51,6 +51,23 @@ export interface PoolView extends PoolEntry {
   by?: SeatRole;
 }
 
+/**
+ * The SYNC_CONFIRM gate the draft is standing at, or null when it isn't at one.
+ *
+ * The two halves are reported separately because `awaiting` cannot tell them
+ * apart: it is false for a seat that has confirmed AND for a seat this gate
+ * never addressed. A gate that names an actor — "the winner acknowledges the
+ * map the loser just picked" — asks one side, and reading the other side's
+ * `awaiting: false` as agreement showed a tick and the word "Confirmed"
+ * against a player who was never given a button.
+ */
+export interface ConfirmGateView {
+  /** Seats this gate is waiting on. Both, unless the step names an actor. */
+  asked: { player1: boolean; player2: boolean };
+  /** Seats that have actually pressed confirm. */
+  confirmed: { player1: boolean; player2: boolean };
+}
+
 export interface CivDuel {
   phase: "offer" | "snipe" | "resolved" | null;
   /** Civs the CURRENT offer step asks of whoever it is addressed to. */
@@ -126,6 +143,8 @@ export interface DerivedState {
   mapBansByP2: string[];
   selectableMapIds: string[];
   civDuel: CivDuel | null;
+  /** The confirm gate in progress, or null when the current step isn't one. */
+  confirmGate: ConfirmGateView | null;
   games: GameRec[];
 }
 
@@ -436,6 +455,7 @@ export function deriveState(
   // turn / simultaneous / awaiting
   let turn: SeatRole | null = null;
   let simultaneous = false;
+  let confirmGate: ConfirmGateView | null = null;
   const awaiting = { player1: false, player2: false };
   if (currentStep) {
     if (currentStep.type === "CIV_OFFER") {
@@ -457,18 +477,26 @@ export function deriveState(
     } else if (currentStep.type === "SYNC_CONFIRM") {
       const c = confirmedByStep.get(currentStepIndex);
       const only = isSimultaneousStep(currentStep) ? null : resolveActor(currentStep, cg, games);
-      if (only === "player1" || only === "player2") {
+      const oneSided = only === "player1" || only === "player2";
+      confirmGate = {
+        asked: oneSided
+          ? { player1: only === "player1", player2: only === "player2" }
+          : { player1: true, player2: true },
+        confirmed: { player1: !!c?.player1, player2: !!c?.player2 },
+      };
+      if (oneSided) {
         // One side's gate. `turn` is what the whole UI reads to say whose move
         // it is, so it has to be set here too — leaving it null would light up
         // nobody while the draft waited on somebody.
         turn = only;
-        awaiting.player1 = only === "player1" && !c?.player1;
-        awaiting.player2 = only === "player2" && !c?.player2;
       } else {
         simultaneous = true;
-        awaiting.player1 = !c?.player1;
-        awaiting.player2 = !c?.player2;
       }
+      // Waiting on a seat means it was asked and hasn't answered. Both halves
+      // matter: `awaiting` alone cannot distinguish the seat that answered from
+      // the seat that was never asked, which is what `confirmGate` is for.
+      awaiting.player1 = confirmGate.asked.player1 && !confirmGate.confirmed.player1;
+      awaiting.player2 = confirmGate.asked.player2 && !confirmGate.confirmed.player2;
     } else if (isSimulBan(currentStepIndex)) {
       simultaneous = true;
       const e = perStepByActor.get(currentStepIndex) ?? { player1: 0, player2: 0 };
@@ -587,6 +615,7 @@ export function deriveState(
     mapBansByP2,
     selectableMapIds,
     civDuel,
+    confirmGate,
     games,
   };
 }

@@ -180,6 +180,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "match.yourMove": { en: "Your move.", zh: "輪到你。", ja: "あなたの番です。" },
   "match.confirm": { en: "Confirm", zh: "確認", ja: "確認" },
   "match.confirmed": { en: "Confirmed", zh: "已確認", ja: "確認済み" },
+  "match.confirmNotAsked": { en: "Not asked", zh: "無需確認", ja: "確認は不要" },
   "match.confirmWaitingOpp": { en: "Waiting for your opponent…", zh: "等待對手確認…", ja: "相手の確認を待っています…" },
   "match.confirmWaitingYou": { en: "Press confirm when you're ready", zh: "準備好了就按確認", ja: "準備ができたら確認を押してください" },
   "match.currentMap": { en: "Current map:", zh: "本局地圖：", ja: "このゲームのマップ：" },
@@ -352,6 +353,9 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "step.CIV_PICK": { en: "Pick civ into pool", zh: "選文明進池", ja: "文明を PICK（プールへ）" },
   "step.MAP_SELECT": { en: "Select map", zh: "選圖開打", ja: "対戦マップを選択" },
   "step.SYNC_CONFIRM": { en: "Both players confirm", zh: "雙方確認", ja: "両プレイヤーが確認" },
+  // The same gate with an actor named on it asks that seat only, so it takes the
+  // {actor} prefix and needs a name that doesn't already claim both players.
+  "step.SYNC_CONFIRM_one": { en: "Confirm", zh: "確認", ja: "確認" },
   // No "(simultaneous)" suffix: the locked 同時進行 checkbox on the row says it,
   // and having it in two places was the reason "simultaneous" looked like two
   // different features depending on the step type.
@@ -445,6 +449,7 @@ const DICT: Record<string, { en: string; zh: string; ja: string }> = {
   "validate.gameNoMap": { en: "Game {game}: add a “Select map” step — the game has no map.", zh: "第 {game} 場：需要一個「選擇地圖」步驟 —— 這場沒有地圖。", ja: "ゲーム {game}：「マップを選択」ステップを追加してください。マップがありません。" },
   "validate.gameNoCiv": { en: "Game {game}: add a civ step (offer/snipe) — players have no civ.", zh: "第 {game} 場：需要一個文明步驟（選文明出戰／狙擊）—— 選手沒有文明可用。", ja: "ゲーム {game}：文明ステップ（出場文明の選択／スナイプ）を追加してください。使う文明がありません。" },
   "validate.offerMinusSnipe": { en: "Game {game}: offer ({offer}) minus snipe ({snipe}) must be at least 1, or a player can be left with no civ.", zh: "第 {game} 場：選文明出戰（{offer}）扣掉狙擊（{snipe}）後必須至少剩 1，否則可能出現選手沒有文明可選的情況。", ja: "ゲーム {game}：出場文明の数（{offer}）からスナイプ（{snipe}）を引いた値は 1 以上必要です。さもないと使える文明が無くなる可能性があります。" },
+  "validate.actorNoPrevGame": { en: "Step {step} is assigned to the winner or loser of the previous game, but it is in game 1 — there is no previous game, so nobody is put on the clock and the draft cannot move. Use P1, P2 or Random for the first game.", zh: "第 {step} 個步驟指定給上一場的勝方／敗方，但它在第 1 場 —— 前面沒有比賽可以決定那是誰，不會有人被輪到，抽選會卡住。第一場請改用 P1、P2 或隨機。", ja: "ステップ {step} は前のゲームの勝者／敗者に割り当てられていますが、ゲーム 1 にあります。前のゲームが無いため誰の番にもならず、ドラフトが進みません。最初のゲームでは P1・P2・ランダムを使ってください。" },
   "validate.handTooSmall": { en: "Each player's hand ({hand}) is smaller than the number of games ({games}); with “exclude used civs” they will run out.", zh: "每位選手的文明池（{hand}）少於比賽場數（{games}），開了「排除已用文明」會不夠用。", ja: "各プレイヤーの手持ち文明（{hand}）がゲーム数（{games}）より少ないため、「使用済み文明を除外」を有効にすると足りなくなります。" },
 
   // --- Civilizations -------------------------------------------------------

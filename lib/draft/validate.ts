@@ -89,6 +89,26 @@ export function validatePreset(config: PresetConfig): PresetIssue[] {
     }
   }
 
+  // --- LOSER / WINNER need a previous game to resolve against. ---
+  // Both read the PREVIOUS game's result (`resolveActor` in the engine), and the
+  // first game has none, so they resolve to nobody. Neither way that fails is
+  // visible from the editor. A MAP_SELECT ends up with no turn AND nobody
+  // awaiting, which is exactly the condition on which `scheduleTimer` tears the
+  // clock down — so the draft stops dead with no countdown to rescue it. A
+  // SYNC_CONFIRM quietly degrades into asking BOTH players instead of the one
+  // it names, which is a wrong gate rather than a stuck one, and reads as the
+  // other player being confirmed against their will.
+  //
+  // A GAME_RESULT is exempt: its actor is only "whoever calls the result first",
+  // never a turn, and the shipped EGC formats declare WINNER on every one of
+  // them. So is anything simultaneous, which ignores `actor` by definition.
+  for (let i = 0; i < steps.length; i++) {
+    const s = steps[i];
+    if (gameOf[i] !== 0) continue;
+    if (s.type === "GAME_RESULT" || isSimultaneousStep(s)) continue;
+    if (s.actor === "LOSER" || s.actor === "WINNER") push("actorNoPrevGame", { step: i + 1 });
+  }
+
   // --- Hand sufficiency for the offer/snipe duel with excludeUsedCivs:
   // each player must be able to field a distinct civ every game. ---
   const usesDuel = steps.some((s) => s.type === "CIV_OFFER");

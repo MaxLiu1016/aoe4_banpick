@@ -319,6 +319,13 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
   const opp = youPlayer === "player1" ? "player2" : youPlayer === "player2" ? "player1" : null;
   const duel = state.civDuel;
   const canActDuel = !spectator && !!youPlayer && state.awaiting[youPlayer] && payload!.status === "running" && !ackPending;
+  // Straight off `state.confirmGate` rather than off `awaiting`: a gate naming
+  // an actor asks one seat, and `awaiting` is false for the other one for the
+  // same reason it is false once you have confirmed. The engine reports who was
+  // asked and who answered separately so this doesn't have to guess.
+  const gate = state.confirmGate;
+  const confirmStatus = (seat: "player1" | "player2"): SeatConfirm =>
+    !gate?.asked[seat] ? "na" : gate.confirmed[seat] ? "done" : "waiting";
   // "This is running against you" — the one thing the prompt row raises its voice
   // for. Same test the board used before the clock moved down here.
   const myPrompt = !spectator && !!youPlayer && state.awaiting[youPlayer]
@@ -558,13 +565,13 @@ export function MatchRoom({ matchId, spectator = false }: { matchId: string; spe
         />
       )}
 
-      {/* Synchronized gate: both players must press confirm before the draft proceeds */}
+      {/* Confirm gate: everybody, or the one seat the step names */}
       {showConfirm && (
         <ConfirmGate
           p1Name={p1Name}
           p2Name={p2Name}
-          p1Confirmed={!state.awaiting.player1}
-          p2Confirmed={!state.awaiting.player2}
+          p1Status={confirmStatus("player1")}
+          p2Status={confirmStatus("player2")}
           you={you}
           canConfirm={canActDuel}
           onConfirm={() => act("confirm")}
@@ -2093,25 +2100,32 @@ function clamp(remain: number, limitSec?: number | null): number {
 
 type TFn = (k: string, v?: Record<string, string | number>) => string;
 
+/**
+ * Where a seat stands at a confirm gate. Three states, not two: a gate that
+ * names an actor ("the winner acknowledges the map the loser just picked")
+ * asks one seat, and the other is neither waiting nor confirmed — it was never
+ * asked. Collapsing that into a boolean printed a tick and the word "Confirmed"
+ * against a player who had never been shown a button.
+ */
+type SeatConfirm = "done" | "waiting" | "na";
+
 // Colour cue: pick/select = green, ban/snipe = red, otherwise gold.
-function ConfirmGate({ p1Name, p2Name, p1Confirmed, p2Confirmed, you, canConfirm, onConfirm }: {
-  p1Name: string; p2Name: string; p1Confirmed: boolean; p2Confirmed: boolean;
+function ConfirmGate({ p1Name, p2Name, p1Status, p2Status, you, canConfirm, onConfirm }: {
+  p1Name: string; p2Name: string; p1Status: SeatConfirm; p2Status: SeatConfirm;
   you: string; canConfirm: boolean; onConfirm: () => void;
 }) {
   const { t } = useI18n();
   const isPlayer = you === "player1" || you === "player2";
-  const youConfirmed = you === "player1" ? p1Confirmed : you === "player2" ? p2Confirmed : false;
+  const mine: SeatConfirm = you === "player1" ? p1Status : you === "player2" ? p2Status : "na";
   return (
     <div className="aoe-panel space-y-4 rounded-xl p-6 text-center">
       <div className="flex items-center justify-center gap-8">
-        <ConfirmSeat name={p1Name} confirmed={p1Confirmed} tone={OWNER.player1} />
+        <ConfirmSeat name={p1Name} status={p1Status} tone={OWNER.player1} />
         <span className="font-display text-muted">vs</span>
-        <ConfirmSeat name={p2Name} confirmed={p2Confirmed} tone={OWNER.player2} />
+        <ConfirmSeat name={p2Name} status={p2Status} tone={OWNER.player2} />
       </div>
       {isPlayer && (
-        youConfirmed ? (
-          <p className="text-sm text-muted">{t("match.confirmWaitingOpp")}</p>
-        ) : (
+        mine === "waiting" ? (
           <div className="space-y-2">
             <button onClick={onConfirm} disabled={!canConfirm}
               className="aoe-btn rounded px-8 py-3 font-display text-lg disabled:opacity-50">
@@ -2119,6 +2133,11 @@ function ConfirmGate({ p1Name, p2Name, p1Confirmed, p2Confirmed, you, canConfirm
             </button>
             <p className="text-xs text-muted">{t("match.confirmWaitingYou")}</p>
           </div>
+        ) : (
+          // Covers "you pressed it" and "this gate was never yours" alike: either
+          // way the draft is waiting on the other seat, which is what the line
+          // says. The badges above carry the difference between the two.
+          <p className="text-sm text-muted">{t("match.confirmWaitingOpp")}</p>
         )
       )}
     </div>
@@ -2127,17 +2146,22 @@ function ConfirmGate({ p1Name, p2Name, p1Confirmed, p2Confirmed, you, canConfirm
 
 // A confirmed seat lights up in that player's OWN colour rather than a generic
 // green — same rule as everywhere else, and it keeps green off the draft screen.
-function ConfirmSeat({ name, confirmed, tone }: { name: string; confirmed: boolean; tone: OwnerTone }) {
+// "na" gets neither the colour nor the tick: it is the seat this gate never
+// asked, and a tick there is a claim that they pressed something.
+function ConfirmSeat({ name, status, tone }: { name: string; status: SeatConfirm; tone: OwnerTone }) {
   const { t } = useI18n();
+  const done = status === "done";
   return (
     <div className="flex flex-col items-center gap-1">
       <div className={`flex h-14 w-14 items-center justify-center rounded-full border-2 text-3xl transition ${
-        confirmed ? `${tone.border} ${tone.bg} ${tone.text}` : "border-border text-muted"
+        done ? `${tone.border} ${tone.bg} ${tone.text}` : "border-border text-muted"
       }`}>
-        {confirmed ? "✓" : "…"}
+        {done ? "✓" : status === "waiting" ? "…" : "–"}
       </div>
       <span className={`font-display text-base ${tone.text}`}>{name}</span>
-      <span className={`text-xs ${confirmed ? tone.text : "text-muted"}`}>{confirmed ? t("match.confirmed") : "—"}</span>
+      <span className={`text-xs ${done ? tone.text : "text-muted"}`}>
+        {done ? t("match.confirmed") : status === "na" ? t("match.confirmNotAsked") : "—"}
+      </span>
     </div>
   );
 }

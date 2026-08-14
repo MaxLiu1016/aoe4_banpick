@@ -32,9 +32,19 @@ export type TFn = (key: string, vars?: Record<string, string | number>) => strin
 
 export function stepLabel(t: TFn, s: Pick<Step, "type" | "actor" | "simultaneous">): string {
   const name = t(`step.${s.type}`);
-  // Neither belongs to one side, so neither takes a prefix. A result is the
-  // game's, and a confirm gate with no named actor is both players'.
-  if (s.type === "GAME_RESULT" || s.type === "SYNC_CONFIRM") return name;
+  // A result belongs to the game rather than to a seat, so it never takes a
+  // prefix — its actor is only "whoever calls it first".
+  if (s.type === "GAME_RESULT") return name;
+  // A confirm gate reads two ways, and the difference is the entire point of
+  // the step. Unnamed it asks everybody, and `step.SYNC_CONFIRM` already says
+  // so. Named — "the winner acknowledges the map the loser just picked" — it
+  // asks ONE seat, and calling that "both players confirm" told the other side
+  // they were expected to press something they were never asked for.
+  if (s.type === "SYNC_CONFIRM") {
+    return isSimultaneousStep(s)
+      ? name
+      : t("step.byActor", { actor: t(`actorShort.${s.actor}`), step: t("step.SYNC_CONFIRM_one") });
+  }
   // The bar has no checkbox to carry this, unlike the editor row, so here the
   // name has to say it.
   if (isSimultaneousStep(s)) return t("step.simul", { step: name });
