@@ -16,6 +16,7 @@ import { gameIndexOfSteps } from "./engine";
  *    (a Bo5 needs 5 games, a Bo3 needs 3, …);
  *  - at least 2 civs and 1 map to choose from;
  *  - civ/map bans + picks stay within the pool sizes (no over-banning/-picking);
+ *  - a random map draw still has un-claimed maps left to draw from;
  *  - every game can actually produce a map and a civ for each player.
  */
 export interface PresetIssue {
@@ -107,6 +108,35 @@ export function validatePreset(config: PresetConfig): PresetIssue[] {
     if (gameOf[i] !== 0) continue;
     if (s.type === "GAME_RESULT" || isSimultaneousStep(s)) continue;
     if (s.actor === "LOSER" || s.actor === "WINNER") push("actorNoPrevGame", { step: i + 1 });
+  }
+
+  // --- A random map draw needs maps left to draw FROM. -----------------------
+  // "🎲 Random (from remaining)" draws out of what NEITHER player claimed. A
+  // draft that bans and picks the pool down to nothing leaves that draw an empty
+  // hat, and there is no sensible thing for it to do then: the engine used to
+  // reach into the players' picked maps, which handed somebody their own pick as
+  // the "random" first map, and refusing to do that instead stops the draft dead
+  // (no turn, nobody awaited, so `scheduleTimer` takes the clock away too).
+  // Neither is discoverable from the editor, so the shape is rejected here.
+  //
+  // Simultaneous bans count once, not once per player: both sides ban blind and
+  // may land on the same map, so `count` is the only figure that is always true.
+  // That errs towards leaving MORE maps than there will be — a preset this rule
+  // clears might still be tight, but one it flags is certainly empty.
+  //
+  // Skipped when there is no pool at all: a new preset opens with an empty map
+  // list on purpose, and `noMaps` already says the useful thing about that.
+  if (config.maps.length > 0) {
+    let left = config.maps.length;
+    for (let i = 0; i < steps.length; i++) {
+      const s = steps[i];
+      if (s.type === "MAP_BAN" || s.type === "MAP_PICK") {
+        left -= s.count;
+      } else if (s.type === "MAP_SELECT" && s.actor === "HOST_DRAW" && left < 1) {
+        push("drawNoMapsLeft", { step: i + 1 });
+        break;
+      }
+    }
   }
 
   // --- Hand sufficiency for the offer/snipe duel with excludeUsedCivs:

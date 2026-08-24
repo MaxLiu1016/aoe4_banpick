@@ -363,6 +363,12 @@ export function deriveState(
         if (only === "player1" || only === "player2") return !!c?.[only];
         return !!c?.player1 && !!c?.player2;
       }
+      case "MAP_SELECT":
+        // One game, one map — `count` means nothing here and the editor never
+        // offers it, but a step that used to be a MAP_PICK keeps the number it
+        // had. Honouring it made the server draw twice and silently keep the
+        // second, while the first was still marked played and never came back.
+        return (actionsByStep.get(i) ?? 0) >= 1;
       default:
         // A simultaneous ban needs `count` from EACH player, not `count` total —
         // otherwise one fast player alone would complete the step.
@@ -516,17 +522,23 @@ export function deriveState(
   // The combined pool of maps BOTH players picked (for "shared" map selection).
   const pickedMaps = maps.filter((m) => m.state === "picked").map((m) => m.id);
   let mapSelectBase: string[];
+  // A random draw is the one case with no rescue. Everywhere else an empty pool
+  // can borrow from the maps that are merely spoken for, but "🎲 Random (from
+  // remaining)" says where it draws from, and quietly reaching into the players'
+  // picked maps hands somebody their own pick as the "random" map — which is
+  // exactly what a Bo7 whose draft spent all 11 maps did. An empty hat stays
+  // empty; `validatePreset` rejects the shape that produces one, so this is
+  // unreachable for any preset that can start a match.
+  let drawn = false;
   if (currentStep?.type === "MAP_SELECT") {
     const scope = currentStep.mapScope ?? "own";
-    // A random (HOST_DRAW) draw always uses the leftover neutral maps — never a
-    // player's picked pool — regardless of scope.
-    if (turn === "host") mapSelectBase = neutralMaps;
+    if (turn === "host") { mapSelectBase = neutralMaps; drawn = true; }
     else if (scope === "shared") mapSelectBase = pickedMaps.length ? pickedMaps : neutralMaps;
     else if (turn === "player1") mapSelectBase = mapsByP1.length ? mapsByP1 : neutralMaps;
     else if (turn === "player2") mapSelectBase = mapsByP2.length ? mapsByP2 : neutralMaps;
     else mapSelectBase = neutralMaps;
   } else mapSelectBase = neutralMaps;
-  if (mapSelectBase.length === 0) mapSelectBase = maps.filter((m) => m.state !== "banned").map((m) => m.id);
+  if (!drawn && mapSelectBase.length === 0) mapSelectBase = maps.filter((m) => m.state !== "banned").map((m) => m.id);
   const notPlayedMaps = mapSelectBase.filter((id) => !playedMaps.has(id));
   const selectableMapIds = notPlayedMaps.length > 0 ? notPlayedMaps : mapSelectBase;
 
