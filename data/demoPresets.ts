@@ -184,12 +184,12 @@ export const DEMO_PRESETS: DemoPreset[] = [
         {
           "id": "kawasan",
           "name": "Kawasan",
-          "imageUrl": "/maps/kawasan.png"
+          "imageUrl": "/maps/kawasan.webp"
         },
         {
           "id": "coastal-cliffs",
           "name": "Coastal Cliffs",
-          "imageUrl": "/maps/coastal-cliffs.png"
+          "imageUrl": "/maps/coastal-cliffs.webp"
         },
         {
           "id": "gorge",
@@ -811,12 +811,12 @@ export const DEMO_PRESETS: DemoPreset[] = [
         {
           "id": "kawasan",
           "name": "Kawasan",
-          "imageUrl": "/maps/kawasan.png"
+          "imageUrl": "/maps/kawasan.webp"
         },
         {
           "id": "coastal-cliffs",
           "name": "Coastal Cliffs",
-          "imageUrl": "/maps/coastal-cliffs.png"
+          "imageUrl": "/maps/coastal-cliffs.webp"
         },
         {
           "id": "gorge",
