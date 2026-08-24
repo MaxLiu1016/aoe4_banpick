@@ -17,6 +17,7 @@ import { gameIndexOfSteps } from "./engine";
  *  - at least 2 civs and 1 map to choose from;
  *  - civ/map bans + picks stay within the pool sizes (no over-banning/-picking);
  *  - a random map draw still has un-claimed maps left to draw from;
+ *  - "random" is not asked to do something only a player can do;
  *  - every game can actually produce a map and a civ for each player.
  */
 export interface PresetIssue {
@@ -108,6 +109,26 @@ export function validatePreset(config: PresetConfig): PresetIssue[] {
     if (gameOf[i] !== 0) continue;
     if (s.type === "GAME_RESULT" || isSimultaneousStep(s)) continue;
     if (s.actor === "LOSER" || s.actor === "WINNER") push("actorNoPrevGame", { step: i + 1 });
+  }
+
+  // --- "Random" cannot draft into a hand. ------------------------------------
+  // HOST_DRAW means the SERVER performs the step. It has something legal to play
+  // only where the result belongs to nobody — a ban, or the map draw. Put it on
+  // a civ draft and the draft stops for good: the server's pick list is only
+  // computed for a player seat and comes back empty, neither player may act
+  // because it is not their turn, and with nobody awaited `scheduleTimer` takes
+  // the clock away, so there is no timeout to auto-fill and move on.
+  //
+  // MAP_PICK is deliberately NOT here. A map picked at random is an orphan —
+  // claimed by neither player, so a "from your own maps" step can never reach it
+  // and it is out of the draw's leftovers too — but the draft still moves, and
+  // presets in the wild do it. The editor no longer offers it; the ones already
+  // saved keep working.
+  for (let i = 0; i < steps.length; i++) {
+    const s = steps[i];
+    if (s.actor !== "HOST_DRAW") continue;
+    if (isSimultaneousStep(s)) continue; // a simultaneous step ignores `actor` entirely
+    if (s.type === "CIV_PICK" || s.type === "CIV_OFFER") push("drawCannotPick", { step: i + 1 });
   }
 
   // --- A random map draw needs maps left to draw FROM. -----------------------

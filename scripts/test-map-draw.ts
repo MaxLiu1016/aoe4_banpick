@@ -148,6 +148,44 @@ ok(!codes(withSteps([
   ok(bare.includes("noMaps") && !bare.includes("drawNoMapsLeft"), `an empty map pool says so once — got ${JSON.stringify(bare)}`);
 }
 
+// --- What "Random" is allowed to be asked to do ------------------------------
+// The server can only perform a step whose result belongs to nobody. A ban does
+// (it takes the map or civ off the table for both sides); a draft into a hand
+// does not, and asking for one stops the draft dead — the server's pick list is
+// only built for a player seat, neither player may act out of turn, and with
+// nobody awaited there is not even a clock left to time out and move on.
+console.log("\nRandom may ban, and may draw the map; it may not draft into a hand");
+const only = (steps: Step[]) => codes(withSteps([
+  ...steps,
+  mk({ type: "MAP_SELECT", actor: "PLAYER1", mapScope: "shared" }),
+  mk({ type: "CIV_OFFER", actor: "PLAYER1", pool: "civ", count: 1 }),
+  mk({ type: "GAME_RESULT", actor: "HOST_DRAW" }),
+])).filter((c) => c === "drawCannotPick");
+ok(only([mk({ type: "MAP_BAN", actor: "HOST_DRAW" })]).length === 0, "a random map ban is fine");
+ok(only([mk({ type: "CIV_BAN", actor: "HOST_DRAW", pool: "civ", banScope: "pool" })]).length === 0, "a random civ ban is fine");
+ok(only([mk({ type: "CIV_PICK", actor: "HOST_DRAW", pool: "civ" })]).length === 1, "a random civ draft is rejected");
+ok(only([mk({ type: "CIV_OFFER", actor: "HOST_DRAW", pool: "civ", simultaneous: false })]).length === 1,
+  "a random turn-based offer is rejected");
+// A simultaneous offer has no turn at all, so its `actor` is decoration and
+// every preset written before turn-based offers existed carries HOST_DRAW there.
+ok(only([mk({ type: "CIV_OFFER", actor: "HOST_DRAW", pool: "civ", simultaneous: true })]).length === 0,
+  "a simultaneous offer ignores its actor and is left alone");
+// Deliberately allowed: the map is orphaned, not stuck, and live presets do it.
+ok(only([mk({ type: "MAP_PICK", actor: "HOST_DRAW" })]).length === 0,
+  "a random map pick is odd but still permitted");
+{
+  // The stuck state itself, so the rule's reason is on the record and not just
+  // in a comment: nobody's turn, nobody awaited, nothing the server can play.
+  const st = deriveState(withSteps([
+    mk({ type: "CIV_PICK", actor: "HOST_DRAW", pool: "civ" }),
+    mk({ type: "MAP_SELECT", actor: "PLAYER1", mapScope: "shared" }),
+    mk({ type: "CIV_OFFER", actor: "PLAYER1", pool: "civ", count: 1 }),
+    mk({ type: "GAME_RESULT", actor: "HOST_DRAW" }),
+  ]), [], "running");
+  ok(st.turn === "host" && !st.awaiting.player1 && !st.awaiting.player2 && st.civPickableIds.length === 0,
+    "…because it leaves the draft with no move for anyone");
+}
+
 // --- The shape that was actually played --------------------------------------
 console.log("\nThe Bo7 that reported this is rejected, and the fixed shape is not");
 {
@@ -176,7 +214,7 @@ const shipped: [string, PresetConfig][] = [
   ["buildDefaultConfig(5)", buildDefaultConfig(5)],
 ];
 for (const [name, cfg] of shipped) {
-  const hit = validatePreset(cfg).filter((e) => e.code === "drawNoMapsLeft");
+  const hit = validatePreset(cfg).filter((e) => e.code === "drawNoMapsLeft" || e.code === "drawCannotPick");
   ok(hit.length === 0, `${name}${hit.length ? ` → ${JSON.stringify(hit)}` : ""}`);
 }
 

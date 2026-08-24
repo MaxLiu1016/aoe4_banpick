@@ -20,6 +20,20 @@ const STEP_TYPES: StepType[] = [
   "MAP_BAN", "MAP_PICK", "CIV_BAN", "CIV_PICK", "MAP_SELECT", "SYNC_CONFIRM", "CIV_OFFER", "CIV_SNIPE_OPPONENT", "GAME_RESULT",
 ];
 const ACTORS: Actor[] = ["HOST_DRAW", "PLAYER1", "PLAYER2", "LOSER", "WINNER"];
+
+// "🎲 Random" means the SERVER performs the step, and it can only do that where
+// the result belongs to nobody: a ban takes the map or civ off the table for
+// both sides, and the map draw is the server's job by definition. A pick has an
+// owner and the host is not a seat — a civ drafted at random lands in nobody's
+// hand, so the server has nothing legal to play, neither player may act, and
+// with nobody awaited the clock is taken away too. The draft stops for good.
+// A map picked at random is not fatal but is still an orphan: claimed by
+// neither player, so a "choose from your own maps" step can never reach it, and
+// it is out of the draw's leftovers as well. Two live presets do this, so it is
+// dropped from the menu rather than rejected outright.
+const NO_DRAW: StepType[] = ["MAP_PICK", "CIV_PICK", "CIV_OFFER"];
+const actorsFor = (type: StepType): Actor[] =>
+  NO_DRAW.includes(type) ? ACTORS.filter((a) => a !== "HOST_DRAW") : ACTORS;
 // No POOLS list any more: a step's pool is fully determined by its type
 // (see poolForType), so offering it as a dropdown only let you build presets
 // whose pool contradicted their type.
@@ -412,9 +426,27 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
                   {STEP_TYPES.map((st) => <option key={st} value={st}>{t(`step.${st}`)}</option>)}
                 </select>
                 {f.actor ? (
-                  <select value={s.actor} onChange={(e) => updateStepMeta(i, { actor: e.target.value as Actor })} className={selectCls}>
-                    {ACTORS.map((a) => <option key={a} value={a}>{t(`actor.${a}`)}</option>)}
-                  </select>
+                  // A step saved before its actor was withdrawn keeps that actor
+                  // in the list, flagged. Dropping it outright would render an
+                  // empty box over a value that is still there and still saved.
+                  (() => {
+                    const allowed = actorsFor(s.type);
+                    const legacy = !allowed.includes(s.actor);
+                    return (
+                      <select
+                        value={s.actor}
+                        onChange={(e) => updateStepMeta(i, { actor: e.target.value as Actor })}
+                        className={legacy ? `${selectCls} border-danger text-danger` : selectCls}
+                        title={legacy ? t("editor.actorNotHere") : undefined}
+                      >
+                        {(legacy ? [s.actor, ...allowed] : allowed).map((a) => (
+                          <option key={a} value={a}>
+                            {a === s.actor && legacy ? `⚠ ${t(`actor.${a}`)}` : t(`actor.${a}`)}
+                          </option>
+                        ))}
+                      </select>
+                    );
+                  })()
                 ) : f.simultaneous !== false ? (
                   <span
                     title={t("editor.bothHint")}
