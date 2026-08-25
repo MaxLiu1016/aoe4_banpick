@@ -83,8 +83,12 @@ export type Step = z.infer<typeof StepSchema>;
  */
 export function isSimultaneousStep(s: Pick<Step, "type" | "simultaneous" | "actor">): boolean {
   switch (s.type) {
+    // The counter-snipe is blind by default and almost always stays that way —
+    // but a format that drafts the fielded civs in the open needs its answer to
+    // be open too, so it takes the same switch the offer does. Nothing wrote the
+    // flag while this returned a flat `true`, so no preset changes meaning here.
     case "CIV_SNIPE_OPPONENT":
-      return true;
+      return s.simultaneous !== false;
     // A confirm gate is simultaneous only when it is asking everybody. Name a
     // side — "the winner acknowledges the map the loser just picked" — and it
     // becomes that player's turn like any other step.

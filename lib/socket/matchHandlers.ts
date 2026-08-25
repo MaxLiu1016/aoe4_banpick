@@ -357,8 +357,11 @@ function redactFor(payload: FullPayload, role: Role, isHost: boolean): FullPaylo
       if (d.offerHidden) hideOther(d.offered); // hidden until both submit (then the step advances)
       d.snipedBy = { player1: [], player2: [] };
     } else {
-      // CIV_SNIPE_OPPONENT: offers revealed; each player's snipe hidden until both done
-      hideOther(d.snipedBy);
+      // CIV_SNIPE_OPPONENT: offers are revealed by now, and a blind snipe stays
+      // hidden until both have taken theirs. A turn-based one is open for the
+      // same reason a turn-based offer is — the seat on the clock is answering
+      // what the other one just did, and cannot answer what it cannot see.
+      if (state.simultaneous) hideOther(d.snipedBy);
     }
     state = { ...state, civDuel: d };
     touched = true;

@@ -83,7 +83,9 @@ function fieldsFor(s: Step): StepFields {
       // the reverse of a ban: simultaneous unless you switch it off.
       return { actor: !isSimultaneousStep(s), count: true, timer: true, excludeUsedCivs: true, simultaneous: "editable" };
     case "CIV_SNIPE_OPPONENT":
-      return { actor: false, count: true, timer: true, excludeUsedCivs: true, simultaneous: "always" };
+      // Blind unless switched off, like the offer it answers — and switching it
+      // off is what makes the seat matter, so the actor appears with it.
+      return { actor: !isSimultaneousStep(s), count: true, timer: true, excludeUsedCivs: true, simultaneous: "editable" };
     case "SYNC_CONFIRM":
       return { actor: false, count: false, timer: true, excludeUsedCivs: false, simultaneous: "always" };
     case "GAME_RESULT":
@@ -193,6 +195,13 @@ export function PresetEditor({ initial }: { initial: ClientPreset }) {
         // arrive turn-based, carrying a flag the previous type meant something
         // else by.
         delete merged.simultaneous;
+        // …and drop the actor with it when the new type turns out to run blind.
+        // Dropping only the flag left the seat behind on a step that no longer
+        // has a seat, and the field that would have shown it is hidden for a
+        // simultaneous step — so the preset quietly said "P2 offers" while
+        // reading, to everything downstream, as "both offer". That is the shape
+        // `repairedTurnOrder` in the engine now has to unpick after the fact.
+        if (isSimultaneousStep(merged)) merged.actor = "PLAYER1";
       }
       steps[idx] = merged;
       return { ...c, steps };

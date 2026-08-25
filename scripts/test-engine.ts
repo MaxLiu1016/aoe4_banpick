@@ -1,7 +1,13 @@
 import { buildDefaultConfig } from "../lib/draft/defaultPreset";
+import { DEFAULT_MAPS } from "../data/maps";
 import { deriveState, validateAction, type EngineAction, type SeatRole } from "../lib/draft/engine";
 
-const config = buildDefaultConfig(3); // handSize = 4
+// A default config ships every civ and NO map on purpose: map pools rotate every
+// season and every tournament, so there is no set that is right by default and
+// the editor asks for one. A simulation that bans and picks maps has to bring
+// its own, and without it every map action here answered "Unknown map" — then
+// the turn never advanced and all 49 assertions after it fell over in sequence.
+const config = { ...buildDefaultConfig(3), maps: DEFAULT_MAPS }; // handSize = 4
 const actions: EngineAction[] = [];
 let seq = 0;
 let failures = 0;
@@ -91,9 +97,17 @@ assert(state().score.player1 === 1, "P1 leads 1-0");
 // --- Game 2 ---
 s = state();
 assert(s.currentStep?.type === "MAP_SELECT" && s.turn === "player2", "game2 map = loser (P2)");
-// Loser P2 may only pick from THEIR OWN map pool (prairie / danube-river), minus played.
+// Loser P2 may only pick from THEIR OWN map pool (french-pass / danube-river), minus played.
 assert(s.selectableMapIds.every((id) => ["french-pass", "danube-river"].includes(id)), "loser selects only from own map pool");
 act("player2", s.selectableMapIds[0], "P2 selects g2 map from own pool");
+
+// Every game after the first puts a gate between the map and the civs chosen for
+// it: the winner acknowledges what the loser just picked. P1 took game 1, so P1
+// is the one asked — and while the gate stands, the offers below land on it as
+// confirmations instead, which is how a missing acknowledgement reads.
+s = state();
+assert(s.currentStep?.type === "SYNC_CONFIRM" && s.turn === "player1", "winner acknowledges the g2 map");
+act("player1", "confirm", "P1 confirms the g2 map");
 
 s = state();
 assert(s.currentStep?.type === "CIV_OFFER", "game2 OFFER");

@@ -1,6 +1,6 @@
 import { isSimultaneousStep } from "./schema";
 import type { PresetConfig } from "./schema";
-import { gameIndexOfSteps } from "./engine";
+import { gameIndexOfSteps, repairedTurnOrder } from "./engine";
 
 /**
  * Structural validation of a preset. Returns a list of problems (empty = valid).
@@ -64,6 +64,16 @@ export function validatePreset(config: PresetConfig): PresetIssue[] {
 
   // --- Per-game civ + map presence. ---
   const gameOf = gameIndexOfSteps(steps);
+  const turnOrdered = repairedTurnOrder(steps, gameOf);
+  // How many civs each seat ends up holding, which is the ceiling on what a
+  // game drawing from the hand can ask them to offer.
+  const handSize = { player1: 0, player2: 0 };
+  for (const s of steps) {
+    if (s.type !== "CIV_PICK") continue;
+    if (s.actor === "PLAYER1") handSize.player1 += s.count;
+    else if (s.actor === "PLAYER2") handSize.player2 += s.count;
+    else { handSize.player1 += s.count; handSize.player2 += s.count; }
+  }
   const CIV_STEPS = ["CIV_OFFER", "CIV_SNIPE_OPPONENT"];
   for (let g = 0; g < games; g++) {
     const gSteps = steps.filter((_, i) => gameOf[i] === g);
@@ -76,18 +86,40 @@ export function validatePreset(config: PresetConfig): PresetIssue[] {
     // 1"), and reading only the first step called that a 1-civ offer and rejected
     // a perfectly good preset.
     const offerSteps = gSteps.filter((s) => s.type === "CIV_OFFER");
-    const snipeTotal = gSteps.filter((s) => s.type === "CIV_SNIPE_OPPONENT").reduce((n, s) => n + s.count, 0);
-    if (offerSteps.length) {
+    // Count the way the engine does, repaired steps included, or the editor
+    // green-lights a preset the draft then reads as asking for twice as much.
+    const perSeat = (kept: typeof gSteps) => {
       let p1 = 0, p2 = 0;
-      for (const s of offerSteps) {
+      for (const s of kept) {
+        const blind = isSimultaneousStep(s) && !turnOrdered.has(steps.indexOf(s));
         // LOSER/WINNER isn't knowable until the series is played, so it counts for
         // whichever seat it lands on — the one reading that keeps a valid preset valid.
-        if (!isSimultaneousStep(s) && s.actor === "PLAYER1") p1 += s.count;
-        else if (!isSimultaneousStep(s) && s.actor === "PLAYER2") p2 += s.count;
+        if (!blind && s.actor === "PLAYER1") p1 += s.count;
+        else if (!blind && s.actor === "PLAYER2") p2 += s.count;
         else { p1 += s.count; p2 += s.count; }
       }
-      const offer = Math.min(p1, p2);
-      if (offer - snipeTotal < 1) push("offerMinusSnipe", { game: g + 1, offer, snipe: snipeTotal });
+      return { player1: p1, player2: p2 };
+    };
+    const snipe = perSeat(gSteps.filter((s) => s.type === "CIV_SNIPE_OPPONENT"));
+    if (offerSteps.length) {
+      const want = perSeat(offerSteps);
+      // What can be taken off a player is what the OPPONENT snipes, so the two
+      // sides are checked against each other rather than against a single pooled
+      // number — a format that asks one seat for less than the other is exactly
+      // the case where one pooled number hides the side that comes up short.
+      for (const seat of ["player1", "player2"] as const) {
+        const taken = snipe[seat === "player1" ? "player2" : "player1"];
+        if (want[seat] - taken < 1) push("offerMinusSnipe", { game: g + 1, offer: want[seat], snipe: taken });
+      }
+      // A game can only ask for civs a player still has to give. Asking for more
+      // does not fail loudly — the step simply can never complete, so the cursor
+      // stops on it for good and no clock rescues the draft.
+      const fromHand = offerSteps.some((s) => s.pool === "drafted_civ");
+      const spent = offerSteps.some((s) => s.excludeUsedCivs) ? g : 0; // one civ fielded per game already played
+      for (const seat of ["player1", "player2"] as const) {
+        const have = (fromHand ? handSize[seat] : config.civs.length) - spent;
+        if (want[seat] > have) push("offerOverHand", { game: g + 1, want: want[seat], have: Math.max(have, 0) });
+      }
     }
   }
 
