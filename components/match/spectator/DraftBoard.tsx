@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Thumb } from "@/components/Thumb";
 import { useI18n } from "@/lib/i18n";
 import type { DerivedState, PoolView } from "@/lib/draft/engine";
@@ -82,11 +82,50 @@ function reserved(state: DerivedState, type: string, seat: Seat): number {
 // rather than something that can grow. Named here because they have to add up.
 const HEADER_H = 128;
 const STEPBAR_H = 60;
-// Tall enough to leave air under the map's name. The two player columns hang off
-// the bottom of this band and a 1080-tall canvas has no more room to give them,
-// so the step bar gives some of its own back.
+// Tall enough to leave air under the map's name. Only the middle waits for this
+// band to finish — the player columns run down beside it.
 const HERO_H = 196;
-const CONTENT_TOP = HEADER_H + STEPBAR_H + HERO_H; // 368
+const CONTENT_TOP = HEADER_H + STEPBAR_H + HERO_H; // 384
+
+// The player columns start ABOVE the middle, level with the hero band rather than
+// under it. The hero band is full-bleed but its contents are three centred items,
+// so the 400-odd pixels either side of them were empty on every draft — and the
+// columns were queuing below that emptiness for room they then ran out of. They
+// start under the step bar instead, which is worth 180px of column and is why a
+// format with four sections now fits without being shrunk to do it.
+const COL_TOP = HEADER_H + STEPBAR_H + 16; // 204
+// What is left underneath for a player column, less a hair of air at the bottom.
+const COL_BUDGET = 1080 - COL_TOP - 16;
+
+/**
+ * The backstop: shrink a player column that still will not fit.
+ *
+ * A column is as tall as the format makes it, and a Bo7 that bans maps, bans
+ * civs, picks maps AND drafts a hand stacks four sections. That one overran a
+ * 1080-tall canvas with nothing to say so — the stage is `overflow-hidden`, so
+ * the last section's tiles were simply not there for anyone watching. Starting
+ * the columns at COL_TOP is what actually bought the room for it; this is here
+ * so the next format to outgrow even that degrades to small rather than to
+ * absent, since a silently clipped column is the one failure a viewer cannot see.
+ *
+ * A transform does not affect layout, so `offsetHeight` stays the unscaled
+ * height and observing the same element cannot feed back into itself. Only ever
+ * scales down: a short column stays at full size rather than growing to fill.
+ */
+function useFitScale(): [React.RefObject<HTMLDivElement | null>, number] {
+  const ref = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    // ResizeObserver delivers once on observe, which is the first measurement —
+    // no separate call, so nothing sets state from inside the effect itself.
+    const ro = new ResizeObserver(() => setScale(Math.min(1, COL_BUDGET / Math.max(1, el.offsetHeight))));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, scale];
+}
 
 // Where the two player columns sit, and therefore how wide the middle is. The
 // duel needs the width far more than the columns do — the pool is not on screen
@@ -341,9 +380,13 @@ export function DraftBoard({
       </div>
 
       {/* ---- The three things a viewer is actually watching for ---- */}
+      {/* Held inside the same middle the pool below it uses, rather than running
+          the full width. The columns now sit level with this band, so a long room
+          heading that used to just grow into the empty margin would grow into a
+          player's hand instead — it truncates at the column edge now. */}
       <div
-        className="absolute left-0 right-0 flex items-center justify-center gap-[48px] px-12"
-        style={{ top: HEADER_H + STEPBAR_H, height: HERO_H }}
+        className="absolute flex items-center justify-center gap-[48px]"
+        style={{ top: HEADER_H + STEPBAR_H, height: HERO_H, left: box.centre, right: box.centre }}
       >
         <HeroMap map={currentMap ? mapById.get(currentMap) : undefined} t={t} />
         <div className="min-w-0 max-w-[720px] text-center">
@@ -596,13 +639,20 @@ function PlayerColumn({
 }) {
   const right = seat === "player2";
   const remaining = hand.filter((c) => !used.has(c.id)).length;
+  const [fitRef, fitScale] = useFitScale();
+  // Anchored to the edge it hangs off, so shrinking pulls it away from the
+  // middle rather than sliding it across the pool.
+  const fit = {
+    transform: fitScale < 1 ? `scale(${fitScale})` : undefined,
+    transformOrigin: right ? "top right" : "top left",
+  };
   const heading = (label: string, colour: string) => (
     <div className="mt-6 font-sans text-[15px] font-semibold tracking-[.18em]" style={{ color: colour }}>{label}</div>
   );
 
   if (compact) {
     return (
-      <div className="absolute" style={{ top: CONTENT_TOP, width, [right ? "right" : "left"]: inset, textAlign: right ? "right" : "left" }}>
+      <div ref={fitRef} className="absolute" style={{ top: COL_TOP, width, [right ? "right" : "left"]: inset, textAlign: right ? "right" : "left", ...fit }}>
         <div className="truncate pb-2 font-display text-[26px] font-bold leading-none" style={{ color: OWNER[seat], borderBottom: `3px solid ${OWNER[seat]}` }}>
           {name}
         </div>
@@ -622,7 +672,7 @@ function PlayerColumn({
   }
 
   return (
-    <div className="absolute" style={{ top: CONTENT_TOP, width, [right ? "right" : "left"]: inset, textAlign: right ? "right" : "left" }}>
+    <div ref={fitRef} className="absolute" style={{ top: COL_TOP, width, [right ? "right" : "left"]: inset, textAlign: right ? "right" : "left", ...fit }}>
       <div className={`flex items-center gap-3 pb-3 ${right ? "justify-end" : ""}`} style={{ borderBottom: `3px solid ${OWNER[seat]}` }}>
         {right && <span className="font-sans text-[15px] font-semibold tracking-[.14em] text-muted">P2</span>}
         <span className="truncate font-display text-[38px] font-bold leading-none" style={{ color: OWNER[seat] }}>{name}</span>
